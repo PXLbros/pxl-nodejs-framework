@@ -5,19 +5,14 @@ import { ServerApplicationInstanceProps } from './server-application-instance.in
 export default class ServerApplicationInstance extends ApplicationInstance {
   private webServer: WebServer;
 
-  constructor({ redisInstance, webServer }: ServerApplicationInstanceProps) {
-    super({ redisInstance });
+  constructor({ redisInstance, events, webServer }: ServerApplicationInstanceProps) {
+    super({ redisInstance, events });
 
     this.webServer = webServer;
   }
 
   protected async stop(): Promise<void> {
-    console.log('SHUUUUUUUUUUUUUUTTING DOWN WEBSERVER.............');
-
     // Stop web server
     await this.webServer.stop();
-
-    // TODO: Call the onStopped event here if any
-    // ...
   }
 }

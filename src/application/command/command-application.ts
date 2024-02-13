@@ -3,9 +3,9 @@ import CommandApplicationInstance from './command-application-instance';
 
 export default class CommandApplication extends Application {
   /**
-   * Start command application instance
+   * Start command application
    */
-  protected async start(): Promise<CommandApplicationInstance> {
+  protected async startInstance(): Promise<CommandApplicationInstance> {
     const { redisInstance } = await this.connect();
 
     const commandApplicationInstance = new CommandApplicationInstance({
@@ -13,6 +13,12 @@ export default class CommandApplication extends Application {
     });
 
     return commandApplicationInstance;
+  }
+
+  /**
+   * Stop command application
+   */
+  protected async stop(): Promise<void> {
   }
 
   /**

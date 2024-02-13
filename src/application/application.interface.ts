@@ -8,7 +8,10 @@ export interface ApplicationConfig {
   redis: ApplicationRedisConfig;
 }
 
+export type OnStartedEvent = ({ startupTime }: { startupTime: number }) => void;
+export type OnStoppedEvent = ({ runtime }: { runtime: number }) => void;
+
 export interface StartApplicationProps {
-  onStarted?: ({ startupTime }: { startupTime: [number, number] }) => void;
-  onStopped?: ({ runtime }: { runtime: [number, number] }) => void;
+  onStarted?: OnStartedEvent;
+  onStopped?: OnStoppedEvent;
 }

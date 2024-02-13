@@ -1,10 +1,11 @@
 import logger from '../../logger/logger';
 import Application from '../application';
 import ClusterManager from '../../cluster/cluster-manager';
+import { ClusterManagerConfig } from '../../cluster/cluster-manager.interface';
 import { ServerApplicationConfig, StartServerApplicationProps } from './server-application.interface';
 import ServerApplicationInstance from './server-application-instance';
 import WebServer from '../../webserver/webserver';
-import { ClusterManagerConfig } from 'src/cluster/cluster-manager.interface';
+import { calculateElapsedTime } from '../../util/time';
 
 export default class ServerApplication extends Application {
   protected readonly config: ServerApplicationConfig;
@@ -20,9 +21,10 @@ export default class ServerApplication extends Application {
   /**
    * Start server application instance
    */
-  protected async start(props?: StartServerApplicationProps): Promise<ServerApplicationInstance> {
+  protected async startInstance(props?: StartServerApplicationProps): Promise<ServerApplicationInstance> {
     const { redisInstance } = await this.connect();
 
+    // Initialize web server
     const webServer = new WebServer({
       config: this.config.webServer,
 
@@ -32,39 +34,26 @@ export default class ServerApplication extends Application {
     // Start web server
     await webServer.start();
 
+    // Initialize server application instance
     const serverApplicationInstance = new ServerApplicationInstance({
-      // TODO:
-      // events: {}
-      // or just
-      // onStopped
-
       redisInstance,
 
       webServer,
+
+      events: {
+        onStopped: props?.onStopped,
+      },
     });
+
+    // Calcualte startup time
+    const startupTime = calculateElapsedTime({ startTime: this.startTime });
+
+    if (props?.onStarted) {
+      // Emit started event
+      props.onStarted({ startupTime });
+    }
 
     return serverApplicationInstance;
-  }
-
-  private async startStandalone(props: StartServerApplicationProps): Promise<void> {
-    const serverApplicationInstance = await this.start(props);
-  }
-
-  private async startCluster({
-    props,
-    clusterConfig,
-  }: {
-    props: StartServerApplicationProps;
-    clusterConfig: ClusterManagerConfig;
-  }): Promise<void> {
-    const clusterManager = new ClusterManager({
-      config: clusterConfig,
-
-      startApplicationCallback: () => this.start(props),
-      stopApplicationCallback: () => this.stop(),
-    });
-
-    clusterManager.start();
   }
 
   /**
@@ -72,19 +61,27 @@ export default class ServerApplication extends Application {
    */
   public async startServer(props: StartServerApplicationProps): Promise<void> {
     if (this.config.cluster?.enabled) {
-      // Start clustered server
-      await this.startCluster({
-        props,
+      // Start clustered server application
+      const clusterManager = new ClusterManager({
+        config: this.config.cluster,
 
-        clusterConfig: this.config.cluster,
+        startApplicationCallback: () => this.startInstance(props),
+        stopApplicationCallback: () => this.stop(),
       });
+
+      clusterManager.start();
     } else {
-      // Start standalone server
-      await this.startStandalone(props);
+      // Start standalone server appplciation
+      await this.startInstance(props);
     }
   }
 
-  public async stop(): Promise<void> {
+  /**
+   * Stop server application
+   */
+  protected async stop(): Promise<void> {
     console.log('STOPPING SERVER APPLICATION');
+
+    await parent.stop();
   }
 }
