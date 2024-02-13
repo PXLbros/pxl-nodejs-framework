@@ -23,7 +23,7 @@ export default class RedisInstance {
 
     await Promise.all(disconnectPromises);
 
-    logger.debug('Disconnected from Redis');
+    logger.debug('Disconnected Redis');
   }
 
   public isConnected(): Promise<boolean> {

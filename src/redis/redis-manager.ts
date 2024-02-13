@@ -44,6 +44,11 @@ export default class RedisManager {
       subscriberClient,
     });
 
+    logger.debug('Connected to Redis', {
+      host: this.config.host,
+      port: this.config.port,
+    });
+
     resolve(redisInstance);
   }
 

@@ -8,6 +8,8 @@ export default abstract class Application {
 
   protected startTime: [number, number];
 
+  // private shutdownSignals: NodeJS.Signals[] = ['SIGTERM', 'SIGINT'];
+
   protected redisManager: RedisManager;
   // protected databaseManager: DatabaseManager;
 
@@ -57,6 +59,14 @@ export default abstract class Application {
   protected async stop(): Promise<void> {
     console.log('STOP APP');
   }
+
+  // protected handleShutdown({ callback }: { callback: () => void }): void {
+  //   this.shutdownSignals.forEach((signal) => {
+  //     process.on(signal, () => {
+  //       callback();
+  //     });
+  //   });
+  // }
 
   // protected async stop({
   //   redisInstance,

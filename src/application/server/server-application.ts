@@ -18,7 +18,7 @@ export default class ServerApplication extends Application {
   /**
    * Create server application instance
    */
-  protected async create(): Promise<ServerApplicationInstance> {
+  protected async create(): Promise<ServerApplicationInstance> { // This is equivalent of startServer in old
     const { redisInstance } = await this.connect();
 
     const webServer = new WebServer({
@@ -39,13 +39,35 @@ export default class ServerApplication extends Application {
     return serverApplicationInstance;
   }
 
+  private async startStandalone(): Promise<void> {
+    const serverApplicationInstance = await this.create();
+
+    // this.handleShutdown({
+    //   callback: async () => {
+    //     this.stopServer();
+    //   },
+    // });
+  }
+
   /**
    * Start server application
    */
   public async startServer(): Promise<void> {
-    // Connect
-    const serverApplicationInstance = await this.create();
+    // // Connect
+    // const serverApplicationInstance = await this.create();
 
-    logger.info('Started server application');
+    // logger.info('Started server application');
+    if (this.config.cluster?.enabled) {
+      // // Start clustered server
+      // await this.startCluster();
+    } else {
+      // Start standalone server
+      await this.startStandalone();
+    }
+  }
+  
+  public async stopServer(): Promise<void> {
+    console.log('STOP SERVER');
+    
   }
 }
