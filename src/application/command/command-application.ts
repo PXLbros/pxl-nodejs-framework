@@ -1,6 +1,20 @@
 import Application from '../application';
+import CommandApplicationInstance from './command-application-instance';
 
 export default class CommandApplication extends Application {
+  /**
+   * Create command application instance
+   */
+  protected async create(): Promise<CommandApplicationInstance> {
+    const { redisInstance } = await this.connect();
+
+    const commandApplicationInstance = new CommandApplicationInstance({
+      redisInstance,
+    });
+
+    return commandApplicationInstance;
+  }
+
   /**
    * Start command application
    */

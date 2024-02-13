@@ -1,5 +1,6 @@
 import RedisInstance from '../redis/redis-instance';
 import RedisManager from '../redis/redis-manager';
+import ApplicationInstance from './application-instance';
 import { ApplicationConfig } from './application.interface';
 
 export default abstract class Application {
@@ -17,7 +18,10 @@ export default abstract class Application {
     this.init();
   }
 
-  private init(): void {
+  /**
+   * Initialize application
+   */
+  protected init(): void {
     this.startTime = process.hrtime();
 
     this.redisManager = new RedisManager({
@@ -35,15 +39,10 @@ export default abstract class Application {
     return { redisInstance };
   }
 
-  // protected async init(): Promise<{
-  //   redisInstance: RedisInstance;
-  //   databaseInstance: DatabaseInstance;
-  // }> {
-  //   const redisInstance = await this.redisManager.connect();
-  //   const databaseInstance = await this.databaseManager.connect();
-
-  //   return { redisInstance, databaseInstance };
-  // }
+  /**
+   * Create application instance
+   */
+  protected abstract create(): Promise<ApplicationInstance>;
 
   /**
    * Start application

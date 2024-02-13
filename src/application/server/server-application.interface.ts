@@ -1,4 +1,5 @@
 import { ApplicationRedisConfig } from '../application.interface';
+import { WebServerConfig } from '../../webserver/webserver.interface';
 
 interface ServerApplicationClusterBaseConfig {
   enabled?: boolean;
@@ -17,4 +18,6 @@ export interface ServerApplicationConfig {
   redis: ApplicationRedisConfig;
 
   cluster?: ServerApplicationClusterWorkerModeAutoConfig | ServerApplicationClusterWorkerModeManualConfig;
+
+  webServer: WebServerConfig;
 }

@@ -16,10 +16,7 @@
       "inlineSources": true,
       "sourceRoot": "/",
       "declaration": true,
-      "declarationMap": true,
-      "paths": {
-        "@pxl/nodejs-framework/*": ["./src/*"]
-      }
+      "declarationMap": true
     },
     "include": ["src/**/*"],
     "exclude": ["node_modules", "dist", "**/*.test.ts"]
