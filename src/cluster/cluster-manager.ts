@@ -49,14 +49,9 @@ export default class ClusterManager {
       });
     });
 
-    cluster.on('exit', (worker, code, signal) => {
-      // logger.debug('Worker stopped', {
-      //   Code: code,
-      //   Signal: signal,
-      // });
-
+    cluster.on('exit', () => {
       if (!this.isShuttingDown) {
-        // Restart the worker on unexpected exit
+        // Restart worker on unexpected exit
         cluster.fork();
       }
     });
@@ -88,16 +83,11 @@ export default class ClusterManager {
 
   private handleShutdown(): void {
     this.shutdownSignals.forEach((signal) => {
-      process.on(signal, () => this.initiateShutdown({ signal }));
+      process.on(signal, () => this.initiateShutdown());
     });
   }
 
-  private initiateShutdown({ signal }: { signal: NodeJS.Signals }): void {
-    logger.debug('Cluster received shutdown signal', {
-      Signal: signal,
-      Already: this.isShuttingDown ? 'Yes' : 'No',
-    });
-
+  private initiateShutdown(): void {
     if (this.isShuttingDown) {
       return;
     }
@@ -124,8 +114,6 @@ export default class ClusterManager {
         const numClusterWorkers = Object.keys(clusterWorkers).length;
 
         if (exitedWorkers === numClusterWorkers) {
-          logger.info('All workers exited, shutting down primary...');
-
           process.exit();
         }
       });

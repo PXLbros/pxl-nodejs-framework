@@ -1,7 +1,10 @@
 export { ApplicationConfig, ApplicationRedisConfig } from './application/application.interface';
 
 export { default as ServerApplication } from './application/server/server-application';
-export { ServerApplicationConfig } from './application/server/server-application.interface';
+export {
+  ServerApplicationConfig,
+  StartServerApplicationProps,
+} from './application/server/server-application.interface';
 export { default as ServerApplicationInstance } from './application/server/server-application-instance';
 export { ServerApplicationInstanceProps } from './application/server/server-application-instance.interface';
 

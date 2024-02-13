@@ -1,7 +1,7 @@
 import RedisInstance from '../redis/redis-instance';
 import RedisManager from '../redis/redis-manager';
 import ApplicationInstance from './application-instance';
-import { ApplicationConfig } from './application.interface';
+import { ApplicationConfig, StartApplicationProps } from './application.interface';
 
 export default abstract class Application {
   protected readonly config: ApplicationConfig;
@@ -42,45 +42,7 @@ export default abstract class Application {
   }
 
   /**
-   * Create application instance
+   * Start application instance
    */
-  protected abstract create(): Promise<ApplicationInstance>;
-
-  /**
-   * Start application
-   */
-  protected async start(): Promise<void> {
-    console.log('START APP');
-  }
-
-  /**
-   * Stop application
-   */
-  protected async stop(): Promise<void> {
-    console.log('STOP APP');
-  }
-
-  // protected handleShutdown({ callback }: { callback: () => void }): void {
-  //   this.shutdownSignals.forEach((signal) => {
-  //     process.on(signal, () => {
-  //       callback();
-  //     });
-  //   });
-  // }
-
-  // protected async stop({
-  //   redisInstance,
-  //   databaseInstance,
-  // }: {
-  //   redisInstance?: RedisInstance;
-  //   databaseInstance?: DatabaseInstance;
-  // }): Promise<void> {
-  //   if (redisInstance) {
-  //     await redisInstance.disconnect();
-  //   }
-
-  //   if (databaseInstance) {
-  //     await databaseInstance.disconnect();
-  //   }
-  // }
+  protected abstract start(props?: StartApplicationProps): Promise<ApplicationInstance>;
 }

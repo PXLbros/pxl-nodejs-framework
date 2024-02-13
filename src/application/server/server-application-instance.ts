@@ -13,9 +13,11 @@ export default class ServerApplicationInstance extends ApplicationInstance {
 
   protected async stop(): Promise<void> {
     console.log('SHUUUUUUUUUUUUUUTTING DOWN WEBSERVER.............');
-    
 
     // Stop web server
     await this.webServer.stop();
+
+    // TODO: Call the onStopped event here if any
+    // ...
   }
 }
