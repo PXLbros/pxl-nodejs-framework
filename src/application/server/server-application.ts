@@ -71,8 +71,10 @@ export default class ServerApplication extends Application {
 
       clusterManager.start();
     } else {
-      // Start standalone server appplciation
-      await this.startInstance(props);
+      // Start standalone server application
+      const serverApplicationInstance = await this.startInstance(props);
+
+      serverApplicationInstance.handleShutdown();
     }
   }
 

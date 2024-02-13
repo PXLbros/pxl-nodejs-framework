@@ -13,9 +13,6 @@ export default abstract class ApplicationInstance {
     this.redisInstance = redisInstance;
 
     this.events = events;
-
-    // Handle shutdown
-    this.handleShutdown(); // TODO: This can be made public and called from application instead
   }
 
   /**
@@ -35,17 +32,17 @@ export default abstract class ApplicationInstance {
     await this.redisInstance.disconnect();
 
     if (this.events?.onStopped) {
+      const runtime = process.uptime() * 1000;
+
       // Emit stopped event
-      this.events.onStopped({ runtime: process.uptime() });
+      this.events.onStopped({ runtime });
     }
   }
 
   /**
    * Handle application instance shutdown
    */
-  protected async handleShutdown(): Promise<void> {
-    console.log('DOING THIS EVEN FOR CLSUTER APPS CURRNETLY...');
-    
+  public async handleShutdown(): Promise<void> {
     this.shutdownSignals.forEach((signal) => {
       process.on(signal, () => {
         this.shutdown();
