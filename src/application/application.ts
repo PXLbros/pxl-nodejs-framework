@@ -1,20 +1,38 @@
-export default abstract class ApplicationManager {
+import RedisInstance from '../redis/redis-instance';
+import RedisManager from '../redis/redis-manager';
+import { ApplicationConfig } from './application.interface';
+
+export default abstract class Application {
+  protected readonly config: ApplicationConfig;
+
   protected startTime: [number, number];
 
-  // protected redisManager: RedisManager;
+  protected redisManager: RedisManager;
   // protected databaseManager: DatabaseManager;
 
-  constructor() {
-    this.startTime = process.hrtime();
-    
+  constructor(config: ApplicationConfig) {
+    this.config = config;
 
-    // this.redisManager = new RedisManager({
-    //   host: env.REDIS_HOST,
-    //   port: env.REDIS_PORT,
-    //   password: env.REDIS_PASSWORD,
-    // });
+    // Initialize
+    this.init();
+  }
+
+  private init(): void {
+    this.startTime = process.hrtime();
+
+    this.redisManager = new RedisManager({
+      host: this.config.redis.host,
+      port: this.config.redis.port,
+      password: this.config.redis.password,
+    });
 
     // this.databaseManager = new DatabaseManager({});
+  }
+
+  protected async connect(): Promise<{ redisInstance: RedisInstance }> {
+    const redisInstance = await this.redisManager.connect();
+
+    return { redisInstance };
   }
 
   // protected async init(): Promise<{

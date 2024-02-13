@@ -1,11 +1,14 @@
+import { logger } from '../..';
 import Application from '../application';
 import { ServerApplicationConfig } from './server-application.interface';
 
 export default class ServerApplication extends Application {
-  private config: ServerApplicationConfig;
+  protected readonly config: ServerApplicationConfig;
 
   constructor(config: ServerApplicationConfig) {
-    super();
+    super({
+      redis: config.redis,
+    });
 
     this.config = config;
   }
@@ -14,7 +17,10 @@ export default class ServerApplication extends Application {
    * Start server application
    */
   public async startServer(): Promise<void> {
-    console.log('START SERVER APP v3');
+    // Connect
+    const { redisInstance } = await this.connect();
+
+    logger.info('Started server application');
   }
 
   /**

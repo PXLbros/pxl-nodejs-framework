@@ -16,7 +16,7 @@
     "yalc:publish": "node yalc-publish.mjs"
   },
   "keywords": [],
-  "author": "",
+  "author": "PXL <devops@pxlagency.com>",
   "license": "ISC",
   "devDependencies": {
     "@types/cors": "^2.8.17",

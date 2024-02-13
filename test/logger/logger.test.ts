@@ -3,6 +3,14 @@ import { Logger } from '../../src/logger/logger';
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
+describe('Logger Singleton', () => {
+  it('should return the same instance', () => {
+    const firstInstance = Logger.getInstance();
+    const secondInstance = Logger.getInstance();
+    expect(firstInstance).toBe(secondInstance);
+  });
+});
+
 describe('Logging Levels', () => {
   beforeEach(() => {
     jest.clearAllMocks();

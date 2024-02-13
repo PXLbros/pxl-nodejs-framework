@@ -1,3 +1,5 @@
+import { ApplicationRedisConfig } from '../application.interface';
+
 interface ServerApplicationClusterBaseConfig {
   enabled?: boolean;
 }
@@ -12,5 +14,7 @@ export interface ServerApplicationClusterWorkerModeManualConfig extends ServerAp
 }
 
 export interface ServerApplicationConfig {
+  redis: ApplicationRedisConfig;
+
   cluster?: ServerApplicationClusterWorkerModeAutoConfig | ServerApplicationClusterWorkerModeManualConfig;
 }
