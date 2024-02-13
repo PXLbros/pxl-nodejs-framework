@@ -1,7 +1,5 @@
-import logger from '../../logger/logger';
 import Application from '../application';
 import ClusterManager from '../../cluster/cluster-manager';
-import { ClusterManagerConfig } from '../../cluster/cluster-manager.interface';
 import { ServerApplicationConfig, StartServerApplicationProps } from './server-application.interface';
 import ServerApplicationInstance from './server-application-instance';
 import WebServer from '../../webserver/webserver';
@@ -16,6 +14,28 @@ export default class ServerApplication extends Application {
     });
 
     this.config = config;
+  }
+
+  /**
+   * Start server application
+   */
+  public async start(props?: StartServerApplicationProps): Promise<void> {
+    if (this.config.cluster?.enabled) {
+      // Start clustered server application
+      const clusterManager = new ClusterManager({
+        config: this.config.cluster,
+
+        startApplicationCallback: () => this.startInstance(props),
+        stopApplicationCallback: () => this.stopInstance(),
+      });
+
+      clusterManager.start();
+    } else {
+      // Start standalone server application
+      const serverApplicationInstance = await this.startInstance(props);
+
+      this.handleShutdown({ applicationInstance: serverApplicationInstance });
+    }
   }
 
   /**
@@ -57,33 +77,11 @@ export default class ServerApplication extends Application {
   }
 
   /**
-   * Start server application
-   */
-  public async startServer(props: StartServerApplicationProps): Promise<void> {
-    if (this.config.cluster?.enabled) {
-      // Start clustered server application
-      const clusterManager = new ClusterManager({
-        config: this.config.cluster,
-
-        startApplicationCallback: () => this.startInstance(props),
-        stopApplicationCallback: () => this.stop(),
-      });
-
-      clusterManager.start();
-    } else {
-      // Start standalone server application
-      const serverApplicationInstance = await this.startInstance(props);
-
-      serverApplicationInstance.handleShutdown();
-    }
-  }
-
-  /**
    * Stop server application
    */
-  protected async stop(): Promise<void> {
+  protected async stopInstance(): Promise<void> {
     console.log('STOPPING SERVER APPLICATION');
 
-    await parent.stop();
+    // await parent.stopInstance();
   }
 }

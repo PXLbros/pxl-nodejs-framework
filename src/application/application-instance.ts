@@ -2,8 +2,8 @@ import RedisInstance from '../redis/redis-instance';
 import { ApplicationInstanceEvents, ApplicationInstanceProps } from './application-instance.interface';
 
 export default abstract class ApplicationInstance {
-  private shutdownSignals: NodeJS.Signals[] = ['SIGTERM', 'SIGINT'];
-  protected isShuttingDown = false;
+  // private shutdownSignals: NodeJS.Signals[] = ['SIGTERM', 'SIGINT'];
+  // protected isShuttingDown = false;
 
   protected redisInstance: RedisInstance;
 
@@ -19,11 +19,11 @@ export default abstract class ApplicationInstance {
    * Shutdown application instance
    */
   public async shutdown(): Promise<void> {
-    if (this.isShuttingDown) {
-      return;
-    }
+    // if (this.isShuttingDown) {
+    //   return;
+    // }
 
-    this.isShuttingDown = true;
+    // this.isShuttingDown = true;
 
     // Stop application instance
     await this.stop();
@@ -39,16 +39,16 @@ export default abstract class ApplicationInstance {
     }
   }
 
-  /**
-   * Handle application instance shutdown
-   */
-  public async handleShutdown(): Promise<void> {
-    this.shutdownSignals.forEach((signal) => {
-      process.on(signal, () => {
-        this.shutdown();
-      });
-    });
-  }
+  // /**
+  //  * Handle application instance shutdown
+  //  */
+  // public async handleShutdown(): Promise<void> {
+  //   this.shutdownSignals.forEach((signal) => {
+  //     process.on(signal, () => {
+  //       this.shutdown();
+  //     });
+  //   });
+  // }
 
   /**
    * Stop application instance

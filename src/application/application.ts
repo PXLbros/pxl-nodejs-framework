@@ -8,6 +8,9 @@ export default abstract class Application {
 
   protected startTime: [number, number];
 
+  private shutdownSignals: NodeJS.Signals[] = ['SIGTERM', 'SIGINT'];
+  protected isShuttingDown = false;
+
   protected redisManager: RedisManager;
   // protected databaseManager: DatabaseManager;
 
@@ -45,10 +48,29 @@ export default abstract class Application {
   /**
    * Start application
    */
-  protected abstract startInstance(props?: StartApplicationProps): Promise<ApplicationInstance>;
+  public abstract start(props?: StartApplicationProps): Promise<void>;
 
   /**
-   * Stop application
+   * Start application instance
    */
-  protected abstract stop(): Promise<void>;
+  protected abstract startInstance(props?: StartApplicationProps): Promise<ApplicationInstance>;
+
+  public async handleShutdown({ applicationInstance }: { applicationInstance: ApplicationInstance }): Promise<void> {
+    this.shutdownSignals.forEach((signal) => {
+      process.on(signal, async () => {
+        if (this.isShuttingDown) {
+          return;
+        }
+
+        this.isShuttingDown = true;
+
+        await applicationInstance.shutdown();
+      });
+    });
+  }
+
+  /**
+   * Stop application instance
+   */
+  protected abstract stopInstance(): Promise<void>;
 }
