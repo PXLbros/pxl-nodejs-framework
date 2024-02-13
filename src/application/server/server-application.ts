@@ -60,7 +60,7 @@ export default class ServerApplication extends Application {
     const clusterManager = new ClusterManager({
       config: clusterConfig,
 
-      createApplicationCallback: () => this.start(props),
+      startApplicationCallback: () => this.start(props),
       stopApplicationCallback: () => this.stop(),
     });
 
@@ -85,6 +85,6 @@ export default class ServerApplication extends Application {
   }
 
   public async stop(): Promise<void> {
-    console.log('STOPPING APPLICATION SERVER');
+    console.log('STOPPING SERVER APPLICATION');
   }
 }

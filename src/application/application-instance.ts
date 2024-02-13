@@ -14,6 +14,9 @@ export default abstract class ApplicationInstance {
     this.handleShutdown();
   }
 
+  /**
+   * Shutdown application instance
+   */
   public async shutdown(): Promise<void> {
     if (this.isShuttingDown) {
       console.warn('Application instance is already stopping');
@@ -23,14 +26,16 @@ export default abstract class ApplicationInstance {
 
     this.isShuttingDown = true;
 
+    // Stop application instance
     await this.stop();
 
     // Disconnect Redis instance
     await this.redisInstance.disconnect();
   }
 
-  protected stop(): void | Promise<void> {}
-
+  /**
+   * Handle application instance shutdown
+   */
   protected async handleShutdown(): Promise<void> {
     this.shutdownSignals.forEach((signal) => {
       process.on(signal, () => {
@@ -38,4 +43,9 @@ export default abstract class ApplicationInstance {
       });
     });
   }
+
+  /**
+   * Stop application instance
+   */
+  protected stop(): void | Promise<void> {}
 }

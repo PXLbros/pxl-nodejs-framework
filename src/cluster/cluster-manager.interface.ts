@@ -29,6 +29,6 @@ export type ClusterManagerConfig =
 export interface ClusterManagerProps {
   config: ClusterManagerConfig;
 
-  createApplicationCallback: () => Promise<ApplicationInstance>;
+  startApplicationCallback: () => Promise<ApplicationInstance>;
   stopApplicationCallback: () => void;
 }

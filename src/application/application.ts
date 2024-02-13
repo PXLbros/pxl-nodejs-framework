@@ -8,15 +8,13 @@ export default abstract class Application {
 
   protected startTime: [number, number];
 
-  // private shutdownSignals: NodeJS.Signals[] = ['SIGTERM', 'SIGINT'];
-
   protected redisManager: RedisManager;
   // protected databaseManager: DatabaseManager;
 
   constructor(config: ApplicationConfig) {
     this.config = config;
 
-    // Initialize
+    // Initialize application
     this.init();
   }
 
@@ -35,6 +33,9 @@ export default abstract class Application {
     // this.databaseManager = new DatabaseManager({});
   }
 
+  /**
+   * Connect
+   */
   protected async connect(): Promise<{ redisInstance: RedisInstance }> {
     const redisInstance = await this.redisManager.connect();
 

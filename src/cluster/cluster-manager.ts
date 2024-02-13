@@ -7,7 +7,7 @@ import ApplicationInstance from 'src/application/application-instance';
 export default class ClusterManager {
   private readonly config: ClusterManagerConfig;
 
-  private createApplicationCallback: () => Promise<ApplicationInstance>;
+  private startApplicationCallback: () => Promise<ApplicationInstance>;
   private stopApplicationCallback: () => void;
 
   private shutdownSignals: NodeJS.Signals[] = ['SIGTERM', 'SIGINT'];
@@ -15,10 +15,10 @@ export default class ClusterManager {
 
   private applicationInstance: ApplicationInstance;
 
-  constructor({ config, createApplicationCallback, stopApplicationCallback }: ClusterManagerProps) {
+  constructor({ config, startApplicationCallback, stopApplicationCallback }: ClusterManagerProps) {
     this.config = config;
 
-    this.createApplicationCallback = createApplicationCallback;
+    this.startApplicationCallback = startApplicationCallback;
     this.stopApplicationCallback = stopApplicationCallback;
   }
 
@@ -64,7 +64,7 @@ export default class ClusterManager {
   }
 
   private async setupWorker(): Promise<void> {
-    this.applicationInstance = await this.createApplicationCallback();
+    this.applicationInstance = await this.startApplicationCallback();
 
     process.on('message', (message) => {
       if (message === 'shutdown') {
