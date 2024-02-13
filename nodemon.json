@@ -1,6 +1,6 @@
 {
-  "watch": ["src"],
+  "watch": ["src", "test"],
   "ext": "ts",
   "ignore": [],
-  "exec": "npm run build && npm run yalc:publish"
+  "exec": "npm run test &&  npm run build && npm run yalc:publish"
 }

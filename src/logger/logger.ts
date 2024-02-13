@@ -2,6 +2,7 @@
 import cluster from 'cluster';
 // import { Router } from 'express';
 import winston from 'winston';
+import { type LogLevel } from './logger.interface';
 
 export class Logger {
   private static instance: Logger;
@@ -80,7 +81,7 @@ export class Logger {
   //   this.isSentryInitialized = true;
   // }
 
-  public log(level: 'debug' | 'info' | 'warn' | 'error', message: unknown, meta?: Record<string, unknown>): void {
+  public log(level: LogLevel, message: unknown, meta?: Record<string, unknown>): void {
     if (message instanceof Error) {
       const errorMessage = message.stack || message.toString();
       this.logger.log(level, errorMessage, meta);
