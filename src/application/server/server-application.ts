@@ -1,8 +1,10 @@
 import logger from '../../logger/logger';
 import Application from '../application';
+import ClusterManager from '../../cluster/cluster-manager';
 import { ServerApplicationConfig } from './server-application.interface';
 import ServerApplicationInstance from './server-application-instance';
 import WebServer from '../../webserver/webserver';
+import { ClusterManagerConfig } from 'src/cluster/cluster-manager.interface';
 
 export default class ServerApplication extends Application {
   protected readonly config: ServerApplicationConfig;
@@ -18,7 +20,7 @@ export default class ServerApplication extends Application {
   /**
    * Create server application instance
    */
-  protected async create(): Promise<ServerApplicationInstance> { // This is equivalent of startServer in old
+  protected async create(): Promise<ServerApplicationInstance> {
     const { redisInstance } = await this.connect();
 
     const webServer = new WebServer({
@@ -41,12 +43,17 @@ export default class ServerApplication extends Application {
 
   private async startStandalone(): Promise<void> {
     const serverApplicationInstance = await this.create();
+  }
 
-    // this.handleShutdown({
-    //   callback: async () => {
-    //     this.stopServer();
-    //   },
-    // });
+  private async startCluster(config: ClusterManagerConfig): Promise<void> {
+    const clusterManager = new ClusterManager({
+      config,
+
+      createApplicationCallback: () => this.create(),
+      stopApplicationCallback: () => this.stopServer(),
+    });
+
+    clusterManager.start();
   }
 
   /**
@@ -58,8 +65,8 @@ export default class ServerApplication extends Application {
 
     // logger.info('Started server application');
     if (this.config.cluster?.enabled) {
-      // // Start clustered server
-      // await this.startCluster();
+      // Start clustered server
+      await this.startCluster(this.config.cluster);
     } else {
       // Start standalone server
       await this.startStandalone();
@@ -67,7 +74,6 @@ export default class ServerApplication extends Application {
   }
   
   public async stopServer(): Promise<void> {
-    console.log('STOP SERVER');
-    
+    console.log('STOPPING APPLICATION SERVER');
   }
 }

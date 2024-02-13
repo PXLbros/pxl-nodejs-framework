@@ -1,23 +1,11 @@
 import { ApplicationRedisConfig } from '../application.interface';
 import { WebServerConfig } from '../../webserver/webserver.interface';
-
-interface ServerApplicationClusterBaseConfig {
-  enabled?: boolean;
-}
-
-export interface ServerApplicationClusterWorkerModeAutoConfig extends ServerApplicationClusterBaseConfig {
-  workerMode?: 'auto';
-}
-
-export interface ServerApplicationClusterWorkerModeManualConfig extends ServerApplicationClusterBaseConfig {
-  workerMode?: 'manual';
-  workerCount: number;
-}
+import { ClusterManagerConfig } from '../../cluster/cluster-manager.interface';
 
 export interface ServerApplicationConfig {
   redis: ApplicationRedisConfig;
 
-  cluster?: ServerApplicationClusterWorkerModeAutoConfig | ServerApplicationClusterWorkerModeManualConfig;
+  cluster?: ClusterManagerConfig;
 
   webServer: WebServerConfig;
 }

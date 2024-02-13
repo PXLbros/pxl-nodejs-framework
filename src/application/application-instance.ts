@@ -14,7 +14,7 @@ export default abstract class ApplicationInstance {
     this.handleShutdown();
   }
 
-  protected async shutdown(): Promise<void> {
+  public async shutdown(): Promise<void> {
     if (this.isShuttingDown) {
       console.warn('Application instance is already stopping');
 
@@ -27,8 +27,6 @@ export default abstract class ApplicationInstance {
 
     // Disconnect Redis instance
     await this.redisInstance.disconnect();
-
-    console.log('DISCONNECTING APPLICFATION INSTANCE');
   }
 
   protected stop(): void | Promise<void> {}
