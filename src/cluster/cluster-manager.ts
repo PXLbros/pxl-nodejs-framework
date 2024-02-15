@@ -73,7 +73,7 @@ export default class ClusterManager {
         });
 
         // Stop application instance
-        this.applicationInstance.shutdown();
+        this.applicationInstance.stop();
 
         // Stop application
         this.stopApplicationCallback();

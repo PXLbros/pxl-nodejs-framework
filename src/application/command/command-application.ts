@@ -11,10 +11,10 @@ export default class CommandApplication extends Application {
     const commandApplicationInstance = await this.startInstance(props);
 
     // Run command
-    commandApplicationInstance.runCommand();
+    await commandApplicationInstance.runCommand();
 
     // Shutdown command application instance
-    commandApplicationInstance.shutdown();
+    await commandApplicationInstance.stop();
 
     // this.handleShutdown({ applicationInstance: commandApplicationInstance });
   }
@@ -45,7 +45,7 @@ export default class CommandApplication extends Application {
   }
 
   /**
-   * Stop command application
+   * Stop command application instance
    */
   protected async stopInstance(): Promise<void> {}
 }

@@ -11,8 +11,11 @@ export default class ServerApplicationInstance extends ApplicationInstance {
     this.webServer = webServer;
   }
 
-  protected async stop(): Promise<void> {
+  public async stop(): Promise<void> {
     // Stop web server
     await this.webServer.stop();
+
+    // Stop application instance
+    await super.stop();
   }
 }

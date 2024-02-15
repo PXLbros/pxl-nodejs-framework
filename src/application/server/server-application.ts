@@ -26,7 +26,7 @@ export default class ServerApplication extends Application {
         config: this.config.cluster,
 
         startApplicationCallback: () => this.startInstance(props),
-        stopApplicationCallback: () => this.stopInstance(),
+        stopApplicationCallback: () => this.stop(),
       });
 
       clusterManager.start();
@@ -79,9 +79,9 @@ export default class ServerApplication extends Application {
   /**
    * Stop server application
    */
-  protected async stopInstance(): Promise<void> {
+  protected async stop(): Promise<void> {
     console.log('STOPPING SERVER APPLICATION');
 
-    // await parent.stopInstance();
+    await super.stop();
   }
 }

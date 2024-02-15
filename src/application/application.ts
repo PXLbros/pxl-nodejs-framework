@@ -55,6 +55,24 @@ export default abstract class Application {
    */
   protected abstract startInstance(props?: StartApplicationProps): Promise<ApplicationInstance>;
 
+  // /**
+  //  * Stop application instance
+  //  */
+  // protected abstract stopInstance(): Promise<void>;
+
+  /**
+   * Stop application
+   */
+  protected async stop(): Promise<void> {
+    // Disconnect redis and stuff
+    // ...
+
+    console.log('STOP APPLICATION...');
+  }
+
+  /**
+   * Handle shutdown
+   */
   public async handleShutdown({ applicationInstance }: { applicationInstance: ApplicationInstance }): Promise<void> {
     this.shutdownSignals.forEach((signal) => {
       process.on(signal, async () => {
@@ -64,13 +82,9 @@ export default abstract class Application {
 
         this.isShuttingDown = true;
 
-        await applicationInstance.shutdown();
+        // Stop application instance
+        await applicationInstance.stop();
       });
     });
   }
-
-  /**
-   * Stop application instance
-   */
-  protected abstract stopInstance(): Promise<void>;
 }
