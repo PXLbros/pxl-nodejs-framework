@@ -1,12 +1,13 @@
 import Application from '../application';
 import ClusterManager from '../../cluster/cluster-manager';
 import { ServerApplicationConfig, StartServerApplicationProps } from './server-application.interface';
-import ServerApplicationInstance from './server-application-instance';
 import WebServer from '../../webserver/webserver';
-import { calculateElapsedTime } from '../../util/time';
+import RedisInstance from 'src/redis/redis-instance';
 
 export default class ServerApplication extends Application {
   protected readonly config: ServerApplicationConfig;
+
+  protected webServer: WebServer;
 
   constructor(config: ServerApplicationConfig) {
     super({
@@ -21,7 +22,7 @@ export default class ServerApplication extends Application {
    */
   public async start(props?: StartServerApplicationProps): Promise<void> {
     if (this.config.cluster?.enabled) {
-      // Start clustered server application
+      // Initialize clustered server application
       const clusterManager = new ClusterManager({
         config: this.config.cluster,
 
@@ -29,59 +30,39 @@ export default class ServerApplication extends Application {
         stopApplicationCallback: () => this.stop(),
       });
 
+      // Start cluster
       clusterManager.start();
     } else {
       // Start standalone server application
-      const serverApplicationInstance = await this.startInstance(props);
+      await this.startInstance(props);
 
-      this.handleShutdown({ applicationInstance: serverApplicationInstance });
+      // Handle standalone server application shutdown
+      this.handleShutdown();
     }
   }
 
   /**
-   * Start server application instance
+   * Start server application callback
    */
-  protected async startInstance(props?: StartServerApplicationProps): Promise<ServerApplicationInstance> {
-    const { redisInstance } = await this.connect();
-
+  protected async startCallback({ redisInstance }: { redisInstance: RedisInstance }): Promise<void> {
     // Initialize web server
-    const webServer = new WebServer({
+    this.webServer = new WebServer({
       config: this.config.webServer,
 
-      redisInstance: redisInstance,
+      redisInstance,
     });
 
     // Start web server
-    await webServer.start();
-
-    // Initialize server application instance
-    const serverApplicationInstance = new ServerApplicationInstance({
-      redisInstance,
-
-      webServer,
-
-      events: {
-        onStopped: props?.onStopped,
-      },
-    });
-
-    // Calcualte startup time
-    const startupTime = calculateElapsedTime({ startTime: this.startTime });
-
-    if (props?.onStarted) {
-      // Emit started event
-      props.onStarted({ startupTime });
-    }
-
-    return serverApplicationInstance;
+    await this.webServer.start();
   }
 
   /**
-   * Stop server application
+   * Stop server application callback
    */
-  protected async stop(): Promise<void> {
-    console.log('STOPPING SERVER APPLICATION');
-
-    // await parent.stopInstance();
+  protected async stopCallback(): Promise<void> {
+    // Stop web server
+    if (this.webServer) {
+      await this.webServer.stop();
+    }
   }
 }

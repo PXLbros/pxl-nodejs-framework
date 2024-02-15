@@ -5,12 +5,8 @@ export {
   ServerApplicationConfig,
   StartServerApplicationProps,
 } from './application/server/server-application.interface';
-export { default as ServerApplicationInstance } from './application/server/server-application-instance';
-export { ServerApplicationInstanceProps } from './application/server/server-application-instance.interface';
 
 export { default as CommandApplication } from './application/command/command-application';
-export { default as CommandApplicationInstance } from './application/command/command-application-instance';
-export { CommandApplicationInstanceProps } from './application/command/command-application-instance.interface';
 
 export {
   ClusterManagerConfig,

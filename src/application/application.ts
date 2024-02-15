@@ -1,7 +1,7 @@
+import { calculateElapsedTime } from 'src/util/time';
 import RedisInstance from '../redis/redis-instance';
 import RedisManager from '../redis/redis-manager';
-import ApplicationInstance from './application-instance';
-import { ApplicationConfig, StartApplicationProps } from './application.interface';
+import { ApplicationConfig, OnStoppedEvent, StartApplicationProps } from './application.interface';
 
 export default abstract class Application {
   protected readonly config: ApplicationConfig;
@@ -11,8 +11,13 @@ export default abstract class Application {
   private shutdownSignals: NodeJS.Signals[] = ['SIGTERM', 'SIGINT'];
   protected isShuttingDown = false;
 
+  private onStopped?: OnStoppedEvent;
+  private isStopping = false;
+
   protected redisManager: RedisManager;
   // protected databaseManager: DatabaseManager;
+
+  protected redisInstance: RedisInstance;
 
   constructor(config: ApplicationConfig) {
     this.config = config;
@@ -27,12 +32,6 @@ export default abstract class Application {
   protected init(): void {
     this.startTime = process.hrtime();
 
-    this.redisManager = new RedisManager({
-      host: this.config.redis.host,
-      port: this.config.redis.port,
-      password: this.config.redis.password,
-    });
-
     // this.databaseManager = new DatabaseManager({});
   }
 
@@ -40,45 +39,93 @@ export default abstract class Application {
    * Connect
    */
   protected async connect(): Promise<{ redisInstance: RedisInstance }> {
-    const redisInstance = await this.redisManager.connect();
+    this.redisManager = new RedisManager({
+      host: this.config.redis.host,
+      port: this.config.redis.port,
+      password: this.config.redis.password,
+    });
 
-    return { redisInstance };
+    // Connect to Redis
+    this.redisInstance = await this.redisManager.connect();
+
+    return { redisInstance: this.redisInstance };
   }
+
+  /**
+   * Disconnect
+   */
+  protected async disconnect(): Promise<void> {
+    if (this.redisInstance) {
+      await this.redisInstance.disconnect();
+    }
+  }
+
+  public abstract start(props?: StartApplicationProps): Promise<void>;
 
   /**
    * Start application
    */
-  public abstract start(props?: StartApplicationProps): Promise<void>;
+  public async startInstance(props?: StartApplicationProps): Promise<void> {
+    this.onStopped = props?.onStopped;
+
+    // Connect
+    const { redisInstance } = await this.connect();
+
+    // Start callback
+    await this.startCallback({ redisInstance });
+
+    if (props?.onStarted) {
+      // Calculate startup time
+      const startupTime = calculateElapsedTime({ startTime: this.startTime });
+
+      // Emit started event
+      props.onStarted({ startupTime });
+    }
+  }
 
   /**
-   * Start application instance
+   * Start application callback
    */
-  protected abstract startInstance(props?: StartApplicationProps): Promise<ApplicationInstance>;
+  protected abstract startCallback({ redisInstance }: { redisInstance: RedisInstance }): Promise<void>;
 
   /**
    * Stop application
    */
   protected async stop(): Promise<void> {
-    // Disconnect redis and stuff
-    // ...
+    if (this.isStopping) {
+      return;
+    }
 
-    console.log('STOP APPLICATION...');
+    this.isStopping = true;
+
+    // Stop callback
+    await this.stopCallback();
+
+    // Disconnect
+    await this.disconnect();
+
+    if (this.onStopped) {
+      // Calculate runtime
+      const runtime = process.uptime() * 1000;
+
+      // Emit stopped event
+      this.onStopped({ runtime });
+    }
   }
+
+  /**
+   * Stop application callback
+   */
+  protected abstract stopCallback(): Promise<void>;
 
   /**
    * Handle shutdown
    */
-  public async handleShutdown({ applicationInstance }: { applicationInstance: ApplicationInstance }): Promise<void> {
+  public handleShutdown(): void {
     this.shutdownSignals.forEach((signal) => {
       process.on(signal, async () => {
-        if (this.isShuttingDown) {
-          return;
-        }
-
-        this.isShuttingDown = true;
-
-        // Stop application instance
-        await applicationInstance.stop();
+        // Stop application
+        await this.stop();
       });
     });
   }

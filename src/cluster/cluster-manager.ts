@@ -1,19 +1,20 @@
 import cluster from 'cluster';
 import { cpus } from 'os';
-import { ClusterManagerConfig, ClusterManagerProps } from './cluster-manager.interface';
+import {
+  ClusterManagerConfig,
+  ClusterManagerProps,
+  ClusterManagerWorkerModeManualConfig,
+} from './cluster-manager.interface';
 import logger from '../logger/logger';
-import ApplicationInstance from 'src/application/application-instance';
 
 export default class ClusterManager {
   private readonly config: ClusterManagerConfig;
 
-  private startApplicationCallback: () => Promise<ApplicationInstance>;
-  private stopApplicationCallback: () => void;
+  private startApplicationCallback: () => Promise<void>;
+  private stopApplicationCallback: () => Promise<void>;
 
   private shutdownSignals: NodeJS.Signals[] = ['SIGTERM', 'SIGINT'];
   private isShuttingDown = false;
-
-  private applicationInstance: ApplicationInstance;
 
   constructor({ config, startApplicationCallback, stopApplicationCallback }: ClusterManagerProps) {
     this.config = config;
@@ -35,9 +36,8 @@ export default class ClusterManager {
   private setupPrimary(): void {
     const numCPUs: number = cpus().length;
 
-    const numDefaultClusterWorkers = 2;
     const numClusterWorkers =
-      this.config.workerMode === 'auto' ? numCPUs : this.config.workerCount || numDefaultClusterWorkers;
+      this.config.workerMode === 'auto' ? numCPUs : (this.config as ClusterManagerWorkerModeManualConfig).workerCount;
 
     for (let workerIndex = 0; workerIndex < numClusterWorkers; workerIndex++) {
       cluster.fork();
@@ -64,30 +64,27 @@ export default class ClusterManager {
   }
 
   private async setupWorker(): Promise<void> {
-    this.applicationInstance = await this.startApplicationCallback();
+    await this.startApplicationCallback();
 
-    process.on('message', (message) => {
+    process.on('message', async (message) => {
       if (message === 'shutdown') {
         logger.debug('Worker received shutdown message, stopping...', {
           PID: process.pid,
         });
 
-        // Stop application instance
-        this.applicationInstance.stop();
-
         // Stop application
-        this.stopApplicationCallback();
+        await this.stopApplicationCallback();
       }
     });
   }
 
   private handleShutdown(): void {
     this.shutdownSignals.forEach((signal) => {
-      process.on(signal, () => this.initiateShutdown());
+      process.on(signal, async () => await this.initiateShutdown());
     });
   }
 
-  private initiateShutdown(): void {
+  private async initiateShutdown(): Promise<void> {
     if (this.isShuttingDown) {
       return;
     }
@@ -118,7 +115,7 @@ export default class ClusterManager {
         }
       });
     } else {
-      this.stopApplicationCallback();
+      await this.stopApplicationCallback();
     }
   }
 }

@@ -1,5 +1,3 @@
-import ApplicationInstance from '../application/application-instance';
-
 export type ClusterWorkerMode = 'auto' | 'manual';
 
 export interface ClusterManagerDisabledConfig {
@@ -29,6 +27,6 @@ export type ClusterManagerConfig =
 export interface ClusterManagerProps {
   config: ClusterManagerConfig;
 
-  startApplicationCallback: () => Promise<ApplicationInstance>;
-  stopApplicationCallback: () => void;
+  startApplicationCallback: () => Promise<void>;
+  stopApplicationCallback: () => Promise<void>;
 }
