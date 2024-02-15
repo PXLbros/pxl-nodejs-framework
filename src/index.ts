@@ -6,6 +6,7 @@ export {
   StartServerApplicationProps,
 } from './application/server/server-application.interface';
 
+export { default as Command } from './application/command/command';
 export { default as CommandApplication } from './application/command/command-application';
 
 export {

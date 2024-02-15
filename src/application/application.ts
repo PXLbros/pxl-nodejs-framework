@@ -9,7 +9,6 @@ export default abstract class Application {
   protected startTime: [number, number];
 
   private shutdownSignals: NodeJS.Signals[] = ['SIGTERM', 'SIGINT'];
-  protected isShuttingDown = false;
 
   private onStopped?: OnStoppedEvent;
   private isStopping = false;
@@ -65,21 +64,46 @@ export default abstract class Application {
   /**
    * Start application
    */
-  public async startInstance(props?: StartApplicationProps): Promise<void> {
+  // public async startInstance(props?: StartApplicationProps): Promise<void> {
+  //   this.onStopped = props?.onStopped;
+
+  //   // Connect
+  //   const { redisInstance } = await this.connect();
+
+  //   // Start callback
+  //   await this.startCallback({ redisInstance });
+
+  //   if (props?.onStarted) {
+  //     // Calculate startup time
+  //     const startupTime = calculateElapsedTime({ startTime: this.startTime });
+
+  //     // Emit started event
+  //     props.onStarted({ startupTime });
+  //   }
+  // }
+
+  protected async onPreStart(props?: StartApplicationProps): Promise<{ redisInstance: RedisInstance }> {
+    // Log start
+    console.log('PRE START...');
+
     this.onStopped = props?.onStopped;
 
     // Connect
     const { redisInstance } = await this.connect();
 
-    // Start callback
-    await this.startCallback({ redisInstance });
+    return { redisInstance };
+  }
+
+  protected async onPostStart(props?: StartApplicationProps): Promise<void> {
+    // Log start
+    console.log('POST START...');
 
     if (props?.onStarted) {
       // Calculate startup time
       const startupTime = calculateElapsedTime({ startTime: this.startTime });
 
       // Emit started event
-      props.onStarted({ startupTime });
+      await props.onStarted({ startupTime });
     }
   }
 
@@ -109,8 +133,10 @@ export default abstract class Application {
       const runtime = process.uptime() * 1000;
 
       // Emit stopped event
-      this.onStopped({ runtime });
+      await this.onStopped({ runtime });
     }
+
+    process.exit(0);
   }
 
   /**

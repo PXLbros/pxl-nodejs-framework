@@ -1,3 +1,8 @@
-import { StartApplicationProps } from '../application.interface';
+import { ApplicationConfig, StartApplicationProps } from '../application.interface';
 
-export interface StartCommandApplicationProps extends StartApplicationProps {}
+export interface CommandApplicationConfig extends ApplicationConfig {
+  directory: string;
+}
+
+export interface StartCommandApplicationProps extends StartApplicationProps {
+}

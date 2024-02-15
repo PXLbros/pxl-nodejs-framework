@@ -41,6 +41,21 @@ export default class ServerApplication extends Application {
     }
   }
 
+  private async startInstance(props?: StartServerApplicationProps): Promise<void> {
+    try {
+      const { redisInstance } = await this.onPreStart(props);
+
+      await this.startCallback({ redisInstance });
+
+      await this.onPostStart();
+    } catch (error) {
+      // Log error
+      console.error(error);
+
+      process.exit(1);
+    }
+  }
+
   /**
    * Start server application callback
    */
