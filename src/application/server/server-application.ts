@@ -82,6 +82,6 @@ export default class ServerApplication extends Application {
   protected async stop(): Promise<void> {
     console.log('STOPPING SERVER APPLICATION');
 
-    await super.stop();
+    // await parent.stopInstance();
   }
 }

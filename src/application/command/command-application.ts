@@ -16,7 +16,7 @@ export default class CommandApplication extends Application {
     // Shutdown command application instance
     await commandApplicationInstance.stop();
 
-    // this.handleShutdown({ applicationInstance: commandApplicationInstance });
+    this.handleShutdown({ applicationInstance: commandApplicationInstance });
   }
 
   /**
@@ -43,9 +43,4 @@ export default class CommandApplication extends Application {
 
     return commandApplicationInstance;
   }
-
-  /**
-   * Stop command application instance
-   */
-  protected async stopInstance(): Promise<void> {}
 }

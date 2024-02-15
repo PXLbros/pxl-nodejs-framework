@@ -55,11 +55,6 @@ export default abstract class Application {
    */
   protected abstract startInstance(props?: StartApplicationProps): Promise<ApplicationInstance>;
 
-  // /**
-  //  * Stop application instance
-  //  */
-  // protected abstract stopInstance(): Promise<void>;
-
   /**
    * Stop application
    */
