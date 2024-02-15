@@ -1,4 +1,10 @@
-export { ApplicationConfig, ApplicationRedisConfig } from './application/application.interface';
+export {
+  ApplicationConfig,
+  ApplicationRedisConfig,
+  StartApplicationProps,
+  type OnStartedEvent,
+  type OnStoppedEvent,
+} from './application/application.interface';
 
 export { default as ServerApplication } from './application/server/server-application';
 export {
@@ -7,7 +13,12 @@ export {
 } from './application/server/server-application.interface';
 
 export { default as Command } from './application/command/command';
+export { CommandProps, type CommandType } from './application/command/command.interface';
 export { default as CommandApplication } from './application/command/command-application';
+export {
+  CommandApplicationConfig,
+  StartCommandApplicationProps,
+} from './application/command/command-application.interface';
 
 export {
   ClusterManagerConfig,
