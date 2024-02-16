@@ -7,7 +7,7 @@ async function build() {
     const nodeTarget = 'node20';
     const tsconfigFilePath = 'tsconfig.json';
 
-    // ES Module build
+    // ESM build
     await esbuild.build({
       entryPoints,
       bundle: true,
@@ -32,6 +32,7 @@ async function build() {
     });
   } catch (error) {
     console.error(error);
+
     process.exit(1);
   }
 }

@@ -1,6 +1,8 @@
 import { calculateElapsedTime } from 'src/util/time';
-import RedisInstance from '../redis/redis-instance';
 import RedisManager from '../redis/redis-manager';
+import RedisInstance from '../redis/redis-instance';
+import DatabaseManager from '../database/database-manager';
+import DatabaseInstance from '../database/database-instance';
 import { ApplicationConfig, OnStoppedEvent, StartApplicationProps } from './application.interface';
 
 export default abstract class Application {
@@ -14,9 +16,10 @@ export default abstract class Application {
   private isStopping = false;
 
   protected redisManager: RedisManager;
-  // protected databaseManager: DatabaseManager;
+  protected databaseManager: DatabaseManager;
 
   protected redisInstance: RedisInstance;
+  protected databaseInstance: DatabaseInstance;
 
   constructor(config: ApplicationConfig) {
     this.config = config;
@@ -37,7 +40,7 @@ export default abstract class Application {
   /**
    * Connect
    */
-  protected async connect(): Promise<{ redisInstance: RedisInstance }> {
+  protected async connect(): Promise<{ redisInstance: RedisInstance; databaseInstance: DatabaseInstance }> {
     this.redisManager = new RedisManager({
       host: this.config.redis.host,
       port: this.config.redis.port,
@@ -47,7 +50,12 @@ export default abstract class Application {
     // Connect to Redis
     this.redisInstance = await this.redisManager.connect();
 
-    return { redisInstance: this.redisInstance };
+    // this.databaseManager = new DatabaseManager({});
+
+    // // Connect to database
+    // this.databaseInstance = await this.databaseManager.connect();
+
+    return { redisInstance: this.redisInstance, databaseInstance: this.databaseInstance };
   }
 
   /**
@@ -57,47 +65,26 @@ export default abstract class Application {
     if (this.redisInstance) {
       await this.redisInstance.disconnect();
     }
+
+    if (this.databaseInstance) {
+      await this.databaseInstance.disconnect();
+    }
   }
 
   public abstract start(props?: StartApplicationProps): Promise<void>;
 
-  /**
-   * Start application
-   */
-  // public async startInstance(props?: StartApplicationProps): Promise<void> {
-  //   this.onStopped = props?.onStopped;
-
-  //   // Connect
-  //   const { redisInstance } = await this.connect();
-
-  //   // Start callback
-  //   await this.startCallback({ redisInstance });
-
-  //   if (props?.onStarted) {
-  //     // Calculate startup time
-  //     const startupTime = calculateElapsedTime({ startTime: this.startTime });
-
-  //     // Emit started event
-  //     props.onStarted({ startupTime });
-  //   }
-  // }
-
-  protected async onPreStart(props?: StartApplicationProps): Promise<{ redisInstance: RedisInstance }> {
-    // Log start
-    console.log('PRE START...');
-
+  protected async onPreStart(
+    props?: StartApplicationProps,
+  ): Promise<{ redisInstance: RedisInstance; databaseInstance: DatabaseInstance }> {
     this.onStopped = props?.onStopped;
 
     // Connect
-    const { redisInstance } = await this.connect();
+    const { redisInstance, databaseInstance } = await this.connect();
 
-    return { redisInstance };
+    return { redisInstance, databaseInstance };
   }
 
   protected async onPostStart(props?: StartApplicationProps): Promise<void> {
-    // Log start
-    console.log('POST START...');
-
     if (props?.onStarted) {
       // Calculate startup time
       const startupTime = calculateElapsedTime({ startTime: this.startTime });
