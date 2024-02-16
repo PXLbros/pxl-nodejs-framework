@@ -2,7 +2,7 @@
     "compilerOptions": {
       "target": "ESNext",
       "module": "CommonJS",
-      "baseUrl": ".",
+      "baseUrl": "./src",
       "outDir": "./dist",
       "rootDir": "./src",
       "strict": true,
@@ -16,7 +16,10 @@
       "inlineSources": true,
       "sourceRoot": "/",
       "declaration": true,
-      "declarationMap": true
+      "declarationMap": true,
+      "paths": {
+        "@pxl/nodejs-framework/*": ["*"]
+      }
     },
     "include": ["src/**/*"],
     "exclude": ["node_modules", "dist", "**/*.test.ts"]

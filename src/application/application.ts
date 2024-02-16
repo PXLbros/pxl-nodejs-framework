@@ -1,4 +1,4 @@
-import { calculateElapsedTime } from 'src/util/time';
+import { calculateElapsedTime } from '../util/time';
 import RedisManager from '../redis/redis-manager';
 import RedisInstance from '../redis/redis-instance';
 import DatabaseManager from '../database/database-manager';

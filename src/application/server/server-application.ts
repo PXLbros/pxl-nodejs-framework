@@ -2,7 +2,7 @@ import Application from '../application';
 import ClusterManager from '../../cluster/cluster-manager';
 import { ServerApplicationConfig, StartServerApplicationProps } from './server-application.interface';
 import WebServer from '../../webserver/webserver';
-import RedisInstance from 'src/redis/redis-instance';
+import RedisInstance from '../../redis/redis-instance';
 
 export default class ServerApplication extends Application {
   protected readonly config: ServerApplicationConfig;
@@ -43,10 +43,13 @@ export default class ServerApplication extends Application {
 
   private async startInstance(props?: StartServerApplicationProps): Promise<void> {
     try {
+      // Pre-start
       const { redisInstance } = await this.onPreStart(props);
 
+      // Start
       await this.startCallback({ redisInstance });
 
+      // Post-start
       await this.onPostStart();
     } catch (error) {
       // Log error

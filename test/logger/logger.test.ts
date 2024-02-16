@@ -47,7 +47,7 @@ describe('Metadata Logging', () => {
   it('should include metadata in the log message if provided', () => {
     const spy = jest.spyOn(winston.Logger.prototype, 'log');
     const logger = Logger.getInstance();
-    const meta = { userId: 123, action: 'test' };
+    const meta = { 'User Id': 123, Action: 'test' };
 
     logger.info('User action', meta);
 
