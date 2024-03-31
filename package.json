@@ -2,23 +2,32 @@
   "name": "@pxl/nodejs-framework",
   "version": "1.0.0",
   "description": "PXL Node.js Framework",
-  "main": "dist/cjs/index.js",
-  "module": "dist/esm/index.js",
-  "types": "dist/index.d.ts",
+  "engines": {
+    "node": ">=18.16.0"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./application": "./dist/application.js",
+    "./logger": "./dist/logger.js"
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "start": "node dist/index.js",
     "dev": "nodemon",
-    "docs:generate": "typedoc",
-    "test": "jest",
-    "prebuild": "rimraf dist",
-    "build": "node build.mjs",
-    "postbuild": "tsc --emitDeclarationOnly && npm run docs:generate",
+    "dev:new": "node pxl serve",
+    "clean": "del-cli dist",
+    "build": "npm run clean && tsc && npm run yalc:publish",
     "yalc:publish": "node yalc-publish.mjs"
   },
   "keywords": [],
   "author": "PXL <devops@pxlagency.com>",
   "license": "ISC",
   "devDependencies": {
+    "@swc/core": "^1.4.1",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/jest": "^29.5.12",
@@ -27,6 +36,7 @@
     "@types/ws": "^8.5.10",
     "@typescript-eslint/eslint-plugin": "^7.0.1",
     "@typescript-eslint/parser": "^7.0.1",
+    "del-cli": "^5.1.0",
     "esbuild": "^0.20.0",
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^9.1.0",
@@ -62,6 +72,7 @@
     "typescript": "^5.3.3",
     "uuid": "^9.0.1",
     "winston": "^3.11.0",
-    "ws": "^8.15.1"
+    "ws": "^8.15.1",
+    "yalc": "^1.0.0-pre.53"
   }
 }

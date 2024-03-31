@@ -1,2 +1,2 @@
-export { default as DatabaseManager } from './database-manager';
-export { default as DatabaseInstance } from './database-instance';
+export { default as DatabaseManager } from './manager.js';
+export { default as DatabaseInstance } from './instance.js';

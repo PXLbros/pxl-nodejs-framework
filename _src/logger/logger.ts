@@ -1,22 +1,20 @@
-import * as Sentry from '@sentry/node';
+// import * as Sentry from '@sentry/node';
 import cluster from 'cluster';
+// import { Router } from 'express';
 import winston from 'winston';
+import { type LogLevel } from './logger.interface';
 
-class Logger {
+export class Logger {
   private static instance: Logger;
   private logger: winston.Logger;
-
-  private environment: string | undefined;
 
   public isSentryInitialized = false;
 
   private constructor() {
-    this.environment = process.env.NODE_ENV;
-
     const customFormat = this.getCustomFormat();
 
     this.logger = winston.createLogger({
-      level: this.environment === 'production' ? 'info' : 'debug',
+      level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
       format: winston.format.combine(
         winston.format.timestamp({
           format: 'YYYY-MM-DD HH:mm:ss',
@@ -53,36 +51,37 @@ class Logger {
         })
         .join(' | ');
 
-      if (level === 'error') {
-        if (this.isSentryInitialized) {
-          Sentry.captureException(new Error(message));
-        }
-      }
+      // if (level === 'error') {
+      //   if (this.isSentryInitialized) {
+      //     Sentry.captureException(new Error(message));
+      //   }
+      // }
 
       return `[${timestamp}] ${level}: ${message}${metaString ? ` (${metaString})` : ''}`;
     });
   }
 
-  public initSentry({ sentryDsn, environment }: { sentryDsn: string; environment: string }): void {
-    if (!sentryDsn) {
-      this.logger.warn('Missing Sentry DSN when initializing Sentry');
+  // public initSentry({ expressApp }: { expressApp: Router }): void {
+  //   if (!env.SENTRY_DSN) {
+  //     this.logger.warn('Missing Sentry DSN when initializing Sentry');
 
-      return;
-    }
+  //     return;
+  //   }
 
-    Sentry.init({
-      dsn: sentryDsn,
-      integrations: [
-        new Sentry.Integrations.Http({ tracing: true }),
-      ],
-      tracesSampleRate: 1.0,
-      environment,
-    });
+  //   Sentry.init({
+  //     dsn: env.SENTRY_DSN,
+  //     integrations: [
+  //       new Sentry.Integrations.Http({ tracing: true }),
+  //       new Sentry.Integrations.Express({ app: expressApp }),
+  //     ],
+  //     tracesSampleRate: 1.0,
+  //     environment: env.NODE_ENV,
+  //   });
 
-    this.isSentryInitialized = true;
-  }
+  //   this.isSentryInitialized = true;
+  // }
 
-  public log(level: 'debug' | 'info' | 'warn' | 'error', message: unknown, meta?: Record<string, unknown>): void {
+  public log(level: LogLevel, message: unknown, meta?: Record<string, unknown>): void {
     if (message instanceof Error) {
       const errorMessage = message.stack || message.toString();
       this.logger.log(level, errorMessage, meta);
