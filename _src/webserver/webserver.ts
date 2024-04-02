@@ -70,7 +70,7 @@ export default class WebServer {
   }
 
   private async configureRoutes(): Promise<void> {
-    // const controllers = await loaderUtil.loadModulesInDirectory({
+    // const controllers = await Loader.loadModulesInDirectory({
     //   directory: path.join(__dirname, '../controllers/webserver'),
     //   extensions: ['.ts'],
     // });
