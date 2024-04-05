@@ -8,6 +8,8 @@ import { ApplicationDatabaseConfig } from '../application/application.interface.
 export default class DatabaseManager {
   private readonly config: ApplicationDatabaseConfig;
 
+  private instances: DatabaseInstance[] = [];
+
   /**
    * Database Manager constructor
    */
@@ -21,6 +23,19 @@ export default class DatabaseManager {
   public async connect(): Promise<DatabaseInstance> {
     const orm = await MikroORM.init();
 
-    return new DatabaseInstance({ orm });
+    const databaseInstance = new DatabaseInstance({ orm });
+
+    this.instances.push(databaseInstance);
+
+    return databaseInstance;
+  }
+
+  /**
+   * Disconnect from database
+   */
+  public async disconnect(): Promise<void> {
+    await Promise.all(this.instances.map((instance) => instance.disconnect()));
+
+    this.instances = [];
   }
 }

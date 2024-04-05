@@ -8,6 +8,14 @@ import DatabaseInstance from '../database/instance.js';
 import ClusterManager from '../cluster/cluster-manager.js';
 import WebServer from '../webserver/webserver.js';
 import QueueManager from '../queue/manager.js';
+import { Time } from '../util/index.js';
+
+export interface ApplicationStartInstanceOptions {
+  onStarted?: ({ startupTime }: { startupTime: number }) => void;
+}
+export interface ApplicationStopInstanceOptions {
+  onStopped?: ({ runtime }: { runtime: number }) => void;
+}
 
 /**
  * Application
@@ -17,10 +25,16 @@ export default class Application {
   private shutdownSignals: NodeJS.Signals[] = ['SIGTERM', 'SIGINT'];
 
   /** Application start time */
-  private startTime?: [number, number];
+  private startTime: [number, number] = [0, 0];
+
+  /** Whether application is stopping */
+  private isStopping = false;
 
   /** Application config */
   private config: ApplicationConfig;
+
+  /** Application version */
+  private applicationVersion?: string;
 
   /** Redis manager */
   private redisManager: RedisManager;
@@ -93,50 +107,96 @@ export default class Application {
   }
 
   /**
+   * Get application version
+  */
+  private async getApplicationVersion() {
+    const packagePath = new URL('../../package.json', import.meta.url).href;
+    const packageJson = await import(packagePath, { assert: { type: 'json' } });
+
+    if (!packageJson?.default?.version) {
+      throw new Error('Application version not found');
+    }
+
+    return packageJson.default.version;
+  }
+
+  /**
    * Start application
    */
   public async start(): Promise<void> {
+    // Start application timer
+    this.startTime = process.hrtime();
+
+    // Get application version
+    this.applicationVersion = await this.getApplicationVersion();
+
+    const startInstanceOptions: ApplicationStartInstanceOptions = {
+      onStarted: ({ startupTime }) => {
+        Logger.info('Application started', {
+          Name: this.config.name,
+          'Framework Version': this.applicationVersion,
+          'Startup Time': Time.formatTime({ time: startupTime, format: 's', numDecimals: 2, showUnit: true }),
+        });
+      },
+    };
+
+    const stopInstanceOptions: ApplicationStopInstanceOptions = {
+      onStopped: ({ runtime }) => {
+        Logger.info('Application stopped', {
+          Name: this.config.name,
+          'Runtime': Time.formatTime({ time: runtime, format: 's', numDecimals: 2, showUnit: true }),
+        });
+      },
+    };
+
     if (this.config.cluster?.enabled) {
-      // Initialize clustered server application
+      // Initialize clustered application
       const clusterManager = new ClusterManager({
         config: this.config.cluster,
 
-        startApplicationCallback: () => this.startInstance(),
-        stopApplicationCallback: () => this.stop(),
+        startApplicationCallback: () => this.startInstance(startInstanceOptions),
+        stopApplicationCallback: () => this.stop(stopInstanceOptions),
       });
 
       // Start cluster
       clusterManager.start();
     } else {
-      // Start standalone server application
-      await this.startInstance();
+      // Start standalone application
+      await this.startInstance(startInstanceOptions);
 
-      // Handle standalone server application shutdown
-      this.handleShutdown();
+      // Handle standalone application shutdown
+      this.handleShutdown({ onStopped: stopInstanceOptions.onStopped });
     }
-
-    // Start application timer
-    this.startTime = process.hrtime();
-
-    Logger.info('Application started', {
-      Name: this.config.name,
-    });
   }
 
   /**
-   * Before application start event
+   * Before application start
    */
   private async onBeforeStart(): Promise<{ redisInstance: RedisInstance; databaseInstance: DatabaseInstance }> {
+    // Connect to Redis
     const redisInstance = await this.redisManager.connect();
+
+    // Connect to database
     const databaseInstance = await this.databaseManager.connect();
 
     return { redisInstance, databaseInstance };
   }
 
   /**
+   * Before application stop
+   */
+  private async onBeforeStop(): Promise<void> {
+    // Disconnect from Redis
+    await this.redisManager.disconnect();
+
+    // Disconnect from database
+    await this.databaseManager.disconnect();
+  }
+
+  /**
    * Start application instance
    */
-  private async startInstance(): Promise<void> {
+  private async startInstance(options: ApplicationStartInstanceOptions): Promise<void> {
     try {
       // Before application start
       const { redisInstance, databaseInstance } = await this.onBeforeStart();
@@ -144,8 +204,13 @@ export default class Application {
       // Start application
       await this.startHandler({ redisInstance, databaseInstance });
 
-      // // On application started
-      // await this.onStarted();
+      // Calculate application startup time
+      const startupTime = Time.calculateElapsedTime({ startTime: this.startTime });
+
+      // On application started
+      if (options.onStarted) {
+        await options.onStarted({ startupTime });
+      }
     } catch (error) {
       // Log error
       console.error(error);
@@ -160,15 +225,19 @@ export default class Application {
       this.webServer = new WebServer({
         // config: this.config.webServer,
         options: {
-          port: 3000,
+          port: this.config.webServer.port,
+          controllersDirectory: this.config.webServer.controllersDirectory,
         },
 
-        routes: [],
+        routes: this.config.webServer.routes,
 
         redisInstance,
         databaseInstance,
         queueManager: this.queueManager,
       });
+
+      // Load web server
+      await this.webServer.load();
 
       // Start web server
       await this.webServer.start();
@@ -184,13 +253,23 @@ export default class Application {
   }
 
   /**
+   * Stop application callback
+   */
+  private async stopCallback(): Promise<void> {
+    if (this.webServer) {
+      // Stop web server
+      await this.webServer.stop();
+    }
+  }
+
+  /**
    * Handle shutdown
    */
-  public handleShutdown(): void {
+  public handleShutdown({ onStopped }: { onStopped?: ({ runtime }: { runtime: number }) => void }): void {
     this.shutdownSignals.forEach((signal) => {
       process.on(signal, async () => {
         // Stop application
-        await this.stop();
+        await this.stop({ onStopped });
       });
     });
   }
@@ -198,28 +277,26 @@ export default class Application {
   /**
    * Stop application
    */
-  private async stop(): Promise<void> {
-    // if (this.isStopping) {
-    //   return;
-    // }
+  private async stop({ onStopped }: ApplicationStopInstanceOptions = {}): Promise<void> {
+    if (this.isStopping) {
+      return;
+    }
 
-    // this.isStopping = true;
+    this.isStopping = true;
 
-    // // Stop callback
-    // await this.stopCallback();
+    // Stop callback
+    await this.stopCallback();
 
-    // // Disconnect
-    // await this.disconnect();
+    // Disconnect
+    await this.onBeforeStop();
 
-    // if (this.onStopped) {
-    //   // Calculate runtime
-    //   const runtime = process.uptime() * 1000;
+    if (onStopped) {
+      // Calculate runtime
+      const runtime = process.uptime() * 1000;
 
-    //   // Emit stopped event
-    //   await this.onStopped({ runtime });
-    // }
-
-    Logger.info('Application stopped');
+      // Emit stopped event
+      await onStopped({ runtime });
+    }
 
     process.exit(0);
   }

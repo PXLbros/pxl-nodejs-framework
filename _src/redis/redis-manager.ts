@@ -6,6 +6,8 @@ import logger from '../logger/logger';
 export default class RedisManager {
   private readonly config: RedisManagerConfig;
 
+  private instances: RedisInstance[] = [];
+
   constructor(config: RedisManagerConfig) {
     this.config = config;
   }
@@ -43,6 +45,8 @@ export default class RedisManager {
       publisherClient,
       subscriberClient,
     });
+
+    this.instances.push(redisInstance);
 
     logger.debug('Connected to Redis', {
       host: this.config.host,

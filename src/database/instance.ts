@@ -37,4 +37,13 @@ export default class DatabaseInstance {
   public getEntityManager(): EntityManager {
     return this.orm.em.fork();
   }
+
+  /**
+   * Disconnect
+   */
+  public async disconnect(): Promise<void> {
+    await this.orm.close();
+
+    Logger.debug('Disconnected from database');
+  }
 }

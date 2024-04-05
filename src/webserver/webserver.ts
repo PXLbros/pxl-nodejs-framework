@@ -8,6 +8,7 @@ import { RedisInstance } from '../redis/index.js';
 import { DatabaseInstance } from '../database/index.js';
 import { BaseControllerType } from './controller/base.interface.js';
 import { QueueManager } from '../queue/index.js';
+import { baseDir } from '../index.js';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -78,7 +79,7 @@ class WebServer {
 
     Logger.debug('Web server started', {
       Port: port,
-      CORS: this.options.corsUrls ? this.options.corsUrls.join(', ') : 'Disabled',
+      CORS: this.options.corsUrls && this.options.corsUrls.length > 0 ? this.options.corsUrls.join(', ') : 'Disabled',
     });
   }
 
@@ -136,22 +137,29 @@ class WebServer {
    * Configure routes.
    */
   private async configureRoutes(): Promise<void> {
-    const controllersDirectory = path.join(__dirname, '../../webserver/controllers');
+    // const controllersDirectory = path.join(baseDir, '../../webserver/controllers');
 
     // Load controllers
     const controllers = await Loader.loadModulesInDirectory({
-      directory: controllersDirectory,
+      directory: this.options.controllersDirectory,
       extensions: ['.ts'],
     });
 
     // Go through each route
     for (const route of this.routes) {
-      const ControllerClass: BaseControllerType = controllers[route.controller];
+      let ControllerClass: BaseControllerType;
+      if (route.controller) {
+        ControllerClass = route.controller;
+      } else if (route.controllerName) {
+        ControllerClass = controllers[route.controllerName];
+      } else {
+        throw new Error('Controller config not found');
+      }
 
       if (typeof ControllerClass !== 'function') {
         Logger.warn('Controller not found', {
           Controller: route.controller,
-          Directory: controllersDirectory,
+          Directory: this.options.controllersDirectory,
         });
 
         continue;
@@ -201,6 +209,15 @@ class WebServer {
     } catch (error) {
       Logger.error(error);
     }
+  }
+
+  /**
+   * Stop web server.
+   */
+  public async stop(): Promise<void> {
+    await this.fastifyServer.close();
+
+    // Implement any additional logic here
   }
 }
 

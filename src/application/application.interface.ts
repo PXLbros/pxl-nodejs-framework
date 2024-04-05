@@ -1,5 +1,6 @@
 import { ClusterManagerConfig } from '../cluster/cluster-manager.interface.js';
 import { QueueManagerOptions } from '../queue/manager.interface.js';
+import { WebServerRoute } from '../webserver/webserver.interface.js';
 
 export interface ApplicationRedisConfig {
   /** Redis host */
@@ -38,6 +39,12 @@ export interface ApplicationWebServerConfig {
 
   /** Web server port */
   port: number;
+
+  /** Web server controllers directory */
+  controllersDirectory: string;
+
+  /** Web server routes */
+  routes: WebServerRoute[];
 }
 
 export interface ApplicationConfig {

@@ -6,6 +6,8 @@ import { Logger } from '../logger/index.js';
 export default class RedisManager {
   private config: RedisManagerConfig;
 
+  public instances: RedisInstance[] = [];
+
   constructor(config: RedisManagerConfig) {
     this.config = config;
   }
@@ -30,6 +32,8 @@ export default class RedisManager {
           subscriberClient,
         });
 
+        this.instances.push(redisInstance);
+
         Logger.debug('Connected to Redis', {
           Host: this.config.host,
           Port: this.config.port,
@@ -47,5 +51,9 @@ export default class RedisManager {
       client.on('connect', handleConnect);
       client.on('error', handleError);
     });
+  }
+
+  public async disconnect(): Promise<void> {
+    await Promise.all(this.instances.map((instance) => instance.disconnect()));
   }
 }
