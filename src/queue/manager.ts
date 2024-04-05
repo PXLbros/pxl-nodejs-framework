@@ -35,7 +35,7 @@ export default class QueueManager {
 
   private async registerJobs(jobProcessors: Array<QueueJob>): Promise<void> {
     const jobProcessorClasses = await Loader.loadModulesInDirectory({
-      directory: path.join(__dirname, '../../queue/processors'),
+      directory: this.options.processorsDirectory,
       extensions: ['.ts'],
     });
 

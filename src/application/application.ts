@@ -1,145 +1,226 @@
 import DatabaseManager from '../database/manager.js';
 import RedisManager from '../redis/manager.js';
 import { Logger } from '../logger/index.js';
-import Joi from 'joi';
-
-export interface ApplicationRedisConfig {
-  /** Redis host */
-  host: string;
-
-  /** Redis port */
-  port: number;
-
-  /** Redis password */
-  password?: string;
-}
-
-export interface ApplicationDatabaseConfig {
-  /** Database host */
-  host: string;
-
-  /** Database port */
-  port: number;
-
-  /** Database username */
-  username: string;
-
-  /** Database password */
-  password: string;
-
-  /** Database name */
-  databaseName: string;
-}
-
-export interface ApplicationWebServerConfig {
-  /** Web server host */
-  host: string;
-
-  /** Web server port */
-  port: number;
-}
-
-export interface ApplicationConstructorProps {
-  /** Application name */
-  name: string;
-
-  /** Redis configuration */
-  redis: ApplicationRedisConfig;
-
-  /** Database configuration */
-  database: ApplicationDatabaseConfig;
-
-  /** Web server configuration */
-  webServer?: ApplicationWebServerConfig;
-}
+// import Joi from 'joi';
+import { ApplicationConfig } from './application.interface.js';
+import RedisInstance from '../redis/instance.js';
+import DatabaseInstance from '../database/instance.js';
+import ClusterManager from '../cluster/cluster-manager.js';
+import WebServer from '../webserver/webserver.js';
+import QueueManager from '../queue/manager.js';
 
 /**
  * Application
  */
 export default class Application {
+  /** Shutdown signals */
+  private shutdownSignals: NodeJS.Signals[] = ['SIGTERM', 'SIGINT'];
+
   /** Application start time */
-  protected startTime?: [number, number];
+  private startTime?: [number, number];
 
-  /** Application name */
-  protected name: string;
+  /** Application config */
+  private config: ApplicationConfig;
 
-  /** Redis Manager */
-  protected redisManager: RedisManager;
+  /** Redis manager */
+  private redisManager: RedisManager;
 
-  /** Database Manager */
-  protected databaseManager: DatabaseManager;
+  /** Database manager */
+  private databaseManager: DatabaseManager;
+
+  /** Queue manager */
+  private queueManager: QueueManager;
+
+  /** Web server */
+  private webServer?: WebServer;
 
   /**
    * Application constructor
    */
-  constructor(props: ApplicationConstructorProps) {
-    const schema = Joi.object({
-      name: Joi.string().required(),
+  constructor(config: ApplicationConfig) {
+    this.config = config;
 
-      redis: {
-        host: Joi.string().required(),
-        port: Joi.number().required(),
-        password: Joi.string().allow('').optional(),
-      },
+    // const schema = Joi.object({
+    //   name: Joi.string().required(),
 
-      database: {
-        host: Joi.string().required(),
-        port: Joi.number().required(),
-        username: Joi.string().required(),
-        password: Joi.string().required(),
-        databaseName: Joi.string().required(),
-      },
-    });
+    //   redis: {
+    //     host: Joi.string().required(),
+    //     port: Joi.number().required(),
+    //     password: Joi.string().allow('').optional(),
+    //   },
 
-    // Validation application constructor props
-    const validationResult = schema.validate(props);
+    //   database: {
+    //     host: Joi.string().required(),
+    //     port: Joi.number().required(),
+    //     username: Joi.string().required(),
+    //     password: Joi.string().required(),
+    //     databaseName: Joi.string().required(),
+    //   },
+    // });
 
-    if (validationResult.error) {
-      throw new Error(validationResult.error.message);
-    }
+    // // Validation application constructor props
+    // const validationResult = schema.validate(props);
 
-    this.name = props.name;
+    // if (validationResult.error) {
+    //   throw new Error(validationResult.error.message);
+    // }
 
     // Initialize Redis manager
     this.redisManager = new RedisManager({
-      host: props.redis.host,
-      port: props.redis.port,
-      password: props.redis.password,
+      host: this.config.redis.host,
+      port: this.config.redis.port,
+      password: this.config.redis.password,
     });
 
     // Initialize Database manager
     this.databaseManager = new DatabaseManager({
-      host: props.database.host,
-      port: props.database.port,
-      username: props.database.username,
-      password: props.database.password,
-      databaseName: props.database.databaseName,
+      host: this.config.database.host,
+      port: this.config.database.port,
+      username: this.config.database.username,
+      password: this.config.database.password,
+      databaseName: this.config.database.databaseName,
+    });
+
+    // Initialize queue manager
+    this.queueManager = new QueueManager({
+      options: {
+        processorsDirectory: this.config.queue.processorsDirectory,
+      },
+      jobs: [],
+      redisInstance: this.redisManager,
+      databaseInstance: this.databaseManager,
     });
   }
 
   /**
    * Start application
    */
-  public start(): void {
+  public async start(): Promise<void> {
+    if (this.config.cluster?.enabled) {
+      // Initialize clustered server application
+      const clusterManager = new ClusterManager({
+        config: this.config.cluster,
+
+        startApplicationCallback: () => this.startInstance(),
+        stopApplicationCallback: () => this.stop(),
+      });
+
+      // Start cluster
+      clusterManager.start();
+    } else {
+      // Start standalone server application
+      await this.startInstance();
+
+      // Handle standalone server application shutdown
+      this.handleShutdown();
+    }
+
     // Start application timer
     this.startTime = process.hrtime();
 
     Logger.info('Application started', {
-      Name: this.name,
+      Name: this.config.name,
     });
   }
 
   /**
-   * Stop application
+   * Before application start event
    */
-  public stop(): void {
-    Logger.info('Application stopped');
+  private async onBeforeStart(): Promise<{ redisInstance: RedisInstance; databaseInstance: DatabaseInstance }> {
+    const redisInstance = await this.redisManager.connect();
+    const databaseInstance = await this.databaseManager.connect();
+
+    return { redisInstance, databaseInstance };
   }
+
+  /**
+   * Start application instance
+   */
+  private async startInstance(): Promise<void> {
+    try {
+      // Before application start
+      const { redisInstance, databaseInstance } = await this.onBeforeStart();
+
+      // Start application
+      await this.startHandler({ redisInstance, databaseInstance });
+
+      // // On application started
+      // await this.onStarted();
+    } catch (error) {
+      // Log error
+      console.error(error);
+
+      process.exit(1);
+    }
+  }
+
+  private async startHandler({ redisInstance, databaseInstance }: { redisInstance: RedisInstance; databaseInstance: DatabaseInstance }): Promise<void> {
+    if (this.config.webServer?.enabled) {
+      // Initialize web server
+      this.webServer = new WebServer({
+        // config: this.config.webServer,
+        options: {
+          port: 3000,
+        },
+
+        routes: [],
+
+        redisInstance,
+        databaseInstance,
+        queueManager: this.queueManager,
+      });
+
+      // Start web server
+      await this.webServer.start();
+    }
+  }
+
 
   /**
    * Run command
    */
   public runCommand(): void {
     // ...
+  }
+
+  /**
+   * Handle shutdown
+   */
+  public handleShutdown(): void {
+    this.shutdownSignals.forEach((signal) => {
+      process.on(signal, async () => {
+        // Stop application
+        await this.stop();
+      });
+    });
+  }
+
+  /**
+   * Stop application
+   */
+  private async stop(): Promise<void> {
+    // if (this.isStopping) {
+    //   return;
+    // }
+
+    // this.isStopping = true;
+
+    // // Stop callback
+    // await this.stopCallback();
+
+    // // Disconnect
+    // await this.disconnect();
+
+    // if (this.onStopped) {
+    //   // Calculate runtime
+    //   const runtime = process.uptime() * 1000;
+
+    //   // Emit stopped event
+    //   await this.onStopped({ runtime });
+    // }
+
+    Logger.info('Application stopped');
+
+    process.exit(0);
   }
 }

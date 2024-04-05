@@ -1,15 +1,18 @@
 import { MikroORM } from '@mikro-orm/postgresql';
 import DatabaseInstance from './instance.js';
-import { ApplicationDatabaseConfig } from '../application/application.js';
+import { ApplicationDatabaseConfig } from '../application/application.interface.js';
 
 /**
  * Database Manager
  */
 export default class DatabaseManager {
+  private readonly config: ApplicationDatabaseConfig;
+
   /**
    * Database Manager constructor
    */
-  constructor(private readonly config: ApplicationDatabaseConfig) {
+  constructor(config: ApplicationDatabaseConfig) {
+    this.config = config;
   }
 
   /**
