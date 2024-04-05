@@ -8,7 +8,7 @@ import { RedisInstance } from '../redis/index.js';
 import { DatabaseInstance } from '../database/index.js';
 import { BaseControllerType } from './controller/base.interface.js';
 import { QueueManager } from '../queue/index.js';
-import { baseDir } from '../index.js';
+import { HealthController, baseDir } from '../index.js';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -124,7 +124,7 @@ class WebServer {
   }
 
   private async onClose(): Promise<void> {
-    Logger.debug('Web server closed');
+    Logger.debug('Web server stopped');
   }
 
   private async configureCORS(): Promise<void> {
@@ -143,6 +143,14 @@ class WebServer {
     const controllers = await Loader.loadModulesInDirectory({
       directory: this.options.controllersDirectory,
       extensions: ['.ts'],
+    });
+
+    // Add health check route
+    this.routes.push({
+      method: 'GET',
+      path: '/health',
+      controller: HealthController,
+      action: 'health',
     });
 
     // Go through each route
@@ -215,6 +223,7 @@ class WebServer {
    * Stop web server.
    */
   public async stop(): Promise<void> {
+    // Close Fastify server
     await this.fastifyServer.close();
 
     // Implement any additional logic here

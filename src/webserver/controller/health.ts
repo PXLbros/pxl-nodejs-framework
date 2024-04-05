@@ -12,6 +12,7 @@ export default class extends BaseController {
 
       const isDatabaseHealthy = results[0] === true;
       const isRedisHealthy = results[1] === true;
+      // const activeQueueItems = await this.queueManager.listAllJobsWithStatus();
 
       const isAllHealthy = results.every((result) => result === true);
 
@@ -20,6 +21,7 @@ export default class extends BaseController {
         services: {
           database: { healthy: isDatabaseHealthy },
           redis: { healthy: isRedisHealthy },
+          // queue: { activeItems: activeQueueItems },
         },
       });
     } catch (error: unknown) {

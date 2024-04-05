@@ -149,4 +149,31 @@ export default class QueueManager {
 
     return jobResult;
   };
+
+  public async listAllJobsWithStatus(): Promise<any[]> {
+    const jobsSummary: any[] = [];
+
+    for (const [queueName, queue] of this.queues) {
+      const jobStates = ['active', 'waiting', 'completed', 'failed', 'delayed', 'paused'];
+
+      const jobsDetailsPromises = jobStates.map(async (state: any) => {
+        const jobs = await queue.getJobs([state]);
+        return jobs.map((job) => ({
+          id: job.id,
+          name: job.name,
+          queueName: queueName,
+          state: state,
+          attemptsMade: job.attemptsMade,
+          failedReason: job.failedReason,
+        }));
+      });
+
+      const results = await Promise.all(jobsDetailsPromises);
+      const flattenedResults = results.flat();
+
+      jobsSummary.push(...flattenedResults);
+    }
+
+    return jobsSummary;
+  }
 }

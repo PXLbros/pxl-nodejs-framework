@@ -2,20 +2,13 @@ import DatabaseManager from '../database/manager.js';
 import RedisManager from '../redis/manager.js';
 import { Logger } from '../logger/index.js';
 // import Joi from 'joi';
-import { ApplicationConfig } from './application.interface.js';
+import { ApplicationConfig, ApplicationStartInstanceOptions, ApplicationStopInstanceOptions } from './application.interface.js';
 import RedisInstance from '../redis/instance.js';
 import DatabaseInstance from '../database/instance.js';
 import ClusterManager from '../cluster/cluster-manager.js';
 import WebServer from '../webserver/webserver.js';
 import QueueManager from '../queue/manager.js';
 import { Time } from '../util/index.js';
-
-export interface ApplicationStartInstanceOptions {
-  onStarted?: ({ startupTime }: { startupTime: number }) => void;
-}
-export interface ApplicationStopInstanceOptions {
-  onStopped?: ({ runtime }: { runtime: number }) => void;
-}
 
 /**
  * Application
@@ -43,7 +36,7 @@ export default class Application {
   private databaseManager: DatabaseManager;
 
   /** Queue manager */
-  private queueManager: QueueManager;
+  private queueManager?: QueueManager;
 
   /** Web server */
   private webServer?: WebServer;
@@ -94,16 +87,6 @@ export default class Application {
       password: this.config.database.password,
       databaseName: this.config.database.databaseName,
     });
-
-    // Initialize queue manager
-    this.queueManager = new QueueManager({
-      options: {
-        processorsDirectory: this.config.queue.processorsDirectory,
-      },
-      jobs: [],
-      redisInstance: this.redisManager,
-      databaseInstance: this.databaseManager,
-    });
   }
 
   /**
@@ -134,7 +117,7 @@ export default class Application {
       onStarted: ({ startupTime }) => {
         Logger.info('Application started', {
           Name: this.config.name,
-          'Framework Version': this.applicationVersion,
+          'PXL Framework Version': this.applicationVersion,
           'Startup Time': Time.formatTime({ time: startupTime, format: 's', numDecimals: 2, showUnit: true }),
         });
       },
@@ -172,14 +155,27 @@ export default class Application {
   /**
    * Before application start
    */
-  private async onBeforeStart(): Promise<{ redisInstance: RedisInstance; databaseInstance: DatabaseInstance }> {
+  private async onBeforeStart(): Promise<{ redisInstance: RedisInstance; databaseInstance: DatabaseInstance; queueManager: QueueManager }> {
     // Connect to Redis
     const redisInstance = await this.redisManager.connect();
 
     // Connect to database
     const databaseInstance = await this.databaseManager.connect();
 
-    return { redisInstance, databaseInstance };
+    // Initialize queue
+    const queueManager = new QueueManager({
+      options: {
+        processorsDirectory: this.config.queue.processorsDirectory,
+      },
+      jobs: this.config.queue.jobs,
+      redisInstance,
+      databaseInstance,
+    });
+
+    // Create queue
+    queueManager.createQueue({ name: 'default' });
+
+    return { redisInstance, databaseInstance, queueManager };
   }
 
   /**
@@ -199,10 +195,10 @@ export default class Application {
   private async startInstance(options: ApplicationStartInstanceOptions): Promise<void> {
     try {
       // Before application start
-      const { redisInstance, databaseInstance } = await this.onBeforeStart();
+      const { redisInstance, databaseInstance, queueManager } = await this.onBeforeStart();
 
       // Start application
-      await this.startHandler({ redisInstance, databaseInstance });
+      await this.startHandler({ redisInstance, databaseInstance, queueManager });
 
       // Calculate application startup time
       const startupTime = Time.calculateElapsedTime({ startTime: this.startTime });
@@ -219,7 +215,7 @@ export default class Application {
     }
   }
 
-  private async startHandler({ redisInstance, databaseInstance }: { redisInstance: RedisInstance; databaseInstance: DatabaseInstance }): Promise<void> {
+  private async startHandler({ redisInstance, databaseInstance, queueManager }: { redisInstance: RedisInstance; databaseInstance: DatabaseInstance; queueManager: QueueManager }): Promise<void> {
     if (this.config.webServer?.enabled) {
       // Initialize web server
       this.webServer = new WebServer({
@@ -233,7 +229,7 @@ export default class Application {
 
         redisInstance,
         databaseInstance,
-        queueManager: this.queueManager,
+        queueManager,
       });
 
       // Load web server
@@ -243,7 +239,6 @@ export default class Application {
       await this.webServer.start();
     }
   }
-
 
   /**
    * Run command

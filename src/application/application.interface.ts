@@ -1,6 +1,19 @@
 import { ClusterManagerConfig } from '../cluster/cluster-manager.interface.js';
+import { QueueJob } from '../queue/job.interface.js';
 import { QueueManagerOptions } from '../queue/manager.interface.js';
 import { WebServerRoute } from '../webserver/webserver.interface.js';
+
+export type OnStartedEvent = ({ startupTime }: { startupTime: number }) => void;
+export type OnStoppedEvent = ({ runtime }: { runtime: number }) => void;
+
+export interface ApplicationStartInstanceOptions {
+  /** On started event */
+  onStarted?: OnStartedEvent;
+}
+export interface ApplicationStopInstanceOptions {
+  /** On stopped event */
+  onStopped?: OnStoppedEvent;
+}
 
 export interface ApplicationRedisConfig {
   /** Redis host */
@@ -47,6 +60,14 @@ export interface ApplicationWebServerConfig {
   routes: WebServerRoute[];
 }
 
+export interface ApplicationQueueConfig {
+  /** Queue processors directory */
+  processorsDirectory: string;
+
+  /** Queue jobs */
+  jobs: QueueJob[];
+}
+
 export interface ApplicationConfig {
   /** Application name */
   name: string;
@@ -64,5 +85,5 @@ export interface ApplicationConfig {
   webServer?: ApplicationWebServerConfig;
 
   /** Queue configuration */
-  queue: QueueManagerOptions;
+  queue: ApplicationQueueConfig;
 }
