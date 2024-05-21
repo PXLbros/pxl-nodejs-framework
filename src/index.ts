@@ -4,11 +4,13 @@ import path from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+export { __dirname as baseDir };
+
 export * from './application/index.js';
+export * from './command/index.js';
 export * from './database/index.js';
 export * from './redis/index.js';
 export * from './logger/index.js';
 export * from './queue/index.js';
 export * from './webserver/index.js';
-
-export { __dirname as baseDir };
+export * from './websocket/index.js';

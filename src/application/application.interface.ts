@@ -73,7 +73,7 @@ export interface ApplicationConfig {
   name: string;
 
   /** Cluster configuration */
-  cluster: ClusterManagerConfig;
+  cluster?: ClusterManagerConfig;
 
   /** Redis configuration */
   redis: ApplicationRedisConfig;

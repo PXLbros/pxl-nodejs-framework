@@ -243,8 +243,31 @@ export default class Application {
   /**
    * Run command
    */
-  public runCommand(): void {
-    // ...
+  public async runCommand({ command }: { command: string }): Promise<void> {
+    const startInstanceOptions: ApplicationStartInstanceOptions = {
+      onStarted: ({ startupTime }) => {
+        Logger.info('Command started', {
+          Name: this.config.name,
+          'PXL Framework Version': this.applicationVersion,
+          'Startup Time': Time.formatTime({ time: startupTime, format: 's', numDecimals: 2, showUnit: true }),
+        });
+      },
+    };
+
+    const stopInstanceOptions: ApplicationStopInstanceOptions = {
+      onStopped: ({ runtime }) => {
+        Logger.info('Command stopped', {
+          Name: this.config.name,
+          'Runtime': Time.formatTime({ time: runtime, format: 's', numDecimals: 2, showUnit: true }),
+        });
+      },
+    };
+
+    // Start standalone application
+    await this.startInstance(startInstanceOptions);
+
+    // Handle standalone application shutdown
+    this.handleShutdown({ onStopped: stopInstanceOptions.onStopped });
   }
 
   /**
