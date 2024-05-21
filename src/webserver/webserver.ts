@@ -29,6 +29,8 @@ class WebServer {
   constructor(params: WebServerConstructorParams) {
     // Define default options
     const defaultOptions: Partial<WebServerOptions> = {
+      host: '0.0.0.0',
+      port: 3001,
       corsUrls: [],
     };
 
@@ -78,6 +80,7 @@ class WebServer {
     const port = typeof address === 'string' ? address : address?.port;
 
     Logger.debug('Web server started', {
+      Host: this.options.host,
       Port: port,
       CORS: this.options.corsUrls && this.options.corsUrls.length > 0 ? this.options.corsUrls.join(', ') : 'Disabled',
     });
@@ -211,7 +214,7 @@ class WebServer {
   public async start(): Promise<void> {
     try {
       await this.fastifyServer.listen({
-        host: '0.0.0.0',
+        host: this.options.host,
         port: this.options.port,
       });
     } catch (error) {

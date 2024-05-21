@@ -26,6 +26,7 @@ export interface WebServerRoute {
 }
 
 export interface WebServerOptions {
+  host: string;
   port: number;
   corsUrls?: string[];
   controllersDirectory: string;

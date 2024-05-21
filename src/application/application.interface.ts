@@ -2,6 +2,7 @@ import { ClusterManagerConfig } from '../cluster/cluster-manager.interface.js';
 import { QueueJob } from '../queue/job.interface.js';
 import { QueueManagerOptions } from '../queue/manager.interface.js';
 import { WebServerRoute } from '../webserver/webserver.interface.js';
+import { WebSocketRoute } from '../websocket/websocket.interface.js';
 
 export type OnStartedEvent = ({ startupTime }: { startupTime: number }) => void;
 export type OnStoppedEvent = ({ runtime }: { runtime: number }) => void;
@@ -43,6 +44,20 @@ export interface ApplicationDatabaseConfig {
   databaseName: string;
 }
 
+export interface ApplicationWebSocketConfig {
+  /** Whether to enable WebSocket */
+  enabled: boolean;
+
+  /** WebSocket host */
+  host: string;
+
+  /** WebSocket port */
+  port: number;
+
+  /** WebSocket routes */
+  routes: WebSocketRoute[];
+}
+
 export interface ApplicationWebServerConfig {
   /** Whether to enable web server */
   enabled: boolean;
@@ -80,6 +95,9 @@ export interface ApplicationConfig {
 
   /** Database configuration */
   database: ApplicationDatabaseConfig;
+
+  /** WebSocket configuration */
+  webSocket?: ApplicationWebSocketConfig;
 
   /** Web server configuration */
   webServer?: ApplicationWebServerConfig;

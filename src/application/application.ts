@@ -9,6 +9,7 @@ import ClusterManager from '../cluster/cluster-manager.js';
 import WebServer from '../webserver/webserver.js';
 import QueueManager from '../queue/manager.js';
 import { Time } from '../util/index.js';
+import WebSocket from '../websocket/websocket.js';
 
 /**
  * Application
@@ -38,8 +39,12 @@ export default class Application {
   /** Queue manager */
   private queueManager?: QueueManager;
 
+  /** WebSocket */
+  private webSocket?: WebSocket;
+
   /** Web server */
   private webServer?: WebServer;
+
 
   /**
    * Application constructor
@@ -216,11 +221,31 @@ export default class Application {
   }
 
   private async startHandler({ redisInstance, databaseInstance, queueManager }: { redisInstance: RedisInstance; databaseInstance: DatabaseInstance; queueManager: QueueManager }): Promise<void> {
+    if (this.config.webSocket?.enabled) {
+      this.webSocket = new WebSocket({
+        options: {
+          host: this.config.webSocket.host,
+          port: this.config.webSocket.port,
+        },
+        routes: [],
+        redisInstance,
+        databaseInstance,
+        queueManager,
+      });
+
+      // Load WebSocket
+      this.webSocket.load();
+
+      // Start WebSocket server
+      this.webSocket.startServer();
+    }
+
     if (this.config.webServer?.enabled) {
       // Initialize web server
       this.webServer = new WebServer({
         // config: this.config.webServer,
         options: {
+          host: this.config.webServer.host,
           port: this.config.webServer.port,
           controllersDirectory: this.config.webServer.controllersDirectory,
         },
