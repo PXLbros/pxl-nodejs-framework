@@ -54,6 +54,9 @@ export interface ApplicationWebSocketConfig {
   /** WebSocket port */
   port: number;
 
+  /** WebSocket controllers directory */
+  controllersDirectory: string;
+
   /** WebSocket routes */
   routes: WebSocketRoute[];
 }

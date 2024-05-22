@@ -1,12 +1,12 @@
 import { DatabaseInstance } from '../../database/index.js';
 import { QueueManager } from '../../queue/index.js';
 import { RedisInstance } from '../../redis/index.js';
-import BaseController from './base.js';
+import WebServerBaseController from './base.js';
 
-export interface BaseControllerConstructorParams {
+export interface WebServerBaseControllerConstructorParams {
   redisInstance: RedisInstance;
   queueManager: QueueManager;
   databaseInstance: DatabaseInstance;
 }
 
-export type BaseControllerType = new (params: BaseControllerConstructorParams) => BaseController;
+export type WebServerBaseControllerType = new (params: WebServerBaseControllerConstructorParams) => WebServerBaseController;

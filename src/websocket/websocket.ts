@@ -1,12 +1,13 @@
 import cluster from 'cluster';
 import { RawData, WebSocket, WebSocketServer } from 'ws';
 import { v4 as uuidv4 } from 'uuid';
-import { Helper } from '../util/index.js';
+import { Helper, Loader } from '../util/index.js';
 import { DatabaseInstance } from '../database/index.js';
 import { QueueManager } from '../queue/index.js';
 import { RedisInstance } from '../redis/index.js';
-import { WebSocketConnectedClientData, WebSocketConstructorParams, WebSocketOptions } from './websocket.interface.js';
+import { WebSocketConnectedClientData, WebSocketConstructorParams, WebSocketOptions, WebSocketRoute } from './websocket.interface.js';
 import { Logger } from '../logger/index.js';
+import { WebSocketBaseControllerType } from './controller/base.interface.js';
 
 /** Redis subscriber event */
 enum redisSubscriberEvent {
@@ -32,6 +33,9 @@ export default class {
 
   /** WebSocket server */
   private server?: WebSocketServer;
+
+  /** WebSocket routes */
+  private routes: WebSocketRoute[] = [];
 
   /** Connected clients */
   private connectedClients: Map<string, WebSocketConnectedClientData> = new Map();
@@ -64,6 +68,8 @@ export default class {
     this.queueManager = params.queueManager;
     this.databaseInstance = params.databaseInstance;
 
+    this.routes = params.routes;
+
     // this.checkConnectedClientsInterval = setInterval(
     //   () => this.checkInactiveClients(),
     //   this.checkConnectedClientsIntervalTime,
@@ -83,7 +89,77 @@ export default class {
    * Load WebSocket.
    */
   public async load(): Promise<void> {
-    // await this.configureRoutes();
+    await this.configureRoutes();
+  }
+
+  /**
+   * Configure WebSocket routes.
+   */
+  private async configureRoutes(): Promise<void> {
+    // const controllers = await loadControllers({ dir: path.join(__dirname, '../controllers/websocket') });
+
+    // for (const route of this.options.routes) {
+    //   const ControllerClass: ControllerType = controllers[route.controller];
+
+    //   // Initialize controller instance
+    //   const controllerInstance = new ControllerClass(
+    //     this,
+    //     this.redisInstance,
+    //     this.queueManager,
+    //     this.databaseInstance,
+    //   );
+
+    //   // Get controller action handler
+    //   const controllerHandler = controllerInstance[
+    //     route.action as keyof typeof controllerInstance
+    //   ] as WebSocketMessageHandler;
+
+    //   // Get route key
+    //   const routeKey = this.getRouteKey({ type: route.type, action: route.action });
+
+    //   // Register route handler
+    //   this.routeHandlers.set(routeKey, controllerHandler);
+    // }
+
+    // Load controllers
+    const controllers = await Loader.loadModulesInDirectory({
+      directory: this.options.controllersDirectory,
+      extensions: ['.ts'],
+    });
+
+    console.log('controllers', controllers);
+
+    // Go through each route
+    for (const route of this.routes) {
+      console.log('route', route);
+
+      let ControllerClass: WebSocketBaseControllerType;
+
+      if (route.controller) {
+        ControllerClass = route.controller;
+      } else if (route.controllerName) {
+        ControllerClass = controllers[route.controllerName];
+      } else {
+        throw new Error('Controller config not found');
+      }
+
+      if (typeof ControllerClass !== 'function') {
+        Logger.warn('Controller not found', {
+          Controller: route.controllerName,
+          Directory: this.options.controllersDirectory,
+        });
+
+        continue;
+      }
+
+      // Initialize controller instance
+      const controllerInstance = new ControllerClass({
+        webSocket: this,
+        redisInstance: this.redisInstance,
+        queueManager: this.queueManager,
+        databaseInstance: this.databaseInstance,
+      });
+    }
   }
 
   /**
@@ -221,7 +297,7 @@ export default class {
    * Handle WebSocket server message.
    */
   private handleServerMessage = async ({ ws, message }: { ws: WebSocket; message: RawData }): Promise<void> => {
-    Logger.debug('Message received', {
+    Logger.debug('Incoming WebSocket server message', {
       Message: message.toString(),
     });
   };

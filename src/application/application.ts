@@ -45,7 +45,6 @@ export default class Application {
   /** Web server */
   private webServer?: WebServer;
 
-
   /**
    * Application constructor
    */
@@ -226,8 +225,9 @@ export default class Application {
         options: {
           host: this.config.webSocket.host,
           port: this.config.webSocket.port,
+          controllersDirectory: this.config.webSocket.controllersDirectory,
         },
-        routes: [],
+        routes: this.config.webSocket.routes,
         redisInstance,
         databaseInstance,
         queueManager,

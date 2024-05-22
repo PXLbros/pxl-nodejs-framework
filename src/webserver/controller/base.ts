@@ -3,16 +3,16 @@ import { StatusCodes } from 'http-status-codes';
 import { DatabaseInstance } from '../../database/index.js';
 import { RedisInstance } from '../../redis/index.js';
 import { QueueManager } from '../../queue/index.js';
-import { BaseControllerConstructorParams } from './base.interface.js';
+import { WebServerBaseControllerConstructorParams } from './base.interface.js';
 import { Logger } from '../../logger/index.js';
 // import { env } from '../../env';
 
-export default abstract class BaseController {
+export default abstract class {
   protected redisInstance: RedisInstance;
   protected queueManager: QueueManager;
   protected databaseInstance: DatabaseInstance;
 
-  constructor({ redisInstance, queueManager, databaseInstance }: BaseControllerConstructorParams) {
+  constructor({ redisInstance, queueManager, databaseInstance }: WebServerBaseControllerConstructorParams) {
     this.redisInstance = redisInstance;
     this.queueManager = queueManager;
     this.databaseInstance = databaseInstance;

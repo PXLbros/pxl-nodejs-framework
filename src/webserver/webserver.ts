@@ -1,14 +1,13 @@
 import Fastify, { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import cors from '@fastify/cors';
-import path from 'path';
 import { WebServerConstructorParams, WebServerOptions, WebServerRoute } from './webserver.interface.js';
 import { Logger } from '../logger/index.js';
 import { Helper, Loader, Time } from '../util/index.js';
 import { RedisInstance } from '../redis/index.js';
 import { DatabaseInstance } from '../database/index.js';
-import { BaseControllerType } from './controller/base.interface.js';
+import { WebServerBaseControllerType } from './controller/base.interface.js';
 import { QueueManager } from '../queue/index.js';
-import { HealthController, baseDir } from '../index.js';
+import { WebServerHealthController } from '../index.js';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -152,13 +151,14 @@ class WebServer {
     this.routes.push({
       method: 'GET',
       path: '/health',
-      controller: HealthController,
+      controller: WebServerHealthController,
       action: 'health',
     });
 
     // Go through each route
     for (const route of this.routes) {
-      let ControllerClass: BaseControllerType;
+      let ControllerClass: WebServerBaseControllerType;
+
       if (route.controller) {
         ControllerClass = route.controller;
       } else if (route.controllerName) {
@@ -228,8 +228,6 @@ class WebServer {
   public async stop(): Promise<void> {
     // Close Fastify server
     await this.fastifyServer.close();
-
-    // Implement any additional logic here
   }
 }
 

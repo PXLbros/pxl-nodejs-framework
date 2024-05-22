@@ -2,7 +2,7 @@ import { HTTPMethods } from 'fastify';
 import { DatabaseInstance } from '../database/index.js';
 import { QueueManager } from '../queue/index.js';
 import { RedisInstance } from '../redis/index.js';
-import { BaseControllerType } from './controller/base.interface.js';
+import { WebServerBaseControllerType } from './controller/base.interface.js';
 
 export interface WebServerConstructorParams {
   options: WebServerOptions;
@@ -17,7 +17,7 @@ export interface WebServerRoute {
   path: string;
   method: HTTPMethods | HTTPMethods[];
   controllerName?: string;
-  controller?: BaseControllerType;
+  controller?: WebServerBaseControllerType;
   action: string;
   validation?: {
     type: 'body' | 'query' | 'params';

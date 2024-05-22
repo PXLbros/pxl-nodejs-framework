@@ -2,15 +2,18 @@ import { WebSocket } from 'ws';
 import DatabaseInstance from '../database/instance.js';
 import QueueManager from '../queue/manager.js';
 import RedisInstance from '../redis/instance.js';
+import { WebSocketBaseControllerType } from './controller/base.interface.js';
 
 export interface WebSocketOptions {
   host: string;
   port: number;
+  controllersDirectory: string;
 }
 
 export interface WebSocketRoute {
   type: string;
   controllerName: string;
+  controller?: WebSocketBaseControllerType;
   action: string;
 }
 
