@@ -1,4 +1,5 @@
 import { ClusterManagerConfig } from '../cluster/cluster-manager.interface.js';
+import { QueueItem } from '../queue/index.interface.js';
 import { QueueJob } from '../queue/job.interface.js';
 import { QueueManagerOptions } from '../queue/manager.interface.js';
 import { WebServerRoute } from '../webserver/webserver.interface.js';
@@ -76,14 +77,20 @@ export interface ApplicationWebServerConfig {
 
   /** Web server routes */
   routes: WebServerRoute[];
+
+  /** Web server CORS URLs */
+  corsUrls: string[];
 }
 
 export interface ApplicationQueueConfig {
+  /** Initial queues */
+  queues: QueueItem[];
+
   /** Queue processors directory */
   processorsDirectory: string;
 
-  /** Queue jobs */
-  jobs: QueueJob[];
+  // /** Queue jobs */
+  // jobs: QueueJob[];
 }
 
 export interface ApplicationConfig {

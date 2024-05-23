@@ -1,3 +1,6 @@
+/**
+ * Deep merge two objects.
+ */
 function defaultsDeep(target: any, ...sources: any[]): any {
   if (!sources.length) return target;
   const source = sources.shift();
@@ -28,6 +31,9 @@ function defaultsDeep(target: any, ...sources: any[]): any {
   return defaultsDeep(target, ...sources);
 }
 
+/**
+ * Check if a value is an object.
+ */
 function isObject(item: any): boolean {
   return (item && typeof item === 'object' && !Array.isArray(item));
 }

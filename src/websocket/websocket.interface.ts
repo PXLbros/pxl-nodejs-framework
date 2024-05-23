@@ -30,3 +30,7 @@ export interface WebSocketConnectedClientData {
   lastActivity: number;
   userName?: string;
 }
+
+export interface WebSocketMessageHandler {
+  (ws: WebSocket, clientId: string, data: any): void;
+}

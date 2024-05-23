@@ -1,3 +1,4 @@
+import { QueueItem } from './index.interface.js';
 import { QueueJob } from './job.interface.js';
 
 export interface QueueManagerOptions {
@@ -7,7 +8,7 @@ export interface QueueManagerOptions {
 
 export interface QueueManagerConstructorParams {
   options?: QueueManagerOptions;
-  jobs: QueueJob[];
+  queues: QueueItem[];
   redisInstance: any;
   databaseInstance: any;
 }

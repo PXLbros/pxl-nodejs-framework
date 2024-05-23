@@ -5,12 +5,13 @@ import { Helper, Loader } from '../util/index.js';
 import { DatabaseInstance } from '../database/index.js';
 import { QueueManager } from '../queue/index.js';
 import { RedisInstance } from '../redis/index.js';
-import { WebSocketConnectedClientData, WebSocketConstructorParams, WebSocketOptions, WebSocketRoute } from './websocket.interface.js';
+import { WebSocketConnectedClientData, WebSocketConstructorParams, WebSocketMessageHandler, WebSocketOptions, WebSocketRoute } from './websocket.interface.js';
 import { Logger } from '../logger/index.js';
 import { WebSocketBaseControllerType } from './controller/base.interface.js';
+import { WebSocketBaseController } from './index.js';
 
 /** Redis subscriber event */
-enum redisSubscriberEvent {
+enum RedisSubscriberEvent {
   ClientConnected = 'clientConnected',
   ClientDisconnected = 'clientDisconnected',
   ClientJoined = 'clientJoined',
@@ -37,16 +38,19 @@ export default class {
   /** WebSocket routes */
   private routes: WebSocketRoute[] = [];
 
+  /** WebSocket route handlers */
+  private routeHandlers: Map<string, WebSocketMessageHandler> = new Map();
+
   /** Connected clients */
   private connectedClients: Map<string, WebSocketConnectedClientData> = new Map();
 
   /** Redis subscriber events */
   private redisSubscriberEvents: string[] = [
-    redisSubscriberEvent.ClientConnected,
-    redisSubscriberEvent.ClientDisconnected,
-    redisSubscriberEvent.ClientJoined,
-    redisSubscriberEvent.SendMessageToAll,
-    redisSubscriberEvent.MessageError,
+    RedisSubscriberEvent.ClientConnected,
+    RedisSubscriberEvent.ClientDisconnected,
+    RedisSubscriberEvent.ClientJoined,
+    RedisSubscriberEvent.SendMessageToAll,
+    RedisSubscriberEvent.MessageError,
   ];
 
   /** Worker ID */
@@ -96,43 +100,14 @@ export default class {
    * Configure WebSocket routes.
    */
   private async configureRoutes(): Promise<void> {
-    // const controllers = await loadControllers({ dir: path.join(__dirname, '../controllers/websocket') });
-
-    // for (const route of this.options.routes) {
-    //   const ControllerClass: ControllerType = controllers[route.controller];
-
-    //   // Initialize controller instance
-    //   const controllerInstance = new ControllerClass(
-    //     this,
-    //     this.redisInstance,
-    //     this.queueManager,
-    //     this.databaseInstance,
-    //   );
-
-    //   // Get controller action handler
-    //   const controllerHandler = controllerInstance[
-    //     route.action as keyof typeof controllerInstance
-    //   ] as WebSocketMessageHandler;
-
-    //   // Get route key
-    //   const routeKey = this.getRouteKey({ type: route.type, action: route.action });
-
-    //   // Register route handler
-    //   this.routeHandlers.set(routeKey, controllerHandler);
-    // }
-
     // Load controllers
     const controllers = await Loader.loadModulesInDirectory({
       directory: this.options.controllersDirectory,
       extensions: ['.ts'],
     });
 
-    console.log('controllers', controllers);
-
     // Go through each route
     for (const route of this.routes) {
-      console.log('route', route);
-
       let ControllerClass: WebSocketBaseControllerType;
 
       if (route.controller) {
@@ -159,7 +134,25 @@ export default class {
         queueManager: this.queueManager,
         databaseInstance: this.databaseInstance,
       });
+
+      // Get controller action handler
+      const controllerHandler = controllerInstance[
+        route.action as keyof typeof controllerInstance
+      ] as WebSocketMessageHandler;
+
+      // Get route key
+      const routeKey = this.getRouteKey({ type: route.type, action: route.action });
+
+      // Register route handler
+      this.routeHandlers.set(routeKey, controllerHandler);
     }
+  }
+
+  /**
+   * Get route key.
+   */
+  private getRouteKey({ type, action }: { type: string; action: string }): string {
+    return `${type}:${action}`;
   }
 
   /**
@@ -167,6 +160,13 @@ export default class {
    */
   private generateClientId(): string {
     return uuidv4();
+  }
+
+  /**
+   * Get client ID.
+   */
+  private getClientId({ client }: { client: WebSocket }): string | undefined {
+    return [...this.connectedClients.entries()].find(([_, value]) => value.ws === client)?.[0];
   }
 
   /**
@@ -187,7 +187,7 @@ export default class {
     this.setConnectedClient({ clientId, ws, lastActivity });
 
     this.redisInstance.publisherClient.publish(
-      'clientConnected',
+      RedisSubscriberEvent.ClientConnected,
       JSON.stringify({ clientId, lastActivity, workerId: this.workerId }),
     );
   }
@@ -284,7 +284,7 @@ export default class {
    */
   private handleServerClientDisconnection = (clientId: string): void => {
     this.redisInstance.publisherClient.publish(
-      'clientDisconnected',
+      RedisSubscriberEvent.ClientDisconnected,
       JSON.stringify({ clientId, workerId: this.workerId, runSameWorker: true }),
     );
 
@@ -294,12 +294,69 @@ export default class {
   };
 
   /**
+   * Parse WebSocket server message.
+   */
+  private parseServerMessage({ message }: { message: RawData }): { parsedMessage: Record<string, unknown>; messageHandler: WebSocketMessageHandler } {
+    let parsedMessage;
+
+    try {
+      // Convert message to JSON
+      parsedMessage = JSON.parse(message.toString());
+    } catch (error) {
+      throw new Error('Failed to parse JSON');
+    }
+
+    if (!parsedMessage) {
+      throw new Error('Invalid WebSocket message');
+    } else if (!parsedMessage.type) {
+      throw new Error('Missing WebSocket message type');
+    } else if (!parsedMessage.action) {
+      throw new Error('Missing WebSocket message action');
+    }
+
+    // Get route key
+    const routeKey = this.getRouteKey({ type: parsedMessage.type, action: parsedMessage.action });
+
+    console.log('routeKey', routeKey);
+
+
+    // Get message handler
+    const messageHandler = this.routeHandlers.get(routeKey);
+
+    if (!messageHandler) {
+      throw new Error('Route handler not found');
+    }
+
+    return { parsedMessage, messageHandler };
+  }
+
+  /**
    * Handle WebSocket server message.
    */
   private handleServerMessage = async ({ ws, message }: { ws: WebSocket; message: RawData }): Promise<void> => {
-    Logger.debug('Incoming WebSocket server message', {
-      Message: message.toString(),
-    });
+    const clientId = this.getClientId({ client: ws });
+
+    if (!clientId) {
+      Logger.warn('Client ID not found when handling WebSocket server message');
+
+      return;
+    }
+
+    try {
+      // Parse message
+      const { parsedMessage, messageHandler } = this.parseServerMessage({ message });
+
+      // Handle message (i.e. calling the controller method)
+      const messageResponse = await messageHandler(ws, clientId, parsedMessage.data);
+
+      console.log('messageResponse', messageResponse);
+
+      Logger.debug('Incoming WebSocket server message', {
+        Message: message.toString(),
+      });
+    } catch (error) {
+      Logger.error(error);
+    }
   };
 
   /**
@@ -317,7 +374,7 @@ export default class {
     }
 
     switch (channel) {
-      case redisSubscriberEvent.ClientConnected: {
+      case RedisSubscriberEvent.ClientConnected: {
         this.setConnectedClient({
           clientId: parsedMessage.clientId,
           ws: null,
@@ -326,18 +383,18 @@ export default class {
 
         break;
       }
-      case redisSubscriberEvent.ClientDisconnected: {
+      case RedisSubscriberEvent.ClientDisconnected: {
         this.setDisconnectedClient({ clientId: parsedMessage.clientId });
 
         break;
       }
-      case redisSubscriberEvent.ClientJoined: {
+      case RedisSubscriberEvent.ClientJoined: {
         break;
       }
-      case redisSubscriberEvent.SendMessageToAll: {
+      case RedisSubscriberEvent.SendMessageToAll: {
         break;
       }
-      case redisSubscriberEvent.MessageError: {
+      case RedisSubscriberEvent.MessageError: {
         break;
       }
       default: {
@@ -347,5 +404,32 @@ export default class {
         });
       }
     }
+  };
+
+  /**
+   * Set client as joined.
+   */
+  public setClientJoined({ ws, userName }: { ws: WebSocket; userName: string }): void {
+    const clientId = this.getClientId({ client: ws });
+
+    if (!clientId) {
+      Logger.warn('Client ID not found when setting client joined');
+
+      return;
+    }
+
+    this.redisInstance.publisherClient.publish(
+      RedisSubscriberEvent.ClientJoined,
+      JSON.stringify({ clientId, allowSameWorker: true, userName, workerId: this.workerId }),
+    );
+  }
+
+  /**
+   * Send client message.
+   */
+  public sendClientMessage = (ws: WebSocket, data: unknown, binary: boolean = false): void => {
+    const webSocketMessage = JSON.stringify(data);
+
+    ws.send(webSocketMessage, { binary });
   };
 }

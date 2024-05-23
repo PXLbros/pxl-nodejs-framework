@@ -1,4 +1,7 @@
 export interface QueueJob {
-  name: string;
-  concurrency: number;
+  /** Job ID */
+  id: string;
+
+  /** The maximum number of concurrent jobs in queue */
+  maxConcurrency?: number;
 }

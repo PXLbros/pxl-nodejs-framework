@@ -1,3 +1,6 @@
+/**
+ * Calculate elapsed time in milliseconds.
+ */
 const calculateElapsedTime = ({ startTime }: { startTime: [number, number] }): number => {
   const endTime = process.hrtime(startTime);
   const elapsedTime = (endTime[0] * 1e9 + endTime[1]) / 1e6;
@@ -5,6 +8,9 @@ const calculateElapsedTime = ({ startTime }: { startTime: [number, number] }): n
   return elapsedTime;
 };
 
+/**
+ * Format time in milliseconds or seconds.
+ */
 const formatTime = ({
   time,
   format = 'ms',

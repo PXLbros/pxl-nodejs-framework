@@ -8,6 +8,7 @@ import QueueWorker from './worker.js';
 import BaseProcessor from './processor/base.js';
 import { Helper, Loader } from '../util/index.js';
 import { QueueJob } from './job.interface.js';
+import { QueueItem } from './index.interface.js';
 
 export default class QueueManager {
   private options: QueueManagerOptions;
@@ -19,7 +20,7 @@ export default class QueueManager {
 
   private jobProcessors: Map<string, BaseProcessor> = new Map();
 
-  constructor({ options, jobs, redisInstance, databaseInstance }: QueueManagerConstructorParams) {
+  constructor({ options, queues, redisInstance, databaseInstance }: QueueManagerConstructorParams) {
     // Define default options
     const defaultOptions: Partial<QueueManagerOptions> = {};
 
@@ -30,25 +31,48 @@ export default class QueueManager {
     this.databaseInstance = databaseInstance;
 
     // Register jobs
-    this.registerJobs(jobs);
+    this.registerQueues({ queues });
   }
 
-  private async registerJobs(jobProcessors: Array<QueueJob>): Promise<void> {
+  private async registerQueues({ queues }: { queues: QueueItem[] }): Promise<void> {
+    if (!queues) {
+      return;
+    }
+
     const jobProcessorClasses = await Loader.loadModulesInDirectory({
       directory: this.options.processorsDirectory,
       extensions: ['.ts'],
     });
 
-    for (const { name } of jobProcessors) {
-      const ProcessorClass = jobProcessorClasses[name];
+    for (const queue of queues) {
+      this.registerQueue({ queue, jobProcessorClasses });
+    }
+
+    Logger.debug('Queues registered', {
+      Count: queues.length,
+    });
+  }
+
+  private registerQueue({ queue, jobProcessorClasses }: { queue: QueueItem; jobProcessorClasses: any }): void {
+    if (!queue.jobs) {
+      return;
+    }
+
+    // Create queue
+    this.createQueue({ name: queue.name });
+
+    for (const job of queue.jobs) {
+      const ProcessorClass = jobProcessorClasses[job.id];
 
       if (!ProcessorClass) {
-        throw new Error(`Processor class "${name}" not found`);
+        throw new Error(`Processor class "${job.id}" not found`);
       }
 
       const processorInstance = new ProcessorClass(this, this.databaseInstance);
 
-      this.jobProcessors.set(name, processorInstance);
+      this.jobProcessors.set(job.id, processorInstance);
+
+      Logger.debug('Queue job registered', { ID: job.id });
     }
   }
 
@@ -106,15 +130,15 @@ export default class QueueManager {
     Logger.debug('Queue removed', { Queue: job.queueName, Job: job.id });
   };
 
-  public addJobToQueue = async ({ queueName, jobName, data }: { queueName: string; jobName: string; data: any }) => {
-    const queue = this.queues.get(queueName);
+  public addJobToQueue = async ({ queueId, jobId, data }: { queueId: string; jobId: string; data: any }) => {
+    const queue = this.queues.get(queueId);
 
     if (!queue) {
-      Logger.warn('Queue not found', { Queue: queueName });
+      Logger.warn('Queue not found', { 'Queue ID': queueId });
       return;
     }
 
-    const job = await queue.add(jobName, data);
+    const job = await queue.add(jobId, data);
 
     const dataStr = JSON.stringify(data);
 
@@ -122,7 +146,7 @@ export default class QueueManager {
     const truncatedLogDataStr =
       dataStr.length > maxLogDataStrLength ? `${dataStr.substring(0, maxLogDataStrLength)}...` : dataStr;
 
-    Logger.info('Job added', { Queue: queueName, Job: jobName, Data: truncatedLogDataStr });
+    Logger.info('Job added', { Queue: queueId, 'Job ID': jobId, Data: truncatedLogDataStr });
 
     return job;
   };

@@ -171,12 +171,14 @@ export default class Application {
       options: {
         processorsDirectory: this.config.queue.processorsDirectory,
       },
-      jobs: this.config.queue.jobs,
+      queues: this.config.queue.queues,
+      // jobs: this.config.queue.jobs,
       redisInstance,
       databaseInstance,
     });
 
     // Create queue
+    // TODO: Pass initial queues to create from config instead
     queueManager.createQueue({ name: 'default' });
 
     return { redisInstance, databaseInstance, queueManager };
@@ -248,6 +250,7 @@ export default class Application {
           host: this.config.webServer.host,
           port: this.config.webServer.port,
           controllersDirectory: this.config.webServer.controllersDirectory,
+          corsUrls: this.config.webServer.corsUrls,
         },
 
         routes: this.config.webServer.routes,

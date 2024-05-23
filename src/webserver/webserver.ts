@@ -1,5 +1,6 @@
 import Fastify, { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import cors from '@fastify/cors';
+import multipart from '@fastify/multipart';
 import { WebServerConstructorParams, WebServerOptions, WebServerRoute } from './webserver.interface.js';
 import { Logger } from '../logger/index.js';
 import { Helper, Loader, Time } from '../util/index.js';
@@ -58,6 +59,9 @@ class WebServer {
 
     // Configure CORS
     this.configureCORS();
+
+    // Configure multipart uploads
+    this.configureMultipartUploads();
 
     // Configure routes
     await this.configureRoutes();
@@ -129,9 +133,22 @@ class WebServer {
     Logger.debug('Web server stopped');
   }
 
-  private async configureCORS(): Promise<void> {
-    await this.fastifyServer.register(cors, {
+  private configureCORS(): void {
+    this.fastifyServer.register(cors, {
       origin: this.options.corsUrls,
+    });
+  }
+
+  private configureMultipartUploads(): void {
+    this.fastifyServer.register(multipart, {
+      limits: {
+        fieldNameSize: 100,
+        fieldSize: 1024 * 1024 * 10,
+        fields: 10,
+        fileSize: 1024 * 1024 * 100,
+        files: 1,
+        headerPairs: 2000,
+      },
     });
   }
 
