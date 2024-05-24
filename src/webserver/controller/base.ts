@@ -5,14 +5,19 @@ import { RedisInstance } from '../../redis/index.js';
 import { QueueManager } from '../../queue/index.js';
 import { WebServerBaseControllerConstructorParams } from './base.interface.js';
 import { Logger } from '../../logger/index.js';
+import { ApplicationConfig } from '../../application/application.interface.js';
 // import { env } from '../../env';
 
 export default abstract class {
+  protected applicationConfig: ApplicationConfig;
+
   protected redisInstance: RedisInstance;
   protected queueManager: QueueManager;
   protected databaseInstance: DatabaseInstance;
 
-  constructor({ redisInstance, queueManager, databaseInstance }: WebServerBaseControllerConstructorParams) {
+  constructor({ applicationConfig, redisInstance, queueManager, databaseInstance }: WebServerBaseControllerConstructorParams) {
+    this.applicationConfig = applicationConfig;
+
     this.redisInstance = redisInstance;
     this.queueManager = queueManager;
     this.databaseInstance = databaseInstance;

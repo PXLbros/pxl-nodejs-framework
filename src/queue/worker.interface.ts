@@ -3,7 +3,7 @@ import { RedisInstance } from '../redis/index.js';
 
 export interface QueueWorkerConstructorParams {
   name: string;
-  processor: string | URL | Processor<any, Processor<any, any, string>, string> | null | undefined;
+  processor: string | URL | Processor<any, any, string> | null | undefined;
   options?: WorkerOptions;
   redisInstance: RedisInstance;
 }

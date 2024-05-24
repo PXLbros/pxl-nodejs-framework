@@ -5,19 +5,16 @@ import { Helper, Loader } from '../util/index.js';
 import { DatabaseInstance } from '../database/index.js';
 import { QueueManager } from '../queue/index.js';
 import { RedisInstance } from '../redis/index.js';
-import { WebSocketConnectedClientData, WebSocketConstructorParams, WebSocketMessageHandler, WebSocketOptions, WebSocketRoute } from './websocket.interface.js';
+import {
+  WebSocketConnectedClientData,
+  WebSocketConstructorParams,
+  WebSocketMessageHandler,
+  WebSocketOptions,
+  WebSocketRedisSubscriberEvent,
+  WebSocketRoute,
+} from './websocket.interface.js';
 import { Logger } from '../logger/index.js';
 import { WebSocketBaseControllerType } from './controller/base.interface.js';
-import { WebSocketBaseController } from './index.js';
-
-/** Redis subscriber event */
-enum RedisSubscriberEvent {
-  ClientConnected = 'clientConnected',
-  ClientDisconnected = 'clientDisconnected',
-  ClientJoined = 'clientJoined',
-  SendMessageToAll = 'sendMessageToAll',
-  MessageError = 'messageError',
-}
 
 export default class {
   /** WebSocket options */
@@ -46,11 +43,11 @@ export default class {
 
   /** Redis subscriber events */
   private redisSubscriberEvents: string[] = [
-    RedisSubscriberEvent.ClientConnected,
-    RedisSubscriberEvent.ClientDisconnected,
-    RedisSubscriberEvent.ClientJoined,
-    RedisSubscriberEvent.SendMessageToAll,
-    RedisSubscriberEvent.MessageError,
+    WebSocketRedisSubscriberEvent.ClientConnected,
+    WebSocketRedisSubscriberEvent.ClientDisconnected,
+    WebSocketRedisSubscriberEvent.ClientJoined,
+    WebSocketRedisSubscriberEvent.SendMessageToAll,
+    WebSocketRedisSubscriberEvent.MessageError,
   ];
 
   /** Worker ID */
@@ -180,14 +177,14 @@ export default class {
 
   /**
    * Add connected client.
-  */
+   */
   private addConnectedClient({ clientId, ws }: { clientId: string; ws: WebSocket }): void {
     const lastActivity = Date.now();
 
     this.setConnectedClient({ clientId, ws, lastActivity });
 
     this.redisInstance.publisherClient.publish(
-      RedisSubscriberEvent.ClientConnected,
+      WebSocketRedisSubscriberEvent.ClientConnected,
       JSON.stringify({ clientId, lastActivity, workerId: this.workerId }),
     );
   }
@@ -225,14 +222,17 @@ export default class {
    */
   public async startServer(): Promise<void> {
     return new Promise((resolve) => {
-      this.server = new WebSocketServer({
-        host: this.options.host,
-        port: this.options.port,
-      }, () => {
-        this.handleServerStart();
+      this.server = new WebSocketServer(
+        {
+          host: this.options.host,
+          port: this.options.port,
+        },
+        () => {
+          this.handleServerStart();
 
-        resolve();
-      });
+          resolve();
+        },
+      );
 
       this.server.on('error', this.handleServerError);
       this.server.on('connection', this.handleServerClientConnection);
@@ -266,7 +266,7 @@ export default class {
 
     ws.on('message', (message) => {
       try {
-        this.handleServerMessage({ ws, message })
+        this.handleServerMessage({ ws, message });
       } catch (error) {
         console.log('HANDLE MESSAGE ERROR');
       }
@@ -284,7 +284,7 @@ export default class {
    */
   private handleServerClientDisconnection = (clientId: string): void => {
     this.redisInstance.publisherClient.publish(
-      RedisSubscriberEvent.ClientDisconnected,
+      WebSocketRedisSubscriberEvent.ClientDisconnected,
       JSON.stringify({ clientId, workerId: this.workerId, runSameWorker: true }),
     );
 
@@ -296,7 +296,10 @@ export default class {
   /**
    * Parse WebSocket server message.
    */
-  private parseServerMessage({ message }: { message: RawData }): { parsedMessage: Record<string, unknown>; messageHandler: WebSocketMessageHandler } {
+  private parseServerMessage({ message }: { message: RawData }): {
+    parsedMessage: Record<string, unknown>;
+    messageHandler: WebSocketMessageHandler;
+  } {
     let parsedMessage;
 
     try {
@@ -318,7 +321,6 @@ export default class {
     const routeKey = this.getRouteKey({ type: parsedMessage.type, action: parsedMessage.action });
 
     console.log('routeKey', routeKey);
-
 
     // Get message handler
     const messageHandler = this.routeHandlers.get(routeKey);
@@ -374,7 +376,7 @@ export default class {
     }
 
     switch (channel) {
-      case RedisSubscriberEvent.ClientConnected: {
+      case WebSocketRedisSubscriberEvent.ClientConnected: {
         this.setConnectedClient({
           clientId: parsedMessage.clientId,
           ws: null,
@@ -383,18 +385,26 @@ export default class {
 
         break;
       }
-      case RedisSubscriberEvent.ClientDisconnected: {
+      case WebSocketRedisSubscriberEvent.ClientDisconnected: {
         this.setDisconnectedClient({ clientId: parsedMessage.clientId });
 
         break;
       }
-      case RedisSubscriberEvent.ClientJoined: {
+      case WebSocketRedisSubscriberEvent.ClientJoined: {
         break;
       }
-      case RedisSubscriberEvent.SendMessageToAll: {
+      case WebSocketRedisSubscriberEvent.SendMessageToAll: {
         break;
       }
-      case RedisSubscriberEvent.MessageError: {
+      case WebSocketRedisSubscriberEvent.MessageError: {
+        break;
+      }
+      case WebSocketRedisSubscriberEvent.QueueJobCompleted: {
+        console.log('QUEUE JOB COMPLETED!');
+
+        break;
+      }
+      case WebSocketRedisSubscriberEvent.QueueJobError: {
         break;
       }
       default: {
@@ -419,7 +429,7 @@ export default class {
     }
 
     this.redisInstance.publisherClient.publish(
-      RedisSubscriberEvent.ClientJoined,
+      WebSocketRedisSubscriberEvent.ClientJoined,
       JSON.stringify({ clientId, allowSameWorker: true, userName, workerId: this.workerId }),
     );
   }

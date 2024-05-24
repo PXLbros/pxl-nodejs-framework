@@ -10,6 +10,9 @@ import WebServer from '../webserver/webserver.js';
 import QueueManager from '../queue/manager.js';
 import { Time } from '../util/index.js';
 import WebSocket from '../websocket/websocket.js';
+import { baseDir } from '../index.js';
+import path from 'path';
+import { existsSync } from 'fs';
 
 /**
  * Application
@@ -83,6 +86,16 @@ export default class Application {
       password: this.config.redis.password,
     });
 
+    const defaultEntitiesDirectory = path.join(this.config.rootDirectory, 'src', 'database', 'entities');
+
+    if (!this.config.database.entitiesDirectory) {
+      this.config.database.entitiesDirectory = defaultEntitiesDirectory;
+    }
+
+    if (!existsSync(this.config.database.entitiesDirectory)) {
+      throw new Error(`Database entities directory not found (Path: ${this.config.database.entitiesDirectory})`);
+    }
+
     // Initialize Database manager
     this.databaseManager = new DatabaseManager({
       host: this.config.database.host,
@@ -90,6 +103,7 @@ export default class Application {
       username: this.config.database.username,
       password: this.config.database.password,
       databaseName: this.config.database.databaseName,
+      entitiesDirectory: this.config.database.entitiesDirectory,
     });
   }
 
@@ -245,6 +259,8 @@ export default class Application {
     if (this.config.webServer?.enabled) {
       // Initialize web server
       this.webServer = new WebServer({
+        applicationConfig: this.config,
+
         // config: this.config.webServer,
         options: {
           host: this.config.webServer.host,

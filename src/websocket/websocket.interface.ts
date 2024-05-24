@@ -34,3 +34,13 @@ export interface WebSocketConnectedClientData {
 export interface WebSocketMessageHandler {
   (ws: WebSocket, clientId: string, data: any): void;
 }
+
+export enum WebSocketRedisSubscriberEvent {
+  ClientConnected = 'clientConnected',
+  ClientDisconnected = 'clientDisconnected',
+  ClientJoined = 'clientJoined',
+  SendMessageToAll = 'sendMessageToAll',
+  MessageError = 'messageError',
+  QueueJobCompleted = 'queueJobCompleted',
+  QueueJobError = 'queueJobError',
+}

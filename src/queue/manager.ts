@@ -151,7 +151,7 @@ export default class QueueManager {
     return job;
   };
 
-  private workerProcessor = async (job: Job): Promise<Processor<any, any, string>> => {
+  private workerProcessor = async (job: Job): Promise<Processor<any, any, string> | undefined> => {
     const startTime = process.hrtime();
 
     // Add start time to job data
@@ -169,9 +169,20 @@ export default class QueueManager {
       throw new Error(`No processor registered for job (Name: ${job.name})`);
     }
 
-    const jobResult = await processor.process({ job });
+    try {
+      const jobResult = await processor.process({ job });
 
-    return jobResult;
+      return jobResult;
+    } catch (error) {
+      Logger.warn('Queue worker processing error', {
+        Queue: job.queueName,
+        'Job Name': job.name,
+        'Job ID': job.id,
+        Error: (error as Error).message,
+      });
+
+      Logger.error(error);
+    }
   };
 
   public async listAllJobsWithStatus(): Promise<any[]> {

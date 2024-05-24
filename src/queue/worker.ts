@@ -2,6 +2,7 @@ import { Job, Worker, Processor } from 'bullmq';
 import { QueueWorkerConstructorParams } from './worker.interface.js';
 import { RedisInstance } from '../redis/index.js';
 import { Logger } from '../logger/index.js';
+import { WebSocketRedisSubscriberEvent } from '../websocket/websocket.interface.js';
 
 export default class QueueWorker extends Worker {
   private redisInstance: RedisInstance;
@@ -53,10 +54,10 @@ export default class QueueWorker extends Worker {
   private onWorkerCompleted = (job: Job): void => {
     const jobData = job.data;
 
-    // if (job.returnvalue && job.returnvalue.webSocketClientId) {
-    //   // Send job completed message to client
-    //   this.redisInstance.publisherClient.publish('queueJobCompleted', JSON.stringify(job.returnvalue));
-    // }
+    if (job.returnvalue && job.returnvalue.webSocketClientId) {
+      // Send job completed message to client
+      this.redisInstance.publisherClient.publish(WebSocketRedisSubscriberEvent.QueueJobCompleted, JSON.stringify(job.returnvalue));
+    }
 
     const startTime = jobData.startTime;
 

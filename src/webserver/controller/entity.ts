@@ -1,3 +1,4 @@
+import path from 'path';
 import { EntityManager } from '@mikro-orm/postgresql';
 import { FastifyReply, FastifyRequest } from 'fastify';
 import { StatusCodes } from 'http-status-codes';
@@ -6,6 +7,7 @@ import { RedisInstance } from '../../redis/index.js';
 import { DatabaseInstance } from '../../database/index.js';
 import { QueueManager } from '../../queue/index.js';
 import { DynamicEntity } from '../../database/dynamic-entity.js';
+import { ApplicationConfig } from '../../application/application.interface.js';
 
 export default abstract class EntityController extends BaseController {
   protected abstract entityName: string;
@@ -13,21 +15,28 @@ export default abstract class EntityController extends BaseController {
   protected entityManager: EntityManager;
 
   constructor({
+    applicationConfig,
     redisInstance,
     queueManager,
     databaseInstance,
   }: {
+    applicationConfig: ApplicationConfig;
     redisInstance: RedisInstance;
     queueManager: QueueManager;
     databaseInstance: DatabaseInstance;
   }) {
-    super({ redisInstance, queueManager, databaseInstance });
+    super({ applicationConfig, redisInstance, queueManager, databaseInstance });
 
     this.entityManager = databaseInstance.getEntityManager();
   }
 
   protected getEntity = async (): Promise<typeof DynamicEntity | undefined> => {
-    const module = await import(`../../../database/entities/${this.entityName}`);
+    const modulePath = path.join(this.applicationConfig.database.entitiesDirectory, `${this.entityName}.js`);
+
+    console.log('modulePath', modulePath);
+
+    // TODO: Need to get from the application's directory, not relative to this library's file
+    const module = await import(modulePath);
 
     const EntityClass = module[this.entityName];
 
@@ -103,9 +112,15 @@ export default abstract class EntityController extends BaseController {
 
       const id = request.params.id;
 
+      console.log('this.entityName', this.entityName);
+
+      // TODO: The problem here might be that we don't have the entities defined in this library, but in an application using this library
+
       // const item = await this.entityManager.findOne(this.entityName, { id });
       // @ts-ignore
       const item = await this.entityManager.findOne(this.entityName, { id }, { populate: withList });
+
+      console.log('item', item);
 
       if (!item) {
         return this.sendNotFoundResponse(reply, `${EntityClass.singularNameCapitalized} not found`);

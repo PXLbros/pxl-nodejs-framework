@@ -43,6 +43,9 @@ export interface ApplicationDatabaseConfig {
 
   /** Database name */
   databaseName: string;
+
+  /** Entities directory */
+  entitiesDirectory: string;
 }
 
 export interface ApplicationWebSocketConfig {
@@ -96,6 +99,9 @@ export interface ApplicationQueueConfig {
 export interface ApplicationConfig {
   /** Application name */
   name: string;
+
+  /** Root directory */
+  rootDirectory: string;
 
   /** Cluster configuration */
   cluster?: ClusterManagerConfig;

@@ -3,8 +3,11 @@ import { DatabaseInstance } from '../database/index.js';
 import { QueueManager } from '../queue/index.js';
 import { RedisInstance } from '../redis/index.js';
 import { WebServerBaseControllerType } from './controller/base.interface.js';
+import { ApplicationConfig } from '../application/application.interface.js';
 
 export interface WebServerConstructorParams {
+  applicationConfig: ApplicationConfig;
+
   options: WebServerOptions;
   routes: WebServerRoute[];
 

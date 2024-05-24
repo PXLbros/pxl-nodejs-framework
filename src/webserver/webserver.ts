@@ -9,6 +9,7 @@ import { DatabaseInstance } from '../database/index.js';
 import { WebServerBaseControllerType } from './controller/base.interface.js';
 import { QueueManager } from '../queue/index.js';
 import { WebServerHealthController } from '../index.js';
+import { ApplicationConfig } from '../application/application.interface.js';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -17,6 +18,8 @@ declare module 'fastify' {
 }
 
 class WebServer {
+  private applicationConfig: ApplicationConfig;
+
   private options: WebServerOptions;
   private routes: WebServerRoute[];
 
@@ -36,6 +39,8 @@ class WebServer {
 
     // Merge default options
     const mergedOptions = Helper.defaultsDeep(params.options, defaultOptions);
+
+    this.applicationConfig = params.applicationConfig;
 
     this.options = mergedOptions;
     this.routes = params.routes;
@@ -195,6 +200,7 @@ class WebServer {
 
       // Initialize controller instance
       const controllerInstance = new ControllerClass({
+        applicationConfig: this.applicationConfig,
         redisInstance: this.redisInstance,
         queueManager: this.queueManager,
         databaseInstance: this.databaseInstance,
