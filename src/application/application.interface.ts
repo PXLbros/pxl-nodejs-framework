@@ -3,7 +3,7 @@ import { QueueItem } from '../queue/index.interface.js';
 import { QueueJob } from '../queue/job.interface.js';
 import { QueueManagerOptions } from '../queue/manager.interface.js';
 import { WebServerRoute } from '../webserver/webserver.interface.js';
-import { WebSocketRoute } from '../websocket/websocket.interface.js';
+import { WebSocketOptions, WebSocketRoute } from '../websocket/websocket.interface.js';
 
 export type OnStartedEvent = ({ startupTime }: { startupTime: number }) => void;
 export type OnStoppedEvent = ({ runtime }: { runtime: number }) => void;
@@ -48,18 +48,9 @@ export interface ApplicationDatabaseConfig {
   entitiesDirectory: string;
 }
 
-export interface ApplicationWebSocketConfig {
+export interface ApplicationWebSocketConfig extends WebSocketOptions {
   /** Whether to enable WebSocket */
   enabled: boolean;
-
-  /** WebSocket host */
-  host: string;
-
-  /** WebSocket port */
-  port: number;
-
-  /** WebSocket controllers directory */
-  controllersDirectory: string;
 
   /** WebSocket routes */
   routes: WebSocketRoute[];

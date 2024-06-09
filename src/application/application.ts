@@ -238,11 +238,7 @@ export default class Application {
   private async startHandler({ redisInstance, databaseInstance, queueManager }: { redisInstance: RedisInstance; databaseInstance: DatabaseInstance; queueManager: QueueManager }): Promise<void> {
     if (this.config.webSocket?.enabled) {
       this.webSocket = new WebSocket({
-        options: {
-          host: this.config.webSocket.host,
-          port: this.config.webSocket.port,
-          controllersDirectory: this.config.webSocket.controllersDirectory,
-        },
+        options: this.config.webSocket,
         routes: this.config.webSocket.routes,
         redisInstance,
         databaseInstance,

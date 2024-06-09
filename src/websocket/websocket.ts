@@ -1,7 +1,7 @@
 import cluster from 'cluster';
 import { RawData, WebSocket, WebSocketServer } from 'ws';
 import { v4 as uuidv4 } from 'uuid';
-import { Helper, Loader } from '../util/index.js';
+import { Helper, Loader, Time } from '../util/index.js';
 import { DatabaseInstance } from '../database/index.js';
 import { QueueManager } from '../queue/index.js';
 import { RedisInstance } from '../redis/index.js';
@@ -53,11 +53,20 @@ export default class {
   /** Worker ID */
   private workerId: number = cluster.isWorker && cluster.worker ? cluster.worker.id : 0;
 
+  /** Check connected clients interval */
+  private checkConnectedClientsInterval?: NodeJS.Timeout;
+
   constructor(params: WebSocketConstructorParams) {
     // Define default options
     const defaultOptions: Partial<WebSocketOptions> = {
       host: '0.0.0.0',
       port: 3002,
+      disconnectInactiveClients: {
+        enabled: true,
+        intervalCheckTime: 1000 * 60 * 5,
+        inactiveTime: 1000 * 60 * 10,
+        log: false,
+      },
     };
 
     // Merge default options
@@ -71,10 +80,12 @@ export default class {
 
     this.routes = params.routes;
 
-    // this.checkConnectedClientsInterval = setInterval(
-    //   () => this.checkInactiveClients(),
-    //   this.checkConnectedClientsIntervalTime,
-    // );
+    if (this.options.disconnectInactiveClients?.enabled) {
+      this.checkConnectedClientsInterval = setInterval(
+        () => this.checkInactiveClients(),
+        this.options.disconnectInactiveClients.intervalCheckTime,
+      );
+    }
 
     // Go through each event and subscribe to it
     this.redisSubscriberEvents.forEach((subscriberEventName) => {
@@ -164,6 +175,57 @@ export default class {
    */
   private getClientId({ client }: { client: WebSocket }): string | undefined {
     return [...this.connectedClients.entries()].find(([_, value]) => value.ws === client)?.[0];
+  }
+
+  /**
+   * Check inactive clients.
+   */
+  private checkInactiveClients(): void {
+    // Get current time
+    const now = Date.now();
+
+    this.connectedClients.forEach((clientInfo, clientId) => {
+      if (this.options.disconnectInactiveClients?.enabled && typeof this.options.disconnectInactiveClients.inactiveTime === 'number') {
+        // Calculate how long until the client is inactive
+        const timeUntilInactive = Math.max(0, this.options.disconnectInactiveClients.inactiveTime - (now - clientInfo.lastActivity));
+
+        // Check if the client is inactive
+        const isClientInactive = timeUntilInactive <= 0;
+
+        if (this.options.disconnectInactiveClients.log) {
+          Logger.debug('Checking client activity', {
+            ID: clientId,
+            'Time Until Inactive': Time.formatTime({ time: timeUntilInactive, format: 'auto' }),
+          });
+        }
+
+        if (isClientInactive) {
+          // Disconnect client if inactive
+          this.disconnectClient({ clientId });
+        }
+      }
+    });
+  }
+
+  /**
+   * Disconnect client.
+   */
+  private disconnectClient({ clientId }: { clientId: string }) {
+    const clientInfo = this.connectedClients.get(clientId);
+
+    if (clientInfo?.ws) {
+      // Check how long the client was connected for based on the last activity
+      const connectedTime = Date.now() - clientInfo.lastActivity;
+
+      // Close client WebSocket connection
+      clientInfo.ws.close();
+
+      Logger.info('WebSocket client was disconnected due to inactivity', {
+        ID: clientId,
+        Worker: this.workerId,
+        'Time Connected': Time.formatTime({ time: connectedTime, format: 's' }),
+      });
+    }
   }
 
   /**

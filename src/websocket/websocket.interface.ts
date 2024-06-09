@@ -8,6 +8,12 @@ export interface WebSocketOptions {
   host: string;
   port: number;
   controllersDirectory: string;
+  disconnectInactiveClients?: {
+    enabled?: boolean;
+    intervalCheckTime?: number;
+    inactiveTime?: number;
+    log?: boolean;
+  };
 }
 
 export interface WebSocketRoute {
