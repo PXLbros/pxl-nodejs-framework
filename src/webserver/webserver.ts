@@ -10,6 +10,7 @@ import { WebServerBaseControllerType } from './controller/base.interface.js';
 import { QueueManager } from '../queue/index.js';
 import { WebServerHealthController } from '../index.js';
 import { ApplicationConfig } from '../application/application.interface.js';
+import { existsSync } from 'fs';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -113,13 +114,18 @@ class WebServer {
     const formattedExecutionTime = Time.formatTime({ time: executionTime, numDecimals: 2 });
 
     const ip = request.headers['x-forwarded-for'] || request.ip;
-    const logParams = {
+
+    const logParams: Record<string, unknown> = {
       Method: request.method,
       Path: request.url,
       Status: reply.statusCode,
-      IP: ip,
-      Time: formattedExecutionTime,
     };
+
+    if (process.env.NODE_ENV !== 'local') {
+      logParams.IP = ip.toString();
+    }
+
+    logParams.Time = formattedExecutionTime;
 
     // if (cluster.isWorker && cluster.worker) {
     //   logParams.Worker = cluster.worker.id;
@@ -161,7 +167,14 @@ class WebServer {
    * Configure routes.
    */
   private async configureRoutes(): Promise<void> {
-    // const controllersDirectory = path.join(baseDir, '../../webserver/controllers');
+    // Check if controllers directory exists
+    const controllersDirectoryExists = await existsSync(this.options.controllersDirectory);
+
+    if (!controllersDirectoryExists) {
+      Logger.warn('Web server controllers directory not found', { Directory: this.options.controllersDirectory });
+
+      return;
+    }
 
     // Load controllers
     const controllers = await Loader.loadModulesInDirectory({
@@ -186,13 +199,15 @@ class WebServer {
       } else if (route.controllerName) {
         ControllerClass = controllers[route.controllerName];
       } else {
-        throw new Error('Controller config not found');
+        throw new Error('Web server controller config not found');
       }
 
       if (typeof ControllerClass !== 'function') {
-        Logger.warn('Controller not found', {
-          Controller: route.controller,
-          Directory: this.options.controllersDirectory,
+        const controllerPath = `${this.options.controllersDirectory}/${route.controllerName}.ts`;
+
+        Logger.warn('Web server controller not found', {
+          Controller: route.controllerName,
+          Path: controllerPath,
         });
 
         continue;

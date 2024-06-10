@@ -15,6 +15,7 @@ import {
 } from './websocket.interface.js';
 import { Logger } from '../logger/index.js';
 import { WebSocketBaseControllerType } from './controller/base.interface.js';
+import { existsSync } from 'fs';
 
 export default class {
   /** WebSocket options */
@@ -108,6 +109,15 @@ export default class {
    * Configure WebSocket routes.
    */
   private async configureRoutes(): Promise<void> {
+    // Check if controllers directory exists
+    const controllersDirectoryExists = await existsSync(this.options.controllersDirectory);
+
+    if (!controllersDirectoryExists) {
+      Logger.warn('WebSocket controllers directory not found', { Directory: this.options.controllersDirectory });
+
+      return;
+    }
+
     // Load controllers
     const controllers = await Loader.loadModulesInDirectory({
       directory: this.options.controllersDirectory,
@@ -123,13 +133,15 @@ export default class {
       } else if (route.controllerName) {
         ControllerClass = controllers[route.controllerName];
       } else {
-        throw new Error('Controller config not found');
+        throw new Error('WebSocket controller config not found');
       }
 
       if (typeof ControllerClass !== 'function') {
-        Logger.warn('Controller not found', {
+        const webSocketPath = `${this.options.controllersDirectory}/${route.controllerName}.ts`;
+
+        Logger.warn('WebSocket controller not found', {
           Controller: route.controllerName,
-          Directory: this.options.controllersDirectory,
+          Path: webSocketPath,
         });
 
         continue;

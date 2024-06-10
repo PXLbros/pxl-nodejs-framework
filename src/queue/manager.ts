@@ -9,6 +9,7 @@ import BaseProcessor from './processor/base.js';
 import { Helper, Loader } from '../util/index.js';
 import { QueueJob } from './job.interface.js';
 import { QueueItem } from './index.interface.js';
+import { existsSync } from 'fs';
 
 export default class QueueManager {
   private options: QueueManagerOptions;
@@ -39,18 +40,32 @@ export default class QueueManager {
       return;
     }
 
-    const jobProcessorClasses = await Loader.loadModulesInDirectory({
-      directory: this.options.processorsDirectory,
-      extensions: ['.ts'],
-    });
+    // Check if processors directory exists
+    const processorsDirectoryExists = await existsSync(this.options.processorsDirectory);
 
-    for (const queue of queues) {
-      this.registerQueue({ queue, jobProcessorClasses });
+    if (!processorsDirectoryExists) {
+      Logger.warn('Processors directory not found', { Directory: this.options.processorsDirectory });
+
+      return;
     }
 
-    Logger.debug('Queues registered', {
-      Count: queues.length,
-    });
+    try {
+      const jobProcessorClasses = await Loader.loadModulesInDirectory({
+        directory: this.options.processorsDirectory,
+        extensions: ['.ts'],
+      });
+
+      for (const queue of queues) {
+        this.registerQueue({ queue, jobProcessorClasses });
+      }
+
+      Logger.debug('Queues registered', {
+        'Queue Count': queues.length,
+        'Job Count': this.jobProcessors.size,
+      });
+    } catch (error) {
+      Logger.error(error);
+    }
   }
 
   private registerQueue({ queue, jobProcessorClasses }: { queue: QueueItem; jobProcessorClasses: any }): void {
@@ -65,7 +80,9 @@ export default class QueueManager {
       const ProcessorClass = jobProcessorClasses[job.id];
 
       if (!ProcessorClass) {
-        throw new Error(`Processor class "${job.id}" not found`);
+        const jobPath = path.join(this.options.processorsDirectory, `${job.id}.ts`);
+
+        throw new Error(`Processor class not found (Job ID: ${job.id} | Path: ${jobPath})`);
       }
 
       const processorInstance = new ProcessorClass(this, this.databaseInstance);
