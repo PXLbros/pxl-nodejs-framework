@@ -394,8 +394,6 @@ export default class {
     // Get route key
     const routeKey = this.getRouteKey({ type: parsedMessage.type, action: parsedMessage.action });
 
-    console.log('routeKey', routeKey);
-
     // Get message handler
     const messageHandler = this.routeHandlers.get(routeKey);
 
@@ -424,8 +422,6 @@ export default class {
 
       // Handle message (i.e. calling the controller method)
       const messageResponse = await messageHandler(ws, clientId, parsedMessage.data);
-
-      console.log('messageResponse', messageResponse);
 
       Logger.debug('Incoming WebSocket server message', {
         Message: message.toString(),

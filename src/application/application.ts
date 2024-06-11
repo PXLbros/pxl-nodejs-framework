@@ -263,6 +263,7 @@ export default class Application {
           port: this.config.webServer.port,
           controllersDirectory: this.config.webServer.controllersDirectory,
           corsUrls: this.config.webServer.corsUrls,
+          debug: this.config.webServer.debug,
         },
 
         routes: this.config.webServer.routes,

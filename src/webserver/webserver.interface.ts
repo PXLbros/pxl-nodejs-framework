@@ -51,6 +51,10 @@ export interface WebServerRoute {
   };
 }
 
+export interface WebServerDebugOptions {
+  printRoutes: boolean;
+}
+
 export interface WebServerOptions {
   /** Web server host */
   host: string;
@@ -63,6 +67,9 @@ export interface WebServerOptions {
 
   /** Web server controllers directory */
   controllersDirectory: string;
+
+  /** Web server debug options */
+  debug: WebServerDebugOptions;
 }
 
 // export interface WebServerLogParams {

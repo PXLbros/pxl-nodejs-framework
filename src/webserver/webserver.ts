@@ -1,7 +1,7 @@
 import Fastify, { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
-import { WebServerConstructorParams, WebServerOptions, WebServerRoute } from './webserver.interface.js';
+import { WebServerConstructorParams, WebServerDebugOptions, WebServerOptions, WebServerRoute } from './webserver.interface.js';
 import { Logger } from '../logger/index.js';
 import { Helper, Loader, Time } from '../util/index.js';
 import { RedisInstance } from '../redis/index.js';
@@ -36,6 +36,9 @@ class WebServer {
       host: '0.0.0.0',
       port: 3001,
       corsUrls: [],
+      debug: {
+        printRoutes: false,
+      },
     };
 
     // Merge default options
@@ -111,7 +114,7 @@ class WebServer {
     }
 
     const executionTime = Time.calculateElapsedTime({ startTime: request.startTime });
-    const formattedExecutionTime = Time.formatTime({ time: executionTime, numDecimals: 2 });
+    const formattedExecutionTime = Time.formatTime({ time: executionTime, numDecimals: 3 });
 
     const ip = request.headers['x-forwarded-for'] || request.ip;
 
@@ -208,6 +211,7 @@ class WebServer {
         Logger.warn('Web server controller not found', {
           Controller: route.controllerName,
           Path: controllerPath,
+          Route: `${route.path} (${route.method})`,
         });
 
         continue;
@@ -223,6 +227,15 @@ class WebServer {
 
       // Get controller action handler
       const controllerHandler = controllerInstance[route.action as keyof typeof controllerInstance];
+
+      if (!controllerHandler) {
+        Logger.warn('Web server controller action not found', {
+          Controller: route.controllerName,
+          Action: route.action,
+        });
+
+        continue;
+      }
 
       // Add route
       this.fastifyServer.route({
@@ -243,6 +256,12 @@ class WebServer {
           }
         },
       });
+    }
+
+    if (this.options.debug.printRoutes) {
+      Logger.debug('Web server routes:');
+
+      console.log(this.fastifyServer.printRoutes());
     }
   }
 

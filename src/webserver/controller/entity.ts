@@ -31,14 +31,18 @@ export default abstract class EntityController extends BaseController {
   }
 
   protected getEntity = async (): Promise<typeof DynamicEntity | undefined> => {
-    const modulePath = path.join(this.applicationConfig.database.entitiesDirectory, `${this.entityName}.js`);
+    // Define entity module path
+    const entityModulePath = path.join(this.applicationConfig.database.entitiesDirectory, `${this.entityName}.ts`);
 
-    console.log('modulePath', modulePath);
+    // Import entity module
+    const entityModule = await import(entityModulePath);
 
-    // TODO: Need to get from the application's directory, not relative to this library's file
-    const module = await import(modulePath);
+    if (!entityModule?.[this.entityName]) {
+      throw new Error(`Entity not found (Entity: ${this.entityName})`);
+    }
 
-    const EntityClass = module[this.entityName];
+    // Get entity class
+    const EntityClass = entityModule[this.entityName];
 
     return EntityClass;
   };
@@ -55,6 +59,14 @@ export default abstract class EntityController extends BaseController {
     reply: FastifyReply,
   ) => {
     try {
+      const EntityClass = await this.getEntity();
+
+      if (!EntityClass) {
+        this.sendErrorResponse(reply, 'Entity not found');
+
+        return;
+      }
+
       // Pagination parameters
       const page = parseInt(request.query.page) || 1;
       const limit = parseInt(request.query.limit) || 10;
@@ -112,15 +124,9 @@ export default abstract class EntityController extends BaseController {
 
       const id = request.params.id;
 
-      console.log('this.entityName', this.entityName);
-
-      // TODO: The problem here might be that we don't have the entities defined in this library, but in an application using this library
-
       // const item = await this.entityManager.findOne(this.entityName, { id });
       // @ts-ignore
       const item = await this.entityManager.findOne(this.entityName, { id }, { populate: withList });
-
-      console.log('item', item);
 
       if (!item) {
         return this.sendNotFoundResponse(reply, `${EntityClass.singularNameCapitalized} not found`);
