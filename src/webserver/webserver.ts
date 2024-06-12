@@ -1,9 +1,10 @@
-import Fastify, { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import Fastify, { FastifyInstance, FastifyReply, FastifyRequest, HTTPMethods } from 'fastify';
 import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
-import { WebServerConstructorParams, WebServerDebugOptions, WebServerOptions, WebServerRoute } from './webserver.interface.js';
+import { WebServerConstructorParams, WebServerDebugOptions, WebServerOptions, WebServerRoute, WebServerRouteType } from './webserver.interface.js';
 import { Logger } from '../logger/index.js';
 import { Helper, Loader, Time } from '../util/index.js';
+import WebServerUtil from './util.js';
 import { RedisInstance } from '../redis/index.js';
 import { DatabaseInstance } from '../database/index.js';
 import { WebServerBaseControllerType } from './controller/base.interface.js';
@@ -150,6 +151,10 @@ class WebServer {
   private configureCORS(): void {
     this.fastifyServer.register(cors, {
       origin: this.options.corsUrls,
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
+      preflightContinue: false,
+      optionsSuccessStatus: 204,
     });
   }
 
@@ -187,6 +192,7 @@ class WebServer {
 
     // Add health check route
     this.routes.push({
+      type: WebServerRouteType.Default,
       method: 'GET',
       path: '/health',
       controller: WebServerHealthController,
@@ -197,10 +203,16 @@ class WebServer {
     for (const route of this.routes) {
       let ControllerClass: WebServerBaseControllerType;
 
+      let controllerName;
+
       if (route.controller) {
         ControllerClass = route.controller;
+
+        controllerName = ControllerClass.name;
       } else if (route.controllerName) {
         ControllerClass = controllers[route.controllerName];
+
+        controllerName = route.controllerName;
       } else {
         throw new Error('Web server controller config not found');
       }
@@ -211,7 +223,7 @@ class WebServer {
         Logger.warn('Web server controller not found', {
           Controller: route.controllerName,
           Path: controllerPath,
-          Route: `${route.path} (${route.method})`,
+          Route: `${route.path}`,
         });
 
         continue;
@@ -225,37 +237,59 @@ class WebServer {
         databaseInstance: this.databaseInstance,
       });
 
-      // Get controller action handler
-      const controllerHandler = controllerInstance[route.action as keyof typeof controllerInstance];
+      let routeMethod;
+      let routeAction;
+      let routePath;
 
-      if (!controllerHandler) {
-        Logger.warn('Web server controller action not found', {
-          Controller: route.controllerName,
-          Action: route.action,
-        });
+      switch (route.type) {
+        case WebServerRouteType.Default: {
+          routeMethod = route.method;
+          routeAction = route.action;
+          routePath = route.path;
 
-        continue;
-      }
+          this.defineRoute({
+            controllerInstance,
+            controllerName,
+            routeMethod,
+            routePath,
+            routeAction,
+            routeValidation: route.validation,
+          });
 
-      // Add route
-      this.fastifyServer.route({
-        method: route.method,
-        url: route.path,
-        handler: controllerHandler,
-        preValidation: async (request, reply) => {
-          if (!route.validation) {
-            return;
-          }
+          break;
+        }
+        case WebServerRouteType.Entity: {
+          const entityModel = await Loader.loadEntityModule({ entitiesDirectory: this.applicationConfig.database.entitiesDirectory, entityName: route.entityName });
 
-          const validate = request.compileValidationSchema(route.validation.schema);
+          const entityValidationSchema = entityModel.schema?.describe();
 
-          if (!validate(request[route.validation.type])) {
-            return reply.code(400).send({
-              error: validate.errors,
+          const formattedEntityValidationSchema = entityValidationSchema ? {
+            type: 'object',
+            properties: Object.fromEntries(
+              Object.entries(entityValidationSchema.keys).map(([key, value]) => [key, { type: (value as any).type }])
+            ),
+            required: Object.keys(entityValidationSchema.keys).filter(key => entityValidationSchema.keys[key].flags?.presence === 'required'),
+          } : {};
+
+          const entityRouteDefinitions = WebServerUtil.getEntityRouteDefinitions({
+            basePath: route.path,
+            entityValidationSchema: formattedEntityValidationSchema,
+          });
+
+          for (const entityRouteDefinition of entityRouteDefinitions) {
+            this.defineRoute({
+              controllerInstance,
+              controllerName,
+              routeMethod: entityRouteDefinition.method,
+              routePath: entityRouteDefinition.path,
+              routeAction: entityRouteDefinition.action,
+              routeValidation: entityRouteDefinition.validationSchema,
             });
           }
-        },
-      });
+
+          break;
+        }
+      }
     }
 
     if (this.options.debug.printRoutes) {
@@ -263,6 +297,68 @@ class WebServer {
 
       console.log(this.fastifyServer.printRoutes());
     }
+  }
+
+  public async defineRoute({
+    controllerInstance,
+    controllerName,
+    routeMethod,
+    routePath,
+    routeAction,
+    routeValidation,
+  }: {
+    controllerInstance: any;
+    controllerName: string;
+    routeMethod: HTTPMethods | HTTPMethods[];
+    routePath: string;
+    routeAction: string;
+    routeValidation?: { type: 'body' | 'query' | 'params'; schema: { [key: string]: any } };
+  }): Promise<void> {
+    // Get controller action handler
+    const controllerHandler = controllerInstance[routeAction as keyof typeof controllerInstance];
+
+    if (!controllerHandler) {
+      Logger.warn('Web server controller action not found', {
+        Controller: controllerName,
+        Action: routeAction,
+      });
+
+      throw new Error('Web server controller action not found');
+    }
+
+    // Add route
+    this.fastifyServer.route({
+      method: routeMethod,
+      url: routePath,
+      handler: controllerHandler,
+      preValidation: async (request, reply) => {
+        if (!routeValidation?.schema) {
+          Logger.warn('Web server route validation schema not found', {
+            Controller: controllerName,
+            Action: routeAction,
+          });
+
+          return;
+        }
+
+        console.log('routeValidation.schema', routeValidation.schema);
+
+        // should look like this:
+        // routeValidation.schema {
+        //   type: 'object',
+        //   properties: { email: { type: 'string' }, password: { type: 'string' } },
+        //   required: [ 'email', 'password' ]
+        // }
+
+        const validate = request.compileValidationSchema(routeValidation.schema);
+
+        // if (!validate(request[routeValidation.type])) {
+        //   return reply.code(400).send({
+        //     error: validate.errors,
+        //   });
+        // }
+      },
+    });
   }
 
   /**

@@ -8,6 +8,7 @@ import { DatabaseInstance } from '../../database/index.js';
 import { QueueManager } from '../../queue/index.js';
 import { DynamicEntity } from '../../database/dynamic-entity.js';
 import { ApplicationConfig } from '../../application/application.interface.js';
+import { generateFormFields } from '../../database/dynamic-entity-form-decorators.js';
 
 export default abstract class EntityController extends BaseController {
   protected abstract entityName: string;
@@ -45,6 +46,26 @@ export default abstract class EntityController extends BaseController {
     const EntityClass = entityModule[this.entityName];
 
     return EntityClass;
+  };
+
+  public options = async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const EntityClass = await this.getEntity();
+
+      if (!EntityClass) {
+        this.sendErrorResponse(reply, 'Entity not found');
+
+        return;
+      }
+
+      const formFields = generateFormFields({ model: EntityClass });
+
+      this.sendSuccessResponse(reply, {
+        form_fields: formFields,
+      });
+    } catch (error) {
+      this.sendErrorResponse(reply, error);
+    }
   };
 
   public getMany = async (

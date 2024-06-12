@@ -1,3 +1,4 @@
+import Joi from 'joi';
 import 'reflect-metadata';
 
 export enum FormFieldType {
@@ -14,6 +15,7 @@ export interface FormFieldOptions {
 
 export interface FormFieldOptionsExtended extends FormFieldOptions {
   name: string;
+  validation: Joi.PartialSchemaMap | null;
 }
 
 export const FormField = (options: FormFieldOptions) => {
@@ -29,12 +31,24 @@ export const FormField = (options: FormFieldOptions) => {
 
 export const generateFormFields = ({ model }: { model: any }): FormFieldOptionsExtended[] => {
   const formFields: FormFieldOptionsExtended[] = [];
-  const prototype = model.prototype;
+
+  const { prototype, schema } = model;
 
   for (const propertyKey of Object.getOwnPropertyNames(prototype)) {
     const formFieldType = Reflect.getMetadata('custom:formFieldType', prototype, propertyKey);
     const formFieldLabel = Reflect.getMetadata('custom:formFieldLabel', prototype, propertyKey);
     const formFieldPlaceholder = Reflect.getMetadata('custom:formFieldPlaceholder', prototype, propertyKey);
+
+    let validationRules = null;
+
+    if (schema && schema.describe) {
+      const schemaDescription = schema.describe();
+      const propertySchema = schemaDescription.keys?.[propertyKey];
+
+      if (propertySchema) {
+        validationRules = propertySchema;
+      }
+    }
 
     if (formFieldType && formFieldLabel) {
       formFields.push({
@@ -42,6 +56,7 @@ export const generateFormFields = ({ model }: { model: any }): FormFieldOptionsE
         type: formFieldType,
         label: formFieldLabel,
         placeholder: formFieldPlaceholder,
+        validation: validationRules,
       });
     }
   }

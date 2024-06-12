@@ -2,7 +2,7 @@ import { BaseEntity } from '@mikro-orm/core';
 import { Schema, ValidationResult } from 'joi';
 
 export abstract class DynamicEntity extends BaseEntity {
-  protected static schema: Schema;
+  public static schema: Schema;
 
   public static get singularName(): string {
     return 'Item';
@@ -32,6 +32,7 @@ export abstract class DynamicEntity extends BaseEntity {
     if (!this.schema) {
       throw new Error('Schema not defined in entity.');
     }
+
     return this.schema.validate(item, { abortEarly: false });
   }
 }

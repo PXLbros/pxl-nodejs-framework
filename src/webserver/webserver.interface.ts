@@ -1,5 +1,5 @@
 import { HTTPMethods } from 'fastify';
-import { DatabaseInstance } from '../database/index.js';
+import { DatabaseInstance, DynamicEntity } from '../database/index.js';
 import { QueueManager } from '../queue/index.js';
 import { RedisInstance } from '../redis/index.js';
 import { WebServerBaseControllerType } from './controller/base.interface.js';
@@ -25,21 +25,23 @@ export interface WebServerConstructorParams {
   databaseInstance: DatabaseInstance;
 }
 
-export interface WebServerRoute {
+export enum WebServerRouteType {
+  Default = 'default',
+  Entity = 'entity',
+}
+
+export interface BaseWebServerRoute {
+  /** Route type */
+  type?: WebServerRouteType;
+
   /** Route path */
   path: string;
-
-  /** Route method */
-  method: HTTPMethods | HTTPMethods[];
 
   /** Route controller name */
   controllerName?: string;
 
   /** Route controller */
   controller?: WebServerBaseControllerType;
-
-  /** Route action */
-  action: string;
 
   /** Route validation */
   validation?: {
@@ -49,6 +51,41 @@ export interface WebServerRoute {
     /** Validation schema */
     schema: { [key: string]: any };
   };
+}
+
+export interface DefaultWebServerRoute extends BaseWebServerRoute {
+  type: WebServerRouteType.Default;
+
+  /** Route method */
+  method: HTTPMethods | HTTPMethods[];
+
+  /** Route action */
+  action: string;
+}
+
+export interface EntityWebServerRoute extends BaseWebServerRoute {
+  type: WebServerRouteType.Entity;
+
+  /** Entity name */
+  entityName: string;
+}
+
+export type WebServerRoute = DefaultWebServerRoute | EntityWebServerRoute;
+
+export interface RouteValidationSchema {
+  type: 'body' | 'query' | 'params';
+  schema: {
+    type: 'object';
+    properties: { [key: string]: any };
+    required: string[];
+  };
+}
+
+export interface EntityRouteDefinition {
+  path: string;
+  method: HTTPMethods | HTTPMethods[];
+  action: string;
+  validationSchema?: RouteValidationSchema;
 }
 
 export interface WebServerDebugOptions {

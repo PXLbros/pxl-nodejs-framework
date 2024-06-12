@@ -32,6 +32,24 @@ const loadModulesInDirectory = async ({
   return loadedModules;
 };
 
+const loadEntityModule = async ({ entitiesDirectory, entityName }: { entitiesDirectory: string; entityName: string }): Promise<any> => {
+  // Define entity module path
+  const entityModulePath = path.join(entitiesDirectory, `${entityName}.ts`);
+
+  // Import entity module
+  const entityModule = await import(entityModulePath);
+
+  if (!entityModule?.[entityName]) {
+    throw new Error(`Entity not found (Entity: ${entityName})`);
+  }
+
+  // Get entity class
+  const EntityClass = entityModule[entityName];
+
+  return EntityClass;
+};
+
 export default {
   loadModulesInDirectory,
+  loadEntityModule,
 };
