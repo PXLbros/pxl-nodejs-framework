@@ -127,7 +127,7 @@ export default abstract class EntityController extends BaseController {
 
       const entityProperties = this.getEntityProperties(EntityClass);
 
-      const reservedQueryKeys = ['page', 'limit', 'filters', 'sort'];
+      const reservedQueryKeys = ['page', 'limit', 'filters', 'sort', 'populate'];
 
       for (const key in request.query) {
         if (!reservedQueryKeys.includes(key) && entityProperties.includes(key)) {
@@ -135,11 +135,14 @@ export default abstract class EntityController extends BaseController {
         }
       }
 
+      const populate = request.query.populate ? request.query.populate.split(',') : [];
+
       // Fetch items from the database
       const [items, total] = await this.entityManager.findAndCount(this.entityName, options.filters, {
         limit: options.limit,
         offset: options.offset,
         orderBy: options.orderBy,
+        populate,
       });
 
       // Calculate total pages

@@ -182,6 +182,7 @@ export default class Application {
 
     // Initialize queue
     const queueManager = new QueueManager({
+      applicationConfig: this.config,
       options: {
         processorsDirectory: this.config.queue.processorsDirectory,
       },

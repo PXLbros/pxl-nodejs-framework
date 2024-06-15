@@ -10,8 +10,11 @@ import { Helper, Loader } from '../util/index.js';
 import { QueueJob } from './job.interface.js';
 import { QueueItem } from './index.interface.js';
 import { existsSync } from 'fs';
+import { ApplicationConfig } from '../application/application.interface.js';
 
 export default class QueueManager {
+  private applicationConfig: ApplicationConfig;
+
   private options: QueueManagerOptions;
 
   private redisInstance: RedisInstance;
@@ -21,12 +24,14 @@ export default class QueueManager {
 
   private jobProcessors: Map<string, BaseProcessor> = new Map();
 
-  constructor({ options, queues, redisInstance, databaseInstance }: QueueManagerConstructorParams) {
+  constructor({ applicationConfig, options, queues, redisInstance, databaseInstance }: QueueManagerConstructorParams) {
     // Define default options
     const defaultOptions: Partial<QueueManagerOptions> = {};
 
     // Merge options
     this.options = Helper.defaultsDeep(options, defaultOptions);
+
+    this.applicationConfig = applicationConfig;
 
     this.redisInstance = redisInstance;
     this.databaseInstance = databaseInstance;
@@ -85,7 +90,7 @@ export default class QueueManager {
         throw new Error(`Processor class not found (Job ID: ${job.id} | Path: ${jobPath})`);
       }
 
-      const processorInstance = new ProcessorClass(this, this.databaseInstance);
+      const processorInstance = new ProcessorClass(this, this.applicationConfig, this.databaseInstance);
 
       this.jobProcessors.set(job.id, processorInstance);
 

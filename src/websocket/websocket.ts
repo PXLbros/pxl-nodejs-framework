@@ -48,6 +48,8 @@ export default class {
     WebSocketRedisSubscriberEvent.ClientJoined,
     WebSocketRedisSubscriberEvent.SendMessageToAll,
     WebSocketRedisSubscriberEvent.MessageError,
+    WebSocketRedisSubscriberEvent.QueueJobCompleted,
+    WebSocketRedisSubscriberEvent.QueueJobError,
   ];
 
   /** Worker ID */
@@ -222,8 +224,10 @@ export default class {
     const now = Date.now();
 
     if (this.options.disconnectInactiveClients?.enabled && this.options.disconnectInactiveClients.log) {
-      Logger.debug('Checking inactive clients...');
+      Logger.debug('Checking inactive WebSocket clients...');
     }
+
+    let numInactiveClients = 0;
 
     this.connectedClients.forEach((clientInfo, clientId) => {
       if (this.options.disconnectInactiveClients?.enabled && typeof this.options.disconnectInactiveClients.inactiveTime === 'number') {
@@ -234,7 +238,7 @@ export default class {
         const isClientInactive = timeUntilInactive <= 0;
 
         if (this.options.disconnectInactiveClients.log) {
-          Logger.debug('Checking client activity', {
+          Logger.debug('Checking WebSocket client activity', {
             ID: clientId,
             'Time Until Inactive': Time.formatTime({ time: timeUntilInactive, format: 'auto' }),
           });
@@ -243,9 +247,21 @@ export default class {
         if (isClientInactive) {
           // Disconnect client if inactive
           this.disconnectClient({ clientId });
+
+          numInactiveClients++;
         }
       }
     });
+
+    if (this.options.disconnectInactiveClients?.enabled && this.options.disconnectInactiveClients.log) {
+      if (numInactiveClients > 0) {
+        Logger.debug('Inactive WebSocket clients disconnected', {
+          Count: numInactiveClients,
+        });
+      } else {
+        Logger.debug('No inactive WebSocket clients');
+      }
+    }
   }
 
   /**
@@ -532,6 +548,9 @@ export default class {
 
     const runSameWorker = parsedMessage.runSameWorker === true;
 
+    console.log('HANDEL SUBSCRIBER MESSAGE', channel);
+
+
     // Check if message is from the same worker
     if (runSameWorker !== true && parsedMessage.workerId === this.workerId) {
       // Ignore the message if it's from the same worker
@@ -562,6 +581,8 @@ export default class {
         break;
       }
       case WebSocketRedisSubscriberEvent.SendMessageToAll: {
+        this.broadcastToAllClients(parsedMessage);
+
         break;
       }
       case WebSocketRedisSubscriberEvent.MessageError: {
@@ -573,11 +594,24 @@ export default class {
         break;
       }
       case WebSocketRedisSubscriberEvent.QueueJobCompleted: {
-        console.log('QUEUE JOB COMPLETED!');
+        console.log('-----------------------> JOB COMPLETED');
+
+        const parsedMessage = JSON.parse(message);
+
+        this.sendJobDoneMessage({ type: 'jobCompleted', ...parsedMessage });
 
         break;
       }
       case WebSocketRedisSubscriberEvent.QueueJobError: {
+        const parsedMessage = JSON.parse(message);
+
+        // action and data is separate
+
+        // TODO: Instead allow to pass anything
+        parsedMessage.data = parsedMessage.error;
+
+        this.sendJobDoneMessage({ type: 'jobError', ...parsedMessage });
+
         break;
       }
       default: {
@@ -642,6 +676,80 @@ export default class {
     Logger.debug('WebSocket client username set', {
       'Client ID': webSocketClientId,
       'User Name': username,
+    });
+  }
+
+  /**
+   * Broadcast to all WebSocket clients.
+   */
+  private broadcastToAllClients({ data, excludeClientId }: { data: unknown; excludeClientId?: string }): void {
+    if (!this.server) {
+      Logger.warn('WebSocket server not started when broadcasting to all clients');
+
+      return;
+    }
+
+    // Go through each client
+    this.server.clients.forEach((client) => {
+      let excludeClient = false;
+
+      if (excludeClientId) {
+        const clientId = this.getClientId({ client });
+
+        excludeClient = clientId === excludeClientId;
+      }
+
+      if (client.readyState === WebSocket.OPEN) {
+        if (!excludeClient) {
+          client.send(JSON.stringify(data));
+        }
+      }
+    });
+  }
+
+  private sendJobDoneMessage({
+    type,
+    webSocketClientId,
+    action,
+    data,
+  }: {
+    type: string;
+    webSocketClientId: string;
+    action: string;
+    data: any;
+  }): void {
+    const clientInfo = this.connectedClients.get(webSocketClientId);
+
+    console.log('SEND JOB DONE MESSAGE');
+
+
+    if (!clientInfo) {
+      Logger.warn('WebSocket client not found when trying to send job completed message to client', {
+        'Client ID': webSocketClientId,
+      });
+
+      return;
+    } else if (!clientInfo.ws) {
+      console.log('NO ws WHEN SENDING JOB DONE MESSAGE');
+
+      return; // This is expected in many cases to return here (because only one worker will have the client connected)
+    } else if (clientInfo.ws.readyState !== WebSocket.OPEN) {
+      Logger.warn('Client WebSocket not open when trying to send job completed message to client', {
+        'Client ID': webSocketClientId,
+        State: clientInfo.ws.readyState,
+      });
+
+      return;
+    }
+
+    console.log('SEND JOB DONE MESSAGE', action);
+
+
+    // Send WebSocket client message
+    this.sendClientMessage(clientInfo.ws, {
+      type,
+      action,
+      data,
     });
   }
 }

@@ -54,7 +54,11 @@ export default class QueueWorker extends Worker {
   private onWorkerCompleted = (job: Job): void => {
     const jobData = job.data;
 
+    console.log('WORKED COMPLETED!');
+
     if (job.returnvalue && job.returnvalue.webSocketClientId) {
+      console.log('SEND MESSAGE BACK!', job.returnvalue);
+
       // Send job completed message to client
       this.redisInstance.publisherClient.publish(WebSocketRedisSubscriberEvent.QueueJobCompleted, JSON.stringify(job.returnvalue));
     }

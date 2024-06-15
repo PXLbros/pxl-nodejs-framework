@@ -1,5 +1,5 @@
+import { ApplicationConfig } from '../application/application.interface.js';
 import { QueueItem } from './index.interface.js';
-import { QueueJob } from './job.interface.js';
 
 export interface QueueManagerOptions {
   /** Queue processors directory */
@@ -7,6 +7,7 @@ export interface QueueManagerOptions {
 }
 
 export interface QueueManagerConstructorParams {
+  applicationConfig: ApplicationConfig;
   options?: QueueManagerOptions;
   queues: QueueItem[];
   redisInstance: any;
