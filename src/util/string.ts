@@ -1,3 +1,15 @@
+import { v4 as uuidv4 } from 'uuid';
+
+/**
+ * Generate a unique id.
+ */
+function generateUniqueId(): string {
+  return uuidv4();
+}
+
+/**
+ * Slugify string.
+ */
 function slugify(text: string): string {
   return text
     .toLowerCase()
@@ -9,5 +21,6 @@ function slugify(text: string): string {
 }
 
 export default {
+  generateUniqueId,
   slugify,
 };

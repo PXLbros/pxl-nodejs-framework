@@ -1,7 +1,6 @@
 import cluster from 'cluster';
 import { RawData, WebSocket, WebSocketServer } from 'ws';
-import { v4 as uuidv4 } from 'uuid';
-import { Helper, Loader, Time } from '../util/index.js';
+import { Helper, Loader, Str, Time } from '../util/index.js';
 import { DatabaseInstance } from '../database/index.js';
 import { QueueManager } from '../queue/index.js';
 import { RedisInstance } from '../redis/index.js';
@@ -166,35 +165,65 @@ export default class {
       // Register route handler
       this.routeHandlers.set(routeKey, controllerHandler);
     }
+
+    if (this.options.debug?.printRoutes) {
+      Logger.debug('WebSocket routes:');
+
+      console.log(this.printRoutes());
+    }
   }
 
   /**
-   * Get route key.
+   * Print WebSocket routes.
+   */
+  private printRoutes(): string {
+    let routesString = '';
+    const routeKeys = Array.from(this.routeHandlers.keys());
+
+    routeKeys.forEach((routeKey, index) => {
+      const [type, action] = routeKey.split(':');
+
+      routesString += `Type: ${type} -> Action: ${action}`;
+
+      if (index !== routeKeys.length - 1) {
+        routesString += '\n';
+      }
+    });
+
+    return routesString;
+  }
+
+  /**
+   * Get WebSocket route key.
    */
   private getRouteKey({ type, action }: { type: string; action: string }): string {
     return `${type}:${action}`;
   }
 
   /**
-   * Generate client ID.
+   * Generate WebSocket client ID.
    */
   private generateClientId(): string {
-    return uuidv4();
+    return Str.generateUniqueId();
   }
 
   /**
-   * Get client ID.
+   * Get WebSocket client ID.
    */
   private getClientId({ client }: { client: WebSocket }): string | undefined {
     return [...this.connectedClients.entries()].find(([_, value]) => value.ws === client)?.[0];
   }
 
   /**
-   * Check inactive clients.
+   * Check inactive WebSocket clients.
    */
   private checkInactiveClients(): void {
     // Get current time
     const now = Date.now();
+
+    if (this.options.disconnectInactiveClients?.enabled && this.options.disconnectInactiveClients.log) {
+      Logger.debug('Checking inactive clients...');
+    }
 
     this.connectedClients.forEach((clientInfo, clientId) => {
       if (this.options.disconnectInactiveClients?.enabled && typeof this.options.disconnectInactiveClients.inactiveTime === 'number') {
@@ -220,7 +249,7 @@ export default class {
   }
 
   /**
-   * Disconnect client.
+   * Disconnect WebSocket client.
    */
   private disconnectClient({ clientId }: { clientId: string }) {
     const clientInfo = this.connectedClients.get(clientId);
@@ -241,7 +270,7 @@ export default class {
   }
 
   /**
-   * Print connected clients.
+   * Print connected WebSocket clients.
    */
   private printConnectedClients(): void {
     Logger.info('Connected clients', {
@@ -250,7 +279,7 @@ export default class {
   }
 
   /**
-   * Add connected client.
+   * Add connected WebSocket client.
    */
   private addConnectedClient({ clientId, ws }: { clientId: string; ws: WebSocket }): void {
     const lastActivity = Date.now();
@@ -264,7 +293,7 @@ export default class {
   }
 
   /**
-   * Set connected client.
+   * Set connected WebSocket client.
    */
   private setConnectedClient({
     clientId,
@@ -283,12 +312,19 @@ export default class {
   }
 
   /**
-   * Set disconnected client.
+   * Set disconnected WebSocket client.
    */
   private setDisconnectedClient({ clientId }: { clientId: string }) {
     this.connectedClients.delete(clientId);
 
     this.printConnectedClients();
+  }
+
+  /**
+   * Get connected WebSocket client.
+   */
+  public getConnectedClient({ clientId }: { clientId: string }): WebSocketConnectedClientData | undefined {
+    return this.connectedClients.get(clientId);
   }
 
   /**
@@ -398,7 +434,7 @@ export default class {
     const messageHandler = this.routeHandlers.get(routeKey);
 
     if (!messageHandler) {
-      throw new Error('Route handler not found');
+      throw new Error(`Route handler not found (Route: ${routeKey})`);
     }
 
     return { parsedMessage, messageHandler };
@@ -416,6 +452,17 @@ export default class {
       return;
     }
 
+    const sendMessageErrorToClient = (error: string) => {
+      this.redisInstance.publisherClient.publish(
+        WebSocketRedisSubscriberEvent.MessageError,
+        JSON.stringify({
+          runSameWorker: true,
+          clientId,
+          error,
+        }),
+      );
+    };
+
     try {
       // Parse message
       const { parsedMessage, messageHandler } = this.parseServerMessage({ message });
@@ -423,13 +470,59 @@ export default class {
       // Handle message (i.e. calling the controller method)
       const messageResponse = await messageHandler(ws, clientId, parsedMessage.data);
 
+      if (messageResponse?.error) {
+        // Send error message to client
+        throw new Error(messageResponse.error);
+      }
+
       Logger.debug('Incoming WebSocket server message', {
-        Message: message.toString(),
+        'Client ID': clientId,
       });
     } catch (error) {
-      Logger.error(error);
+      // Send error message to client
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+      Logger.warn(errorMessage);
+
+      sendMessageErrorToClient(errorMessage);
     }
   };
+
+  /**
+   * Send WebSocket message error.
+   */
+  private sendMessageError({
+    webSocketClientId,
+    error,
+  }: {
+    webSocketClientId: string;
+    error: string;
+  }): void {
+    const clientInfo = this.connectedClients.get(webSocketClientId);
+
+    if (!clientInfo) {
+      Logger.warn('WebSocket client not found when trying to send message error to client', {
+        'Client ID': webSocketClientId,
+      });
+
+      return;
+    } else if (!clientInfo.ws) {
+      return; // This is expected in many cases to return here (as only one worker will have the client connected)
+    } else if (clientInfo.ws.readyState !== WebSocket.OPEN) {
+      Logger.warn('Client WebSocket connection not open when trying to send message error to client', {
+        'Client ID': webSocketClientId,
+        State: clientInfo.ws.readyState,
+      });
+
+      return;
+    }
+
+    // Send WebSocket client message
+    this.sendClientMessage(clientInfo.ws, {
+      type: WebSocketRedisSubscriberEvent.MessageError,
+      error,
+    });
+  }
 
   /**
    * Handle subscriber message.
@@ -461,12 +554,22 @@ export default class {
         break;
       }
       case WebSocketRedisSubscriberEvent.ClientJoined: {
+        this.setClientUserName({
+          webSocketClientId: parsedMessage.clientId,
+          username: parsedMessage.username
+        });
+
         break;
       }
       case WebSocketRedisSubscriberEvent.SendMessageToAll: {
         break;
       }
       case WebSocketRedisSubscriberEvent.MessageError: {
+        this.sendMessageError({
+          webSocketClientId: parsedMessage.clientId,
+          error: parsedMessage.error,
+        });
+
         break;
       }
       case WebSocketRedisSubscriberEvent.QueueJobCompleted: {
@@ -487,9 +590,9 @@ export default class {
   };
 
   /**
-   * Set client as joined.
+   * Set WebSocket client as joined.
    */
-  public setClientJoined({ ws, userName }: { ws: WebSocket; userName: string }): void {
+  public setClientJoined({ ws, username }: { ws: WebSocket; username: string }): void {
     const clientId = this.getClientId({ client: ws });
 
     if (!clientId) {
@@ -500,16 +603,45 @@ export default class {
 
     this.redisInstance.publisherClient.publish(
       WebSocketRedisSubscriberEvent.ClientJoined,
-      JSON.stringify({ clientId, allowSameWorker: true, userName, workerId: this.workerId }),
+      JSON.stringify({ clientId, runSameWorker: true, username, workerId: this.workerId }),
     );
+
+    // Send welcome message to user
+    this.sendClientMessage(ws, {
+      type: 'user',
+      action: 'welcome',
+    });
   }
 
   /**
-   * Send client message.
+   * Send WebSocket client message.
    */
   public sendClientMessage = (ws: WebSocket, data: unknown, binary: boolean = false): void => {
     const webSocketMessage = JSON.stringify(data);
 
     ws.send(webSocketMessage, { binary });
   };
+
+  /**
+   * Set WebSocket client username.
+   */
+  private setClientUserName({ webSocketClientId, username }: { webSocketClientId: string; username: string }) {
+    const clientData = this.connectedClients.get(webSocketClientId);
+
+    if (!clientData) {
+      Logger.warn('WebSocket client not found when trying to update connected client with username', {
+        'Client ID': webSocketClientId,
+      });
+
+      return;
+    }
+
+    // Update client data with username
+    this.connectedClients.set(webSocketClientId, { ...clientData, username });
+
+    Logger.debug('WebSocket client username set', {
+      'Client ID': webSocketClientId,
+      'User Name': username,
+    });
+  }
 }

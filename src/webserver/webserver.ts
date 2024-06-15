@@ -292,7 +292,7 @@ class WebServer {
       }
     }
 
-    if (this.options.debug.printRoutes) {
+    if (this.options.debug?.printRoutes) {
       Logger.debug('Web server routes:');
 
       console.log(this.fastifyServer.printRoutes());
@@ -333,30 +333,21 @@ class WebServer {
       handler: controllerHandler,
       preValidation: async (request, reply) => {
         if (!routeValidation?.schema) {
-          Logger.warn('Web server route validation schema not found', {
-            Controller: controllerName,
-            Action: routeAction,
-          });
+          // Logger.warn('Web server route validation schema not found', {
+          //   Controller: controllerName,
+          //   Action: routeAction,
+          // });
 
           return;
         }
 
-        console.log('routeValidation.schema', routeValidation.schema);
-
-        // should look like this:
-        // routeValidation.schema {
-        //   type: 'object',
-        //   properties: { email: { type: 'string' }, password: { type: 'string' } },
-        //   required: [ 'email', 'password' ]
-        // }
-
         const validate = request.compileValidationSchema(routeValidation.schema);
 
-        // if (!validate(request[routeValidation.type])) {
-        //   return reply.code(400).send({
-        //     error: validate.errors,
-        //   });
-        // }
+        if (!validate(request[routeValidation.type])) {
+          return reply.code(400).send({
+            error: validate.errors,
+          });
+        }
       },
     });
   }

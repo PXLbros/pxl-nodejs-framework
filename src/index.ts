@@ -13,6 +13,7 @@ export * from './database/index.js';
 export * from './redis/index.js';
 export * from './logger/index.js';
 export * from './queue/index.js';
+export * from './services/index.js';
 export * from './util/index.js';
 export * from './webserver/index.js';
 export * from './websocket/index.js';

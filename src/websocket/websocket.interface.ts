@@ -4,6 +4,10 @@ import QueueManager from '../queue/manager.js';
 import RedisInstance from '../redis/instance.js';
 import { WebSocketBaseControllerType } from './controller/base.interface.js';
 
+export interface WebSocketDebugOptions {
+  printRoutes?: boolean;
+}
+
 export interface WebSocketOptions {
   /** WebSocket host */
   host: string;
@@ -28,6 +32,9 @@ export interface WebSocketOptions {
     /** Whether to log disconnection of inactive WebSocket clients */
     log?: boolean;
   };
+
+  /** WebSocket debug options */
+  debug?: WebSocketDebugOptions;
 }
 
 export interface WebSocketRoute {
@@ -68,12 +75,16 @@ export interface WebSocketConnectedClientData {
   /** Last activity time */
   lastActivity: number;
 
-  /** Client user name */
-  userName?: string;
+  /** Client username */
+  username?: string;
+}
+
+export interface WebSocketMessageResponse {
+  error?: string;
 }
 
 export interface WebSocketMessageHandler {
-  (ws: WebSocket, clientId: string, data: any): void;
+  (ws: WebSocket, clientId: string, data: any): WebSocketMessageResponse;
 }
 
 export enum WebSocketRedisSubscriberEvent {

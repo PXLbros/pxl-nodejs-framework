@@ -89,7 +89,7 @@ export interface EntityRouteDefinition {
 }
 
 export interface WebServerDebugOptions {
-  printRoutes: boolean;
+  printRoutes?: boolean;
 }
 
 export interface WebServerOptions {
@@ -106,7 +106,7 @@ export interface WebServerOptions {
   controllersDirectory: string;
 
   /** Web server debug options */
-  debug: WebServerDebugOptions;
+  debug?: WebServerDebugOptions;
 }
 
 // export interface WebServerLogParams {

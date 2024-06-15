@@ -1,5 +1,5 @@
 import { HTTPMethods } from 'fastify';
-import { EntityRouteDefinition } from './webserver.interface.js';
+import { EntityRouteDefinition, RouteValidationSchema } from './webserver.interface.js';
 
 function getEntityRouteDefinitions({
   basePath,
@@ -9,6 +9,17 @@ function getEntityRouteDefinitions({
   entityValidationSchema: any;
 }): EntityRouteDefinition[] {
   const routeDefinitions: EntityRouteDefinition[] = [];
+
+  const idValidationSchema: RouteValidationSchema = {
+    type: 'params',
+    schema: {
+      properties: {
+        id: { type: 'integer' },
+      },
+      required: ['id'],
+      type: 'object',
+    },
+  };
 
   // Options
   routeDefinitions.push({
@@ -29,6 +40,7 @@ function getEntityRouteDefinitions({
     path: `${basePath}/:id`,
     method: 'GET' as HTTPMethods,
     action: 'getOne',
+    validationSchema: idValidationSchema,
   });
 
   // Create one
@@ -44,7 +56,7 @@ function getEntityRouteDefinitions({
     path: `${basePath}/:id`,
     method: 'PUT' as HTTPMethods,
     action: 'updateOne',
-    validationSchema: entityValidationSchema,
+    validationSchema: entityValidationSchema, // TODO: Need to merge with idValidationSchema
   });
 
   // Delete one
@@ -52,6 +64,7 @@ function getEntityRouteDefinitions({
     path: `${basePath}/:id`,
     method: 'DELETE' as HTTPMethods,
     action: 'deleteOne',
+    validationSchema: idValidationSchema,
   });
 
   return routeDefinitions;

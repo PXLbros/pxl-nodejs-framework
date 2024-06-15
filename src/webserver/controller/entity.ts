@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import path from 'path';
 import { EntityManager } from '@mikro-orm/postgresql';
 import { FastifyReply, FastifyRequest } from 'fastify';
@@ -48,6 +49,24 @@ export default abstract class EntityController extends BaseController {
     return EntityClass;
   };
 
+  private getEntityProperties(entityClass: any): string[] {
+    const properties: string[] = [];
+
+    const reservedPropertyKeys = ['constructor', 'toJSON'];
+
+    for (const propertyKey of Object.getOwnPropertyNames(entityClass.prototype)) {
+      if (propertyKey.startsWith('__')) {
+        continue;
+      } else if (reservedPropertyKeys.includes(propertyKey)) {
+        continue;
+      }
+
+      properties.push(propertyKey);
+    }
+
+    return properties;
+  }
+
   public options = async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const EntityClass = await this.getEntity();
@@ -75,6 +94,7 @@ export default abstract class EntityController extends BaseController {
         limit: string;
         filters: string;
         sort: string;
+        [key: string]: any;
       };
     }>,
     reply: FastifyReply,
@@ -104,6 +124,16 @@ export default abstract class EntityController extends BaseController {
         filters,
         orderBy,
       };
+
+      const entityProperties = this.getEntityProperties(EntityClass);
+
+      const reservedQueryKeys = ['page', 'limit', 'filters', 'sort'];
+
+      for (const key in request.query) {
+        if (!reservedQueryKeys.includes(key) && entityProperties.includes(key)) {
+          options.filters[key] = request.query[key];
+        }
+      }
 
       // Fetch items from the database
       const [items, total] = await this.entityManager.findAndCount(this.entityName, options.filters, {
