@@ -548,9 +548,6 @@ export default class {
 
     const runSameWorker = parsedMessage.runSameWorker === true;
 
-    console.log('HANDEL SUBSCRIBER MESSAGE', channel);
-
-
     // Check if message is from the same worker
     if (runSameWorker !== true && parsedMessage.workerId === this.workerId) {
       // Ignore the message if it's from the same worker

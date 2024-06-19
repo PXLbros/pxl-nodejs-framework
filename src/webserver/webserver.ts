@@ -36,7 +36,9 @@ class WebServer {
     const defaultOptions: Partial<WebServerOptions> = {
       host: '0.0.0.0',
       port: 3001,
-      corsUrls: [],
+      cors: {
+        enabled: false,
+      },
       debug: {
         printRoutes: false,
       },
@@ -95,7 +97,8 @@ class WebServer {
     Logger.debug('Web server started', {
       Host: this.options.host,
       Port: port,
-      CORS: this.options.corsUrls && this.options.corsUrls.length > 0 ? this.options.corsUrls.join(', ') : 'Disabled',
+      // CORS: this.options.cors?.enabled && this.options.cors?..length > 0 ? this.options.corsUrls.join(', ') : 'Disabled',
+      CORS: this.options.cors?.enabled ? this.options.cors.urls.join(', ') : 'Disabled',
     });
   }
 
@@ -149,8 +152,14 @@ class WebServer {
   }
 
   private configureCORS(): void {
+    console.log('this.options.cors', this.options.cors);
+
+    if (!this.options.cors?.enabled) {
+      return;
+    }
+
     this.fastifyServer.register(cors, {
-      origin: this.options.corsUrls,
+      origin: this.options.cors.urls,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization'],
       preflightContinue: false,

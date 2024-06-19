@@ -92,6 +92,25 @@ export interface WebServerDebugOptions {
   printRoutes?: boolean;
 }
 
+export interface WebServerCorsBaseOptions {
+  /** Whether CORS is enabled */
+  enabled: boolean;
+}
+
+export interface WebServerCorsDisabledOptionsBase {
+  enabled: false;
+}
+
+export interface WebServerCorsEnabledOptionsBase {
+  enabled: true;
+}
+
+export interface WebServerCorsEnabledOptions extends WebServerCorsEnabledOptionsBase {
+  urls: string[];
+}
+
+export type WebServerCorsOptions = WebServerCorsDisabledOptionsBase | WebServerCorsEnabledOptions;
+
 export interface WebServerOptions {
   /** Web server host */
   host: string;
@@ -99,8 +118,8 @@ export interface WebServerOptions {
   /** Web server port */
   port: number;
 
-  /** Web server CORS URLs */
-  corsUrls?: string[];
+  /** Web server CORS options */
+  cors?: WebServerCorsOptions;
 
   /** Web server controllers directory */
   controllersDirectory: string;
