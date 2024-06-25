@@ -148,8 +148,11 @@ export default abstract class BaseApplication {
       // Start cluster
       clusterManager.start();
     } else {
+      console.log('STARTING NON CLUSTER APP');
+
       // Start standalone application
       await this.startInstance(startInstanceOptions);
+
 
       // Handle standalone application shutdown
       this.handleShutdown({ onStopped: stopInstanceOptions.onStopped });
