@@ -20,8 +20,7 @@
     "dev": "nodemon",
     "dev:new": "node pxl serve",
     "clean": "del-cli dist",
-    "build": "npm run clean && tsc && npm run yalc:publish",
-    "yalc:publish": "node yalc-publish.mjs"
+    "build": "npm run clean && tsc && yalc push"
   },
   "keywords": [],
   "author": "PXL <devops@pxlagency.com>",

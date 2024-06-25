@@ -20,6 +20,9 @@ export default class CommandApplication extends BaseApplication {
     Logger.info('Command started yoyo!!www!ww!!1!!!!!!!!!!!');
 
     console.log('SCAN COMMDNAS DIR FOR COMMAND: ', this.config.commandsDirectory);
+
+    // // call shutdown signtal to stop the command
+    // process.kill(process.pid, 'SIGINT');
   }
 
   protected stopCallback(): void {
