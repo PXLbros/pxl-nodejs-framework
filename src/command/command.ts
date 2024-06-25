@@ -1,3 +1,10 @@
 export default abstract class Command {
-  public abstract execute(): Promise<void>;
+  /** Command name */
+  public abstract name: string;
+
+  /** Command description */
+  public abstract description: string;
+
+  /** Run command **/
+  public abstract run(): Promise<void>;
 }

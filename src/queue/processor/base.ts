@@ -1,7 +1,7 @@
 import { Job } from 'bullmq';
 import { QueueManager } from '../../queue/index.js';
 import { DatabaseInstance } from '../../database/index.js';
-import { ApplicationConfig } from '../../application/application.interface.js';
+import { ApplicationConfig } from '../../application/base-application.interface.js';
 
 export default abstract class BaseProcessor {
   constructor(

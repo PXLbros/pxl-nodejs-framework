@@ -1,7 +1,5 @@
 import { ClusterManagerConfig } from '../cluster/cluster-manager.interface.js';
 import { QueueItem } from '../queue/index.interface.js';
-import { QueueJob } from '../queue/job.interface.js';
-import { QueueManagerOptions } from '../queue/manager.interface.js';
 import { WebServerDebugOptions, WebServerOptions, WebServerRoute } from '../webserver/webserver.interface.js';
 import { WebSocketOptions, WebSocketRoute } from '../websocket/websocket.interface.js';
 
@@ -48,6 +46,17 @@ export interface ApplicationDatabaseConfig {
   entitiesDirectory: string;
 }
 
+export interface ApplicationQueueConfig {
+  /** Initial queues */
+  queues: QueueItem[];
+
+  /** Queue processors directory */
+  processorsDirectory: string;
+
+  // /** Queue jobs */
+  // jobs: QueueJob[];
+}
+
 export interface ApplicationWebSocketConfig extends WebSocketOptions {
   /** Whether to enable WebSocket */
   enabled: boolean;
@@ -78,15 +87,8 @@ export interface ApplicationWebServerConfig extends WebServerOptions {
   debug: WebServerDebugOptions;
 }
 
-export interface ApplicationQueueConfig {
-  /** Initial queues */
-  queues: QueueItem[];
-
-  /** Queue processors directory */
-  processorsDirectory: string;
-
-  // /** Queue jobs */
-  // jobs: QueueJob[];
+export interface ApplicationCommandsConfig {
+  commandsDirectory: string;
 }
 
 export interface ApplicationConfig {
@@ -104,12 +106,6 @@ export interface ApplicationConfig {
 
   /** Database configuration */
   database: ApplicationDatabaseConfig;
-
-  /** WebSocket configuration */
-  webSocket?: ApplicationWebSocketConfig;
-
-  /** Web server configuration */
-  webServer?: ApplicationWebServerConfig;
 
   /** Queue configuration */
   queue: ApplicationQueueConfig;

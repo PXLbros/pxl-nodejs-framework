@@ -1,52 +1,38 @@
-import DatabaseManager from '../database/manager.js';
-import RedisManager from '../redis/manager.js';
-import { Logger } from '../logger/index.js';
-// import Joi from 'joi';
-import { ApplicationConfig, ApplicationStartInstanceOptions, ApplicationStopInstanceOptions } from './application.interface.js';
-import RedisInstance from '../redis/instance.js';
-import DatabaseInstance from '../database/instance.js';
-import ClusterManager from '../cluster/cluster-manager.js';
-import WebServer from '../webserver/webserver.js';
-import QueueManager from '../queue/manager.js';
-import { Time } from '../util/index.js';
-import WebSocket from '../websocket/websocket.js';
-import { baseDir } from '../index.js';
-import path from 'path';
 import { existsSync } from 'fs';
+import { DatabaseInstance, DatabaseManager } from '../database/index.js';
+import QueueManager from '../queue/manager.js';
+import RedisManager from '../redis/manager.js';
+import { ApplicationConfig, ApplicationStartInstanceOptions, ApplicationStopInstanceOptions } from './base-application.interface.js';
+import path from 'path';
+import ClusterManager from '../cluster/cluster-manager.js';
+import RedisInstance from '../redis/instance.js';
+import { Time } from '../util/index.js';
+import { Logger } from '../logger/index.js';
 
-/**
- * Application
- */
-export default class Application {
+export default abstract class BaseApplication {
   /** Shutdown signals */
-  private shutdownSignals: NodeJS.Signals[] = ['SIGTERM', 'SIGINT'];
+  protected shutdownSignals: NodeJS.Signals[] = ['SIGTERM', 'SIGINT'];
 
   /** Application start time */
-  private startTime: [number, number] = [0, 0];
+  protected startTime: [number, number] = [0, 0];
 
   /** Whether application is stopping */
-  private isStopping = false;
+  protected isStopping = false;
 
   /** Application config */
-  private config: ApplicationConfig;
+  protected config: ApplicationConfig;
 
   /** Application version */
-  private applicationVersion?: string;
+  protected applicationVersion?: string;
 
   /** Redis manager */
-  private redisManager: RedisManager;
+  protected redisManager: RedisManager;
 
   /** Database manager */
-  private databaseManager: DatabaseManager;
+  protected databaseManager: DatabaseManager;
 
   /** Queue manager */
-  private queueManager?: QueueManager;
-
-  /** WebSocket */
-  private webSocket?: WebSocket;
-
-  /** Web server */
-  private webServer?: WebServer;
+  protected queueManager?: QueueManager;
 
   /**
    * Application constructor
@@ -109,8 +95,8 @@ export default class Application {
 
   /**
    * Get application version
-  */
-  private async getApplicationVersion() {
+   */
+  public async getApplicationVersion() {
     const packagePath = new URL('../../package.json', import.meta.url).href;
     const packageJson = await import(packagePath, { assert: { type: 'json' } });
 
@@ -236,91 +222,9 @@ export default class Application {
     }
   }
 
-  private async startHandler({ redisInstance, databaseInstance, queueManager }: { redisInstance: RedisInstance; databaseInstance: DatabaseInstance; queueManager: QueueManager }): Promise<void> {
-    if (this.config.webSocket?.enabled) {
-      this.webSocket = new WebSocket({
-        options: this.config.webSocket,
-        routes: this.config.webSocket.routes,
-        redisInstance,
-        databaseInstance,
-        queueManager,
-      });
+  protected abstract startHandler({ redisInstance, databaseInstance, queueManager }: { redisInstance: RedisInstance; databaseInstance: DatabaseInstance; queueManager: QueueManager }): Promise<void>;
 
-      // Load WebSocket
-      this.webSocket.load();
-
-      // Start WebSocket server
-      this.webSocket.startServer();
-    }
-
-    if (this.config.webServer?.enabled) {
-      // Initialize web server
-      this.webServer = new WebServer({
-        applicationConfig: this.config,
-
-        // config: this.config.webServer,
-        options: {
-          host: this.config.webServer.host,
-          port: this.config.webServer.port,
-          controllersDirectory: this.config.webServer.controllersDirectory,
-          cors: this.config.webServer.cors,
-          debug: this.config.webServer.debug,
-        },
-
-        routes: this.config.webServer.routes,
-
-        redisInstance,
-        databaseInstance,
-        queueManager,
-      });
-
-      // Load web server
-      await this.webServer.load();
-
-      // Start web server
-      await this.webServer.start();
-    }
-  }
-
-  /**
-   * Run command
-   */
-  public async runCommand({ command }: { command: string }): Promise<void> {
-    const startInstanceOptions: ApplicationStartInstanceOptions = {
-      onStarted: ({ startupTime }) => {
-        Logger.info('Command started', {
-          Name: this.config.name,
-          'PXL Framework Version': this.applicationVersion,
-          'Startup Time': Time.formatTime({ time: startupTime, format: 's', numDecimals: 2, showUnit: true }),
-        });
-      },
-    };
-
-    const stopInstanceOptions: ApplicationStopInstanceOptions = {
-      onStopped: ({ runtime }) => {
-        Logger.info('Command stopped', {
-          Name: this.config.name,
-          'Runtime': Time.formatTime({ time: runtime, format: 's', numDecimals: 2, showUnit: true }),
-        });
-      },
-    };
-
-    // Start standalone application
-    await this.startInstance(startInstanceOptions);
-
-    // Handle standalone application shutdown
-    this.handleShutdown({ onStopped: stopInstanceOptions.onStopped });
-  }
-
-  /**
-   * Stop application callback
-   */
-  private async stopCallback(): Promise<void> {
-    if (this.webServer) {
-      // Stop web server
-      await this.webServer.stop();
-    }
-  }
+  protected abstract stopCallback(): void;
 
   /**
    * Handle shutdown

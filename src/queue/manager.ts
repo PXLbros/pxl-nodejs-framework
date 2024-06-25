@@ -10,7 +10,7 @@ import { Helper, Loader } from '../util/index.js';
 import { QueueJob } from './job.interface.js';
 import { QueueItem } from './index.interface.js';
 import { existsSync } from 'fs';
-import { ApplicationConfig } from '../application/application.interface.js';
+import { ApplicationConfig } from '../application/base-application.interface.js';
 
 export default class QueueManager {
   private applicationConfig: ApplicationConfig;

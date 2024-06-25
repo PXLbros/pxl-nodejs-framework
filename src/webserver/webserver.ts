@@ -10,7 +10,7 @@ import { DatabaseInstance } from '../database/index.js';
 import { WebServerBaseControllerType } from './controller/base.interface.js';
 import { QueueManager } from '../queue/index.js';
 import { WebServerHealthController } from '../index.js';
-import { ApplicationConfig } from '../application/application.interface.js';
+import { ApplicationConfig } from '../application/base-application.interface.js';
 import { existsSync } from 'fs';
 
 declare module 'fastify' {
@@ -152,8 +152,6 @@ class WebServer {
   }
 
   private configureCORS(): void {
-    console.log('this.options.cors', this.options.cors);
-
     if (!this.options.cors?.enabled) {
       return;
     }

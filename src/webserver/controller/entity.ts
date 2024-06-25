@@ -8,7 +8,7 @@ import { RedisInstance } from '../../redis/index.js';
 import { DatabaseInstance } from '../../database/index.js';
 import { QueueManager } from '../../queue/index.js';
 import { DynamicEntity } from '../../database/dynamic-entity.js';
-import { ApplicationConfig } from '../../application/application.interface.js';
+import { ApplicationConfig } from '../../application/base-application.interface.js';
 import { generateFormFields } from '../../database/dynamic-entity-form-decorators.js';
 
 export default abstract class EntityController extends BaseController {

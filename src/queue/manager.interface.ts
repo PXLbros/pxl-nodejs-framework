@@ -1,4 +1,4 @@
-import { ApplicationConfig } from '../application/application.interface.js';
+import { ApplicationConfig } from '../application/base-application.interface.js';
 import { QueueItem } from './index.interface.js';
 
 export interface QueueManagerOptions {
