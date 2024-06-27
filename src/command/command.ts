@@ -39,7 +39,7 @@ export default abstract class Command {
    * Log command message
    */
   public log(message: string, meta?: Record<string, unknown>): void {
-    this.logger.command(message, {
+    this.logger.custom('command', message, {
       Command: this.name,
       ...meta
     });

@@ -4,6 +4,8 @@ import RedisInstance from './instance.js';
 import { Logger } from '../logger/index.js';
 
 export default class RedisManager {
+  private logger: typeof Logger = Logger;
+
   private options: RedisManagerOptions;
 
   public instances: RedisInstance[] = [];
@@ -27,6 +29,7 @@ export default class RedisManager {
 
       const handleConnect = (): void => {
         const redisInstance = new RedisInstance({
+          redisManager: this,
           client,
           publisherClient,
           subscriberClient,
@@ -35,7 +38,7 @@ export default class RedisManager {
         this.instances.push(redisInstance);
 
         if (this.options.applicationConfig.log?.startUp) {
-          Logger.debug('Connected to Redis', {
+          this.log('Connected', {
             Host: this.options.host,
             Port: this.options.port,
           });
@@ -57,5 +60,12 @@ export default class RedisManager {
 
   public async disconnect(): Promise<void> {
     await Promise.all(this.instances.map((instance) => instance.disconnect()));
+  }
+
+  /**
+   * Log Redis message
+   */
+  public log(message: string, meta?: Record<string, unknown>): void {
+    this.logger.custom('redis', message, meta);
   }
 }

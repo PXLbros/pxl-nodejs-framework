@@ -1,11 +1,15 @@
 import { EntityManager, MikroORM } from '@mikro-orm/postgresql';
 import { Logger } from '../logger/index.js';
 import { ApplicationConfig } from '../application/base-application.interface.js';
+import DatabaseManager from './manager.js';
 
 /**
  * Database Instance
  */
 export default class DatabaseInstance {
+  /** Database manager */
+  private databaseManager: DatabaseManager;
+
   /** Application config */
   private applicationConfig: ApplicationConfig;
 
@@ -16,14 +20,15 @@ export default class DatabaseInstance {
    * Database Instance constructor
    * @param orm MikroORM instance
    */
-  constructor({ applicationConfig, orm }: { applicationConfig: ApplicationConfig; orm: MikroORM }) {
+  constructor({ databaseManager, applicationConfig, orm }: { databaseManager: DatabaseManager; applicationConfig: ApplicationConfig; orm: MikroORM }) {
+    this.databaseManager = databaseManager;
     this.applicationConfig = applicationConfig;
     this.orm = orm;
 
     const config = orm.config.getAll();
 
     if (this.applicationConfig.log?.startUp) {
-      Logger.debug('Connected to database', {
+      this.databaseManager.log('Connected', {
         Host: config.host,
         User: config.user,
         Database: config.dbName,
@@ -51,6 +56,6 @@ export default class DatabaseInstance {
   public async disconnect(): Promise<void> {
     await this.orm.close();
 
-    Logger.debug('Disconnected from database');
+    this.databaseManager.log('Disconnected from database');
   }
 }

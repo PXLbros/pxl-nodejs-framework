@@ -20,6 +20,8 @@ declare module 'fastify' {
 }
 
 class WebServer {
+  private logger: typeof Logger = Logger;
+
   private applicationConfig: ApplicationConfig;
 
   private options: WebServerOptions;
@@ -98,7 +100,7 @@ class WebServer {
     const port = typeof address === 'string' ? address : address?.port;
 
     if (this.options.log?.startUp) {
-      Logger.debug('Web server started', {
+      this.log('Started', {
         Host: this.options.host,
         Port: port,
         // CORS: this.options.cors?.enabled && this.options.cors?..length > 0 ? this.options.corsUrls.join(', ') : 'Disabled',
@@ -143,7 +145,7 @@ class WebServer {
     //   logParams.Worker = cluster.worker.id;
     // }
 
-    Logger.debug('API Request', logParams);
+    this.log('API Request', logParams);
   }
 
   private async onError(request: FastifyRequest, reply: FastifyReply, error: Error): Promise<void> {
@@ -153,7 +155,7 @@ class WebServer {
   }
 
   private async onClose(): Promise<void> {
-    Logger.debug('Web server stopped');
+    this.log('Stopped');
   }
 
   private configureCORS(): void {
@@ -305,7 +307,7 @@ class WebServer {
     }
 
     if (this.options.debug?.printRoutes) {
-      Logger.debug('Web server routes:');
+      this.log('Routes:');
 
       console.log(this.fastifyServer.printRoutes());
     }
@@ -384,6 +386,13 @@ class WebServer {
   public async stop(): Promise<void> {
     // Close Fastify server
     await this.fastifyServer.close();
+  }
+
+  /**
+   * Log web server message
+   */
+  public log(message: string, meta?: Record<string, unknown>): void {
+    this.logger.custom('webServer', message, meta);
   }
 }
 

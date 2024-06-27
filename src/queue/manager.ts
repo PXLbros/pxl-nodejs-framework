@@ -13,6 +13,8 @@ import { existsSync } from 'fs';
 import { ApplicationConfig } from '../application/base-application.interface.js';
 
 export default class QueueManager {
+  private logger: typeof Logger = Logger;
+
   private applicationConfig: ApplicationConfig;
 
   private options: QueueManagerOptions;
@@ -65,7 +67,7 @@ export default class QueueManager {
       }
 
       if (this.applicationConfig.queue.log?.queuesRegistered) {
-        Logger.debug('Queues registered', {
+        this.log('Registered queue', {
           'Queue Count': queues.length,
           'Job Count': this.jobProcessors.size,
         });
@@ -97,7 +99,7 @@ export default class QueueManager {
       this.jobProcessors.set(job.id, processorInstance);
 
       if (this.applicationConfig.queue.log?.jobRegistered) {
-        Logger.debug('Queue job registered', { ID: job.id });
+        this.log('Job registered', { ID: job.id });
       }
     }
   }
@@ -124,6 +126,8 @@ export default class QueueManager {
     };
 
     const queueWorker = new QueueWorker({
+      applicationConfig: this.applicationConfig,
+      queueManager: this,
       name: queue.name,
       processor: this.workerProcessor,
       options: workerOptions,
@@ -133,7 +137,7 @@ export default class QueueManager {
     this.queues.set(name, queue);
 
     if (this.applicationConfig.queue.log?.queueCreated) {
-      Logger.debug('Queue created', { Name: name });
+      this.log('Created queue', { Name: name });
     }
   };
 
@@ -142,11 +146,13 @@ export default class QueueManager {
   };
 
   private onQueueWaiting = (job: Job): void => {
-    Logger.info('Queue waiting', { Queue: job.queueName, Job: job.id });
+    if (this.applicationConfig.queue.log?.queueWaiting) {
+      this.log('Waiting...', { Queue: job.queueName, Job: job.id });
+    }
   };
 
   private onQueueProgress = (job: Job<any, any, string>, progress: number | object): void => {
-    Logger.info('Queue progress', {
+    this.log('Progress update', {
       Queue: job.queueName,
       'Job Name': job.name,
       'Job ID': job.id,
@@ -155,14 +161,15 @@ export default class QueueManager {
   };
 
   private onQueueRemoved = (job: Job): void => {
-    Logger.debug('Queue removed', { Queue: job.queueName, Job: job.id });
+    this.log('Removed queue', { Queue: job.queueName, Job: job.id });
   };
 
   public addJobToQueue = async ({ queueId, jobId, data }: { queueId: string; jobId: string; data: any }) => {
     const queue = this.queues.get(queueId);
 
     if (!queue) {
-      Logger.warn('Queue not found', { 'Queue ID': queueId });
+      this.log('Queue not found', { 'Queue ID': queueId });
+
       return;
     }
 
@@ -174,7 +181,9 @@ export default class QueueManager {
     const truncatedLogDataStr =
       dataStr.length > maxLogDataStrLength ? `${dataStr.substring(0, maxLogDataStrLength)}...` : dataStr;
 
-    Logger.info('Queue job added', { Queue: queueId, 'Job ID': jobId, Data: truncatedLogDataStr });
+    if (this.applicationConfig.queue.log?.jobAdded) {
+      this.log('Job added', { Queue: queueId, 'Job ID': jobId, Data: truncatedLogDataStr });
+    }
 
     return job;
   };
@@ -185,7 +194,7 @@ export default class QueueManager {
     // Add start time to job data
     job.updateData({ ...job.data, startTime });
 
-    Logger.info('Queue worker processing', {
+    this.log('Worker processing...', {
       Queue: job.queueName,
       'Job Name': job.name,
       'Job ID': job.id,
@@ -238,5 +247,12 @@ export default class QueueManager {
     }
 
     return jobsSummary;
+  }
+
+  /**
+   * Log queue message
+   */
+  public log(message: string, meta?: Record<string, unknown>): void {
+    this.logger.custom('queue', message, meta);
   }
 }

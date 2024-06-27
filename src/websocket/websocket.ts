@@ -17,6 +17,9 @@ import { WebSocketBaseControllerType } from './controller/base.interface.js';
 import { existsSync } from 'fs';
 
 export default class {
+  /** WebSocket logger */
+  private logger: typeof Logger = Logger;
+
   /** WebSocket options */
   private options: WebSocketOptions;
 
@@ -114,7 +117,7 @@ export default class {
     const controllersDirectoryExists = await existsSync(this.options.controllersDirectory);
 
     if (!controllersDirectoryExists) {
-      Logger.warn('WebSocket controllers directory not found', { Directory: this.options.controllersDirectory });
+      this.log('Controllers directory not found', { Directory: this.options.controllersDirectory });
 
       return;
     }
@@ -140,7 +143,7 @@ export default class {
       if (typeof ControllerClass !== 'function') {
         const webSocketPath = `${this.options.controllersDirectory}/${route.controllerName}.ts`;
 
-        Logger.warn('WebSocket controller not found', {
+        this.log('Controller not found', {
           Controller: route.controllerName,
           Path: webSocketPath,
         });
@@ -169,7 +172,7 @@ export default class {
     }
 
     if (this.options.debug?.printRoutes) {
-      Logger.debug('WebSocket routes:');
+      this.log('Routes:');
 
       console.log(this.printRoutes());
     }
@@ -224,7 +227,7 @@ export default class {
     const now = Date.now();
 
     if (this.options.disconnectInactiveClients?.enabled && this.options.disconnectInactiveClients.log) {
-      Logger.debug('Checking inactive WebSocket clients...');
+      this.log('Checking inactive clients...');
     }
 
     let numInactiveClients = 0;
@@ -238,7 +241,7 @@ export default class {
         const isClientInactive = timeUntilInactive <= 0;
 
         if (this.options.disconnectInactiveClients.log) {
-          Logger.debug('Checking WebSocket client activity', {
+          this.log('Checking client activity', {
             ID: clientId,
             'Time Until Inactive': Time.formatTime({ time: timeUntilInactive, format: 'auto' }),
           });
@@ -255,11 +258,11 @@ export default class {
 
     if (this.options.disconnectInactiveClients?.enabled && this.options.disconnectInactiveClients.log) {
       if (numInactiveClients > 0) {
-        Logger.debug('Inactive WebSocket clients disconnected', {
+        this.log('Inactive clients disconnected', {
           Count: numInactiveClients,
         });
       } else {
-        Logger.debug('No inactive WebSocket clients');
+        this.log('No inactive clients');
       }
     }
   }
@@ -369,7 +372,7 @@ export default class {
    * Handle WebSocket server start.
    */
   private handleServerStart = (): void => {
-    Logger.debug('WebSocket server started', {
+    this.log('Server started', {
       Host: this.options.host,
       Port: this.options.port,
     });
@@ -400,7 +403,7 @@ export default class {
 
     ws.on('close', () => this.handleServerClientDisconnection(clientId));
 
-    Logger.debug('Client connected', {
+    this.log('Client connected', {
       ID: clientId,
     });
   };
@@ -414,7 +417,7 @@ export default class {
       JSON.stringify({ clientId, workerId: this.workerId, runSameWorker: true }),
     );
 
-    Logger.debug('Client disconnected', {
+    this.log('Client disconnected', {
       ID: clientId,
     });
   };
@@ -463,7 +466,7 @@ export default class {
     const clientId = this.getClientId({ client: ws });
 
     if (!clientId) {
-      Logger.warn('Client ID not found when handling WebSocket server message');
+      this.log('Client ID not found when handling server message');
 
       return;
     }
@@ -486,7 +489,7 @@ export default class {
       const action = parsedMessage.action;
       const type = parsedMessage.type;
 
-      Logger.debug('Incoming WebSocket message', {
+      this.log('Incoming message', {
         'Client ID': clientId,
         Action: action ?? '-',
         Type: type ?? '-',
@@ -503,7 +506,7 @@ export default class {
       // Send error message to client
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
-      Logger.warn(errorMessage);
+      this.log(errorMessage);
 
       sendMessageErrorToClient(errorMessage);
     }
@@ -522,7 +525,7 @@ export default class {
     const clientInfo = this.connectedClients.get(webSocketClientId);
 
     if (!clientInfo) {
-      Logger.warn('WebSocket client not found when trying to send message error to client', {
+      this.log('Client not found when trying to send message error to client', {
         'Client ID': webSocketClientId,
       });
 
@@ -530,7 +533,7 @@ export default class {
     } else if (!clientInfo.ws) {
       return; // This is expected in many cases to return here (as only one worker will have the client connected)
     } else if (clientInfo.ws.readyState !== WebSocket.OPEN) {
-      Logger.warn('Client WebSocket connection not open when trying to send message error to client', {
+      this.log('Client connection not open when trying to send message error to client', {
         'Client ID': webSocketClientId,
         State: clientInfo.ws.readyState,
       });
@@ -617,7 +620,7 @@ export default class {
         break;
       }
       default: {
-        Logger.warn('Unknown subscriber message received', {
+        this.log('Unknown subscriber message received', {
           Channel: channel,
           Message: message,
         });
@@ -632,7 +635,7 @@ export default class {
     const clientId = this.getClientId({ client: ws });
 
     if (!clientId) {
-      Logger.warn('Client ID not found when setting client joined');
+      this.log('Client ID not found when setting client joined');
 
       return;
     }
@@ -665,7 +668,7 @@ export default class {
     const clientData = this.connectedClients.get(webSocketClientId);
 
     if (!clientData) {
-      Logger.warn('WebSocket client not found when trying to update connected client with username', {
+      this.log('Client not found when trying to update connected client with username', {
         'Client ID': webSocketClientId,
       });
 
@@ -675,7 +678,7 @@ export default class {
     // Update client data with username
     this.connectedClients.set(webSocketClientId, { ...clientData, username });
 
-    Logger.debug('WebSocket client username set', {
+    this.log('Client username set', {
       'Client ID': webSocketClientId,
       'User Name': username,
     });
@@ -686,7 +689,7 @@ export default class {
    */
   private broadcastToAllClients({ data, excludeClientId }: { data: unknown; excludeClientId?: string }): void {
     if (!this.server) {
-      Logger.warn('WebSocket server not started when broadcasting to all clients');
+      this.log('Server not started when broadcasting to all clients');
 
       return;
     }
@@ -722,21 +725,16 @@ export default class {
   }): void {
     const clientInfo = this.connectedClients.get(webSocketClientId);
 
-    console.log('SEND JOB DONE MESSAGE');
-
-
     if (!clientInfo) {
-      Logger.warn('WebSocket client not found when trying to send job completed message to client', {
+      this.log('Client not found when trying to send job completed message to client', {
         'Client ID': webSocketClientId,
       });
 
       return;
     } else if (!clientInfo.ws) {
-      console.log('NO ws WHEN SENDING JOB DONE MESSAGE');
-
       return; // This is expected in many cases to return here (because only one worker will have the client connected)
     } else if (clientInfo.ws.readyState !== WebSocket.OPEN) {
-      Logger.warn('Client WebSocket not open when trying to send job completed message to client', {
+      this.log('Client not open when trying to send job completed message to client', {
         'Client ID': webSocketClientId,
         State: clientInfo.ws.readyState,
       });
@@ -744,14 +742,18 @@ export default class {
       return;
     }
 
-    console.log('SEND JOB DONE MESSAGE', action);
-
-
     // Send WebSocket client message
     this.sendClientMessage(clientInfo.ws, {
       type,
       action,
       data,
     });
+  }
+
+  /**
+   * Log WebSocket message
+   */
+  public log(message: string, meta?: Record<string, unknown>): void {
+    this.logger.custom('webSocket', message, meta);
   }
 }

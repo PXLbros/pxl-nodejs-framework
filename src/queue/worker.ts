@@ -3,12 +3,22 @@ import { QueueWorkerConstructorParams } from './worker.interface.js';
 import { RedisInstance } from '../redis/index.js';
 import { Logger } from '../logger/index.js';
 import { WebSocketRedisSubscriberEvent } from '../websocket/websocket.interface.js';
+import { ApplicationConfig } from '../application/base-application.interface.js';
+import QueueManager from './manager.js';
 
 export default class QueueWorker extends Worker {
+  private applicationConfig: ApplicationConfig;
+
+  private queueManager: QueueManager;
+
   private redisInstance: RedisInstance;
 
-  constructor({ name, processor, options, redisInstance }: QueueWorkerConstructorParams) {
+  constructor({ applicationConfig, queueManager, name, processor, options, redisInstance }: QueueWorkerConstructorParams) {
     super(name, processor, options);
+
+    this.applicationConfig = applicationConfig;
+
+    this.queueManager = queueManager;
 
     this.redisInstance = redisInstance;
 
@@ -20,7 +30,7 @@ export default class QueueWorker extends Worker {
   }
 
   private onWorkerActive = (job: Job): void => {
-    Logger.info('Queue worker active', {
+    this.queueManager.log('Queue worker active', {
       Queue: job.queueName,
       'Job Name': job.name,
       'Job ID': job.id,
@@ -28,7 +38,7 @@ export default class QueueWorker extends Worker {
   };
 
   private onWorkerError = (error: Error): void => {
-    Logger.warn('Queue worker error', { Error: error });
+    Logger.error(error);
   };
 
   private onWorkerFailed = (job: Job<any, Processor<any, any, string>, string> | undefined, error: Error): void => {
@@ -48,17 +58,13 @@ export default class QueueWorker extends Worker {
   };
 
   private onWorkerStalled = (jobId: string): void => {
-    Logger.warn('Queue worker stalled', { Job: jobId });
+    this.queueManager.log('Queue worker stalled', { Job: jobId });
   };
 
   private onWorkerCompleted = (job: Job): void => {
     const jobData = job.data;
 
-    console.log('WORKED COMPLETED!');
-
     if (job.returnvalue && job.returnvalue.webSocketClientId) {
-      console.log('SEND MESSAGE BACK!', job.returnvalue);
-
       // Send job completed message to client
       this.redisInstance.publisherClient.publish(WebSocketRedisSubscriberEvent.QueueJobCompleted, JSON.stringify(job.returnvalue));
     }
@@ -69,11 +75,13 @@ export default class QueueWorker extends Worker {
     const executionTimeMs = seconds * 1000 + nanoseconds / 1e6;
     const formattedExecutionTime = executionTimeMs.toFixed(2);
 
-    Logger.info('Queue worker completed', {
-      Queue: job.queueName,
-      'Job Name': job.name,
-      'Job ID': job.id,
-      Time: `${formattedExecutionTime}ms`,
-    });
+    if (this.applicationConfig.queue.log?.jobCompleted) {
+      this.queueManager.log('Queue worker completed', {
+        Queue: job.queueName,
+        'Job Name': job.name,
+        'Job ID': job.id,
+        Time: `${formattedExecutionTime}ms`,
+      });
+    }
   };
 }

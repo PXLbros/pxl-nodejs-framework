@@ -53,13 +53,13 @@ export interface ApplicationQueueConfig {
   /** Queue processors directory */
   processorsDirectory: string;
 
-  // /** Queue jobs */
-  // jobs: QueueJob[];
-
   log?: {
     jobRegistered?: boolean;
+    jobAdded?: boolean;
+    jobCompleted?: boolean;
     queueCreated?: boolean;
     queuesRegistered?: boolean;
+    queueWaiting?: boolean;
   };
 }
 

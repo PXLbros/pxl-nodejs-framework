@@ -2,6 +2,8 @@ import * as Sentry from '@sentry/node';
 import cluster from 'cluster';
 import winston from 'winston';
 
+export type LoggerLevels = 'error' | 'warn' | 'info' | 'command' | 'database' | 'redis' | 'webServer' | 'webSocket' | 'queue' | 'debug';
+
 class Logger {
   private static instance: Logger;
   private logger: winston.Logger;
@@ -20,15 +22,25 @@ class Logger {
       warn: 1,
       info: 2,
       command: 3,
-      debug: 4,
+      database: 4,
+      redis: 5,
+      webServer: 6,
+      webSocket: 7,
+      queue: 8,
+      debug: 9,
     };
 
     const customColors: winston.config.AbstractConfigSetColors = {
       error: 'red',
       warn: 'yellow',
-      info: 'green',
+      info: 'blue',
       command: 'cyan',
-      debug: 'blue',
+      database: 'brightGreen',
+      redis: 'brightYellow',
+      webServer: 'brightBlue',
+      webSocket: 'brightMagenta',
+      queue: 'gray',
+      debug: 'brightCyan',
     };
 
     winston.addColors(customColors);
@@ -101,7 +113,7 @@ class Logger {
     this.isSentryInitialized = true;
   }
 
-  public log(level: 'debug' | 'info' | 'warn' | 'error' | 'command', message: unknown, meta?: Record<string, unknown>): void {
+  public log(level: LoggerLevels, message: unknown, meta?: Record<string, unknown>): void {
     if (message instanceof Error) {
       const errorMessage = message.stack || message.toString();
       this.logger.log(level, errorMessage, meta);
@@ -128,8 +140,8 @@ class Logger {
     this.log('error', error);
   }
 
-  public command(message: unknown, meta?: Record<string, unknown>): void {
-    this.log('command', message, meta);
+  public custom(level: LoggerLevels, message: unknown, meta?: Record<string, unknown>): void {
+    this.log(level, message, meta);
   }
 }
 
