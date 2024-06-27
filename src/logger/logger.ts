@@ -15,7 +15,26 @@ class Logger {
 
     const customFormat = this.getCustomFormat();
 
+    const customLevels: winston.config.AbstractConfigSetLevels = {
+      error: 0,
+      warn: 1,
+      info: 2,
+      command: 3,
+      debug: 4,
+    };
+
+    const customColors: winston.config.AbstractConfigSetColors = {
+      error: 'red',
+      warn: 'yellow',
+      info: 'green',
+      command: 'cyan',
+      debug: 'blue',
+    };
+
+    winston.addColors(customColors);
+
     this.logger = winston.createLogger({
+      levels: customLevels,
       level: this.environment === 'production' ? 'info' : 'debug',
       format: winston.format.combine(
         winston.format.timestamp({
@@ -82,7 +101,7 @@ class Logger {
     this.isSentryInitialized = true;
   }
 
-  public log(level: 'debug' | 'info' | 'warn' | 'error', message: unknown, meta?: Record<string, unknown>): void {
+  public log(level: 'debug' | 'info' | 'warn' | 'error' | 'command', message: unknown, meta?: Record<string, unknown>): void {
     if (message instanceof Error) {
       const errorMessage = message.stack || message.toString();
       this.logger.log(level, errorMessage, meta);
@@ -107,6 +126,10 @@ class Logger {
 
   public error(error: Error | unknown): void {
     this.log('error', error);
+  }
+
+  public command(message: unknown, meta?: Record<string, unknown>): void {
+    this.log('command', message, meta);
   }
 }
 

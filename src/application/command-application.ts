@@ -64,7 +64,7 @@ export default class CommandApplication extends BaseApplication {
       return;
     }
 
-    // Execute command
+    // Initialize command
     const command = new CommandClass({
       applicationConfig: this.config,
       redisInstance: redisInstance,
@@ -72,7 +72,12 @@ export default class CommandApplication extends BaseApplication {
       databaseInstance: databaseInstance,
     });
 
+    command.log('Command started', { Command: inputCommandName });
+
+    // Run command
     await command.run(parsedArgv);
+
+    command.log('Command completed', { Command: inputCommandName });
 
     // Call shutdown signtal to stop the command
     this.stopCommand();

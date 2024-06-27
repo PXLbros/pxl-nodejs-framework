@@ -174,7 +174,7 @@ export default class QueueManager {
     const truncatedLogDataStr =
       dataStr.length > maxLogDataStrLength ? `${dataStr.substring(0, maxLogDataStrLength)}...` : dataStr;
 
-    Logger.info('Job added', { Queue: queueId, 'Job ID': jobId, Data: truncatedLogDataStr });
+    Logger.info('Queue job added', { Queue: queueId, 'Job ID': jobId, Data: truncatedLogDataStr });
 
     return job;
   };
