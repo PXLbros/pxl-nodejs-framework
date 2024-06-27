@@ -5,6 +5,7 @@ import QueueManager from '../queue/manager.js';
 import WebSocket from '../websocket/websocket.js';
 import BaseApplication from './base-application.js';
 import { WebApplicationConfig } from './web-application.interface.js';
+import { Helper } from '../util/index.js';
 
 /**
  * Application
@@ -22,7 +23,15 @@ export default class WebApplication extends BaseApplication {
   constructor(config: WebApplicationConfig) {
     super(config);
 
-    this.config = config;
+    const defaultConfig: Partial<WebApplicationConfig> = {
+      log: {
+        startUp: true,
+      },
+    };
+
+    const mergedConfig = Helper.defaultsDeep(config, defaultConfig);
+
+    this.config = mergedConfig;
   }
 
   protected async startHandler({ redisInstance, databaseInstance, queueManager }: { redisInstance: RedisInstance; databaseInstance: DatabaseInstance; queueManager: QueueManager }): Promise<void> {
@@ -53,6 +62,7 @@ export default class WebApplication extends BaseApplication {
           port: this.config.webServer.port,
           controllersDirectory: this.config.webServer.controllersDirectory,
           cors: this.config.webServer.cors,
+          log: this.config.webServer.log,
           debug: this.config.webServer.debug,
         },
 

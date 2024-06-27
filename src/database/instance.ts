@@ -1,10 +1,14 @@
 import { EntityManager, MikroORM } from '@mikro-orm/postgresql';
 import { Logger } from '../logger/index.js';
+import { ApplicationConfig } from '../application/base-application.interface.js';
 
 /**
  * Database Instance
  */
 export default class DatabaseInstance {
+  /** Application config */
+  private applicationConfig: ApplicationConfig;
+
   /** MikroORM instance */
   private orm: MikroORM;
 
@@ -12,16 +16,19 @@ export default class DatabaseInstance {
    * Database Instance constructor
    * @param orm MikroORM instance
    */
-  constructor({ orm }: { orm: MikroORM }) {
+  constructor({ applicationConfig, orm }: { applicationConfig: ApplicationConfig; orm: MikroORM }) {
+    this.applicationConfig = applicationConfig;
     this.orm = orm;
 
     const config = orm.config.getAll();
 
-    Logger.debug('Connected to database', {
-      Host: config.host,
-      User: config.user,
-      Database: config.dbName,
-    });
+    if (this.applicationConfig.log?.startUp) {
+      Logger.debug('Connected to database', {
+        Host: config.host,
+        User: config.user,
+        Database: config.dbName,
+      });
+    }
   }
 
   /**

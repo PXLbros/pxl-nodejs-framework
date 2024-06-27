@@ -10,7 +10,7 @@ function generateUniqueId(): string {
 /**
  * Slugify string.
  */
-function slugify(text: string): string {
+function slugify({ text }: { text: string }): string {
   return text
     .toLowerCase()
     .replace(/\s+/g, '-') // Replace spaces with -

@@ -1,20 +1,20 @@
 import { MikroORM } from '@mikro-orm/postgresql';
 import DatabaseInstance from './instance.js';
-import { ApplicationDatabaseConfig } from '../application/base-application.interface.js';
+import { ApplicationDatabaseOptions } from './manager.interface.js';
 
 /**
  * Database Manager
  */
 export default class DatabaseManager {
-  private readonly config: ApplicationDatabaseConfig;
+  private readonly options: ApplicationDatabaseOptions;
 
   private instances: DatabaseInstance[] = [];
 
   /**
    * Database Manager constructor
    */
-  constructor(config: ApplicationDatabaseConfig) {
-    this.config = config;
+  constructor(options: ApplicationDatabaseOptions) {
+    this.options = options;
   }
 
   /**
@@ -23,7 +23,7 @@ export default class DatabaseManager {
   public async connect(): Promise<DatabaseInstance> {
     const orm = await MikroORM.init();
 
-    const databaseInstance = new DatabaseInstance({ orm });
+    const databaseInstance = new DatabaseInstance({ applicationConfig: this.options.applicationConfig, orm });
 
     this.instances.push(databaseInstance);
 

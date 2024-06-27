@@ -1,23 +1,23 @@
 import { Redis, RedisOptions } from 'ioredis';
-import { RedisManagerConfig } from './manager.interface.js';
+import { RedisManagerConfig as RedisManagerOptions } from './manager.interface.js';
 import RedisInstance from './instance.js';
 import { Logger } from '../logger/index.js';
 
 export default class RedisManager {
-  private config: RedisManagerConfig;
+  private options: RedisManagerOptions;
 
   public instances: RedisInstance[] = [];
 
-  constructor(config: RedisManagerConfig) {
-    this.config = config;
+  constructor(config: RedisManagerOptions) {
+    this.options = config;
   }
 
   public connect(): Promise<RedisInstance> {
     return new Promise((resolve, reject) => {
       const redisOptions: RedisOptions = {
-        host: this.config.host,
-        port: this.config.port,
-        password: this.config.password,
+        host: this.options.host,
+        port: this.options.port,
+        password: this.options.password,
         maxRetriesPerRequest: null, // Needed for bullmq
       };
 
@@ -34,10 +34,12 @@ export default class RedisManager {
 
         this.instances.push(redisInstance);
 
-        Logger.debug('Connected to Redis', {
-          Host: this.config.host,
-          Port: this.config.port,
-        });
+        if (this.options.applicationConfig.log?.startUp) {
+          Logger.debug('Connected to Redis', {
+            Host: this.options.host,
+            Port: this.options.port,
+          });
+        }
 
         resolve(redisInstance);
       };

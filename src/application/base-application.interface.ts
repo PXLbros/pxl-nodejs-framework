@@ -1,6 +1,6 @@
 import { ClusterManagerConfig } from '../cluster/cluster-manager.interface.js';
 import { QueueItem } from '../queue/index.interface.js';
-import { WebServerDebugOptions, WebServerOptions, WebServerRoute } from '../webserver/webserver.interface.js';
+import { WebServerDebugOptions, WebServerLogConfig, WebServerOptions, WebServerRoute } from '../webserver/webserver.interface.js';
 import { WebSocketOptions, WebSocketRoute } from '../websocket/websocket.interface.js';
 
 export type OnStartedEvent = ({ startupTime }: { startupTime: number }) => void;
@@ -55,6 +55,12 @@ export interface ApplicationQueueConfig {
 
   // /** Queue jobs */
   // jobs: QueueJob[];
+
+  log?: {
+    jobRegistered?: boolean;
+    queueCreated?: boolean;
+    queuesRegistered?: boolean;
+  };
 }
 
 export interface ApplicationWebSocketConfig extends WebSocketOptions {
@@ -84,11 +90,17 @@ export interface ApplicationWebServerConfig extends WebServerOptions {
   // /** Web server CORS URLs */
   // corsUrls: string[];
 
+  log?: WebServerLogConfig;
+
   debug: WebServerDebugOptions;
 }
 
 export interface ApplicationCommandsConfig {
   commandsDirectory: string;
+}
+
+export interface ApplicationLogConfig {
+  startUp?: boolean;
 }
 
 export interface ApplicationConfig {
@@ -109,4 +121,7 @@ export interface ApplicationConfig {
 
   /** Queue configuration */
   queue: ApplicationQueueConfig;
+
+  /** Log configuration */
+  log?: ApplicationLogConfig;
 }

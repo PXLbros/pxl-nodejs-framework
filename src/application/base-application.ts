@@ -67,6 +67,7 @@ export default abstract class BaseApplication {
 
     // Initialize Redis manager
     this.redisManager = new RedisManager({
+      applicationConfig: this.config,
       host: this.config.redis.host,
       port: this.config.redis.port,
       password: this.config.redis.password,
@@ -84,6 +85,7 @@ export default abstract class BaseApplication {
 
     // Initialize Database manager
     this.databaseManager = new DatabaseManager({
+      applicationConfig: this.config,
       host: this.config.database.host,
       port: this.config.database.port,
       username: this.config.database.username,
@@ -119,11 +121,13 @@ export default abstract class BaseApplication {
 
     const startInstanceOptions: ApplicationStartInstanceOptions = {
       onStarted: ({ startupTime }) => {
-        Logger.info('Application started', {
-          Name: this.config.name,
-          'PXL Framework Version': this.applicationVersion,
-          'Startup Time': Time.formatTime({ time: startupTime, format: 's', numDecimals: 2, showUnit: true }),
-        });
+        if (this.config.log?.startUp) {
+          Logger.info('Application started', {
+            Name: this.config.name,
+            'PXL Framework Version': this.applicationVersion,
+            'Startup Time': Time.formatTime({ time: startupTime, format: 's', numDecimals: 2, showUnit: true }),
+          });
+        }
       },
     };
 
@@ -148,8 +152,6 @@ export default abstract class BaseApplication {
       // Start cluster
       clusterManager.start();
     } else {
-      console.log('STARTING NON CLUSTER APP');
-
       // Start standalone application
       await this.startInstance(startInstanceOptions);
 
@@ -183,7 +185,7 @@ export default abstract class BaseApplication {
 
     // Create queue
     // TODO: Pass initial queues to create from config instead
-    queueManager.createQueue({ name: 'default' });
+    // queueManager.createQueue({ name: 'default' });
 
     return { redisInstance, databaseInstance, queueManager };
   }

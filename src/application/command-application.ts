@@ -5,7 +5,7 @@ import QueueManager from '../queue/manager.js';
 import RedisInstance from '../redis/instance.js';
 import BaseApplication from './base-application.js';
 import { CommandApplicationConfig } from './command-application.interface.js';
-import { Loader } from '../util/index.js';
+import { Helper, Loader } from '../util/index.js';
 
 export default class CommandApplication extends BaseApplication {
   /** Command application config */
@@ -14,7 +14,15 @@ export default class CommandApplication extends BaseApplication {
   constructor(config: CommandApplicationConfig) {
     super(config);
 
-    this.config = config;
+    const defaultConfig: Partial<CommandApplicationConfig> = {
+      log: {
+        startUp: false,
+      },
+    };
+
+    const mergedConfig = Helper.defaultsDeep(config, defaultConfig);
+
+    this.config = mergedConfig;
   }
 
   protected async startHandler({ redisInstance, databaseInstance, queueManager }: { redisInstance: RedisInstance; databaseInstance: DatabaseInstance; queueManager: QueueManager; }): Promise<void> {
@@ -22,7 +30,6 @@ export default class CommandApplication extends BaseApplication {
     const argv = this.config.commandManager.argv;
 
     const parsedArgv = argv.parseSync();
-    console.log('parsedArgv', parsedArgv);
 
     if (parsedArgv._.length === 0) {
       Logger.warn('No command provided');
@@ -33,9 +40,6 @@ export default class CommandApplication extends BaseApplication {
     }
 
     const inputCommandName = parsedArgv._[0];
-
-    console.log('inputCommandName', inputCommandName);
-
 
     const commandsDirectoryExists = await existsSync(this.config.commandsDirectory);
 
@@ -61,7 +65,12 @@ export default class CommandApplication extends BaseApplication {
     }
 
     // Execute command
-    const command = new CommandClass();
+    const command = new CommandClass({
+      applicationConfig: this.config,
+      redisInstance: redisInstance,
+      queueManager: queueManager,
+      databaseInstance: databaseInstance,
+    });
 
     await command.run(parsedArgv);
 

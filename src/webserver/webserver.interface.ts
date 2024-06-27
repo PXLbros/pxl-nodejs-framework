@@ -88,6 +88,10 @@ export interface EntityRouteDefinition {
   validationSchema?: RouteValidationSchema;
 }
 
+export interface WebServerLogConfig {
+  startUp?: boolean;
+}
+
 export interface WebServerDebugOptions {
   printRoutes?: boolean;
 }
@@ -123,6 +127,8 @@ export interface WebServerOptions {
 
   /** Web server controllers directory */
   controllersDirectory: string;
+
+  log?: WebServerLogConfig;
 
   /** Web server debug options */
   debug?: WebServerDebugOptions;

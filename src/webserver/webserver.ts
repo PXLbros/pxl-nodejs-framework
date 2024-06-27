@@ -42,6 +42,9 @@ class WebServer {
       debug: {
         printRoutes: false,
       },
+      log: {
+        startUp: true,
+      },
     };
 
     // Merge default options
@@ -94,12 +97,14 @@ class WebServer {
     const address = this.fastifyServer.server.address();
     const port = typeof address === 'string' ? address : address?.port;
 
-    Logger.debug('Web server started', {
-      Host: this.options.host,
-      Port: port,
-      // CORS: this.options.cors?.enabled && this.options.cors?..length > 0 ? this.options.corsUrls.join(', ') : 'Disabled',
-      CORS: this.options.cors?.enabled ? this.options.cors.urls.join(', ') : 'Disabled',
-    });
+    if (this.options.log?.startUp) {
+      Logger.debug('Web server started', {
+        Host: this.options.host,
+        Port: port,
+        // CORS: this.options.cors?.enabled && this.options.cors?..length > 0 ? this.options.corsUrls.join(', ') : 'Disabled',
+        CORS: this.options.cors?.enabled ? this.options.cors.urls.join(', ') : 'Disabled',
+      });
+    }
   }
 
   private async onRequest(request: FastifyRequest): Promise<void> {

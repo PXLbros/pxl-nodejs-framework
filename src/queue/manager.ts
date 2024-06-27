@@ -64,10 +64,12 @@ export default class QueueManager {
         this.registerQueue({ queue, jobProcessorClasses });
       }
 
-      Logger.debug('Queues registered', {
-        'Queue Count': queues.length,
-        'Job Count': this.jobProcessors.size,
-      });
+      if (this.applicationConfig.queue.log?.queuesRegistered) {
+        Logger.debug('Queues registered', {
+          'Queue Count': queues.length,
+          'Job Count': this.jobProcessors.size,
+        });
+      }
     } catch (error) {
       Logger.error(error);
     }
@@ -94,7 +96,9 @@ export default class QueueManager {
 
       this.jobProcessors.set(job.id, processorInstance);
 
-      Logger.debug('Queue job registered', { ID: job.id });
+      if (this.applicationConfig.queue.log?.jobRegistered) {
+        Logger.debug('Queue job registered', { ID: job.id });
+      }
     }
   }
 
@@ -128,7 +132,9 @@ export default class QueueManager {
 
     this.queues.set(name, queue);
 
-    Logger.debug('Queue created', { Name: name });
+    if (this.applicationConfig.queue.log?.queueCreated) {
+      Logger.debug('Queue created', { Name: name });
+    }
   };
 
   private onQueueError = (error: Error): void => {

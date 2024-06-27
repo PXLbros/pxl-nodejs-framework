@@ -483,6 +483,15 @@ export default class {
       // Parse message
       const { parsedMessage, messageHandler } = this.parseServerMessage({ message });
 
+      const action = parsedMessage.action;
+      const type = parsedMessage.type;
+
+      Logger.debug('Incoming WebSocket message', {
+        'Client ID': clientId,
+        Action: action ?? '-',
+        Type: type ?? '-',
+      });
+
       // Handle message (i.e. calling the controller method)
       const messageResponse = await messageHandler(ws, clientId, parsedMessage.data);
 
@@ -490,10 +499,6 @@ export default class {
         // Send error message to client
         throw new Error(messageResponse.error);
       }
-
-      Logger.debug('Incoming WebSocket server message', {
-        'Client ID': clientId,
-      });
     } catch (error) {
       // Send error message to client
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
