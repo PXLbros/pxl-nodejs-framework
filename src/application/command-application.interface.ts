@@ -7,4 +7,9 @@ export interface CommandApplicationConfig extends ApplicationConfig {
 
   /** Command manager */
   commandManager: CommandManager;
+
+  /** Command debug config */
+  debug?: {
+    measureExecutionTime?: boolean;
+  };
 }

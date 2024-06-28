@@ -30,7 +30,7 @@ export default class QueueWorker extends Worker {
   }
 
   private onWorkerActive = (job: Job): void => {
-    this.queueManager.log('Queue worker active', {
+    this.queueManager.log('Worker active', {
       Queue: job.queueName,
       'Job Name': job.name,
       'Job ID': job.id,
@@ -58,7 +58,7 @@ export default class QueueWorker extends Worker {
   };
 
   private onWorkerStalled = (jobId: string): void => {
-    this.queueManager.log('Queue worker stalled', { Job: jobId });
+    this.queueManager.log('Worker stalled', { Job: jobId });
   };
 
   private onWorkerCompleted = (job: Job): void => {
@@ -76,7 +76,7 @@ export default class QueueWorker extends Worker {
     const formattedExecutionTime = executionTimeMs.toFixed(2);
 
     if (this.applicationConfig.queue.log?.jobCompleted) {
-      this.queueManager.log('Queue worker completed', {
+      this.queueManager.log('Job completed', {
         Queue: job.queueName,
         'Job Name': job.name,
         'Job ID': job.id,

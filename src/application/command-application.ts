@@ -5,7 +5,7 @@ import QueueManager from '../queue/manager.js';
 import RedisInstance from '../redis/instance.js';
 import BaseApplication from './base-application.js';
 import { CommandApplicationConfig } from './command-application.interface.js';
-import { Helper, Loader } from '../util/index.js';
+import { Helper, Loader, Time } from '../util/index.js';
 
 export default class CommandApplication extends BaseApplication {
   /** Command application config */
@@ -18,6 +18,10 @@ export default class CommandApplication extends BaseApplication {
       log: {
         startUp: false,
       },
+
+      debug: {
+        measureExecutionTime: false,
+      },
     };
 
     const mergedConfig = Helper.defaultsDeep(config, defaultConfig);
@@ -26,6 +30,8 @@ export default class CommandApplication extends BaseApplication {
   }
 
   protected async startHandler({ redisInstance, databaseInstance, queueManager }: { redisInstance: RedisInstance; databaseInstance: DatabaseInstance; queueManager: QueueManager; }): Promise<void> {
+    const startTime = performance.now();
+
     // get argv (yargs) input args
     const argv = this.config.commandManager.argv;
 
@@ -72,12 +78,23 @@ export default class CommandApplication extends BaseApplication {
       databaseInstance: databaseInstance,
     });
 
-    command.log('Command started', { Command: inputCommandName });
+    Logger.info('Command started', { Command: inputCommandName });
 
     // Run command
     await command.run(parsedArgv);
 
-    command.log('Command completed', { Command: inputCommandName });
+    const commandCompletedLogParams: Record<string, unknown> = {
+      Command: inputCommandName,
+    };
+
+    if (this.config.debug?.measureExecutionTime) {
+      const endTime = performance.now();
+      const executionTime = endTime - startTime;
+
+      commandCompletedLogParams['Execution Time'] = Time.formatTime({ time: executionTime, numDecimals: 2, showUnit: true });
+    }
+
+    Logger.info('Command completed', commandCompletedLogParams);
 
     // Call shutdown signtal to stop the command
     this.stopCommand();
@@ -88,7 +105,6 @@ export default class CommandApplication extends BaseApplication {
   }
 
   protected stopCallback(): void {
-    // throw new Error('Method not implemented.');
     Logger.info('Command stopped');
   }
 }

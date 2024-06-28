@@ -2,7 +2,7 @@ import * as Sentry from '@sentry/node';
 import cluster from 'cluster';
 import winston from 'winston';
 
-export type LoggerLevels = 'error' | 'warn' | 'info' | 'command' | 'database' | 'redis' | 'webServer' | 'webSocket' | 'queue' | 'debug';
+export type LoggerLevels = 'error' | 'warn' | 'info' | 'command' | 'database' | 'redis' | 'webServer' | 'webSocket' | 'queue' | 'queueJob' | 'dataSource' | 'debug';
 
 class Logger {
   private static instance: Logger;
@@ -27,7 +27,9 @@ class Logger {
       webServer: 6,
       webSocket: 7,
       queue: 8,
-      debug: 9,
+      queueJob: 9,
+      dataSource: 10,
+      debug: 11,
     };
 
     const customColors: winston.config.AbstractConfigSetColors = {
@@ -40,6 +42,8 @@ class Logger {
       webServer: 'brightBlue',
       webSocket: 'brightMagenta',
       queue: 'gray',
+      queueJob: 'brightWhite',
+      dataSource: 'brightGreen',
       debug: 'brightCyan',
     };
 
