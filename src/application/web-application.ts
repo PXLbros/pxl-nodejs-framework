@@ -5,7 +5,8 @@ import QueueManager from '../queue/manager.js';
 import WebSocket from '../websocket/websocket.js';
 import BaseApplication from './base-application.js';
 import { WebApplicationConfig } from './web-application.interface.js';
-import { Helper } from '../util/index.js';
+import { Helper, Time } from '../util/index.js';
+import { Logger } from '../logger/index.js';
 
 /**
  * Application
@@ -15,10 +16,10 @@ export default class WebApplication extends BaseApplication {
   protected config: WebApplicationConfig;
 
   /** WebSocket */
-  private webSocket?: WebSocket;
+  public webSocket?: WebSocket;
 
   /** Web server */
-  private webServer?: WebServer;
+  public webServer?: WebServer;
 
   constructor(config: WebApplicationConfig) {
     super(config);
@@ -47,8 +48,12 @@ export default class WebApplication extends BaseApplication {
       // Load WebSocket
       this.webSocket.load();
 
-      // Start WebSocket server
-      this.webSocket.startServer();
+      if (this.config.webSocket.isServer) {
+        // Start WebSocket server
+        this.webSocket.startServer();
+      } else {
+        this.webSocket.connectToServer();
+      }
     }
 
     if (this.config.webServer?.enabled) {
@@ -88,6 +93,36 @@ export default class WebApplication extends BaseApplication {
     if (this.webServer) {
       // Stop web server
       await this.webServer.stop();
+    }
+  }
+
+  /**
+   * Application started event
+   */
+  protected async onStarted({ startupTime }: { startupTime: number }): Promise<void> {
+    if (this.config.log?.startUp) {
+      Logger.info('Application started', {
+        Name: this.config.name,
+        'PXL Framework Version': this.applicationVersion,
+        'Startup Time': Time.formatTime({ time: startupTime, format: 's', numDecimals: 2, showUnit: true }),
+      });
+    }
+
+    if (this.config.events?.onStarted) {
+      this.config.events.onStarted({ app: this, startupTime });
+    }
+  }
+
+  protected async onStopped({ runtime }: { runtime: number }): Promise<void> {
+    if (this.config.log?.shutdown) {
+      Logger.info('Application stopped', {
+        Name: this.config.name,
+        'Runtime': Time.formatTime({ time: runtime, format: 's', numDecimals: 2, showUnit: true }),
+      });
+    }
+
+    if (this.config.events?.onStopped) {
+      this.config.events.onStopped({ app: this, runtime });
     }
   }
 }

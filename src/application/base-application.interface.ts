@@ -2,6 +2,9 @@ import { ClusterManagerConfig } from '../cluster/cluster-manager.interface.js';
 import { QueueItem } from '../queue/index.interface.js';
 import { WebServerDebugOptions, WebServerLogConfig, WebServerOptions, WebServerRoute } from '../webserver/webserver.interface.js';
 import { WebSocketOptions, WebSocketRoute } from '../websocket/websocket.interface.js';
+import BaseApplication from './base-application.js';
+import CommandApplication from './command-application.js';
+import WebApplication from './web-application.js';
 
 export type OnStartedEvent = ({ startupTime }: { startupTime: number }) => void;
 export type OnStoppedEvent = ({ runtime }: { runtime: number }) => void;
@@ -25,6 +28,8 @@ export interface ApplicationRedisConfig {
   /** Redis password */
   password?: string;
 }
+
+export interface ApplicationCacheConfig {}
 
 export interface ApplicationDatabaseConfig {
   /** Database host */
@@ -57,13 +62,15 @@ export interface ApplicationQueueConfig {
     jobRegistered?: boolean;
     jobAdded?: boolean;
     jobCompleted?: boolean;
-    queueCreated?: boolean;
+    queueRegistered?: boolean;
     queuesRegistered?: boolean;
     queueWaiting?: boolean;
   };
 }
 
 export interface ApplicationWebSocketConfig extends WebSocketOptions {
+  isServer?: boolean;
+
   /** Whether to enable WebSocket */
   enabled: boolean;
 
@@ -101,6 +108,7 @@ export interface ApplicationCommandsConfig {
 
 export interface ApplicationLogConfig {
   startUp?: boolean;
+  shutdown?: boolean;
 }
 
 export interface ApplicationConfig {
@@ -115,6 +123,9 @@ export interface ApplicationConfig {
 
   /** Redis configuration */
   redis: ApplicationRedisConfig;
+
+  /** Cache configuration */
+  cache: ApplicationCacheConfig;
 
   /** Database configuration */
   database: ApplicationDatabaseConfig;

@@ -42,7 +42,7 @@ class Logger {
       webServer: 'brightBlue',
       webSocket: 'brightMagenta',
       queue: 'gray',
-      queueJob: 'brightWhite',
+      queueJob: 'blue',
       dataSource: 'brightGreen',
       debug: 'brightCyan',
     };

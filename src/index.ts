@@ -8,6 +8,7 @@ export { __dirname as baseDir };
 
 export * from './application/index.js';
 export * from './auth/index.js';
+export * from './cache/index.js';
 export * from './command/index.js';
 export * from './database/index.js';
 export * from './redis/index.js';

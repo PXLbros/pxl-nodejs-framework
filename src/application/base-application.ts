@@ -8,6 +8,7 @@ import ClusterManager from '../cluster/cluster-manager.js';
 import RedisInstance from '../redis/instance.js';
 import { Time } from '../util/index.js';
 import { Logger } from '../logger/index.js';
+import CacheManager from '../cache/manager.js';
 
 export default abstract class BaseApplication {
   /** Shutdown signals */
@@ -26,13 +27,20 @@ export default abstract class BaseApplication {
   protected applicationVersion?: string;
 
   /** Redis manager */
-  protected redisManager: RedisManager;
+  public redisManager: RedisManager;
+
+  /** Cache manager */
+  public cacheManager: CacheManager;
 
   /** Database manager */
-  protected databaseManager: DatabaseManager;
+  public databaseManager: DatabaseManager;
 
   /** Queue manager */
-  protected queueManager?: QueueManager;
+  public queueManager?: QueueManager;
+
+  public get Name () {
+    return this.config.name;
+  }
 
   /**
    * Application constructor
@@ -71,6 +79,12 @@ export default abstract class BaseApplication {
       host: this.config.redis.host,
       port: this.config.redis.port,
       password: this.config.redis.password,
+    });
+
+    // Initialize cache manager
+    this.cacheManager = new CacheManager({
+      applicationConfig: this.config,
+      redisManager: this.redisManager,
     });
 
     const defaultEntitiesDirectory = path.join(this.config.rootDirectory, 'src', 'database', 'entities');
@@ -116,28 +130,40 @@ export default abstract class BaseApplication {
     // Start application timer
     this.startTime = process.hrtime();
 
-    // Get application version
+    // Get application version`
     this.applicationVersion = await this.getApplicationVersion();
 
     const startInstanceOptions: ApplicationStartInstanceOptions = {
-      onStarted: ({ startupTime }) => {
-        if (this.config.log?.startUp) {
-          Logger.info('Application started', {
-            Name: this.config.name,
-            'PXL Framework Version': this.applicationVersion,
-            'Startup Time': Time.formatTime({ time: startupTime, format: 's', numDecimals: 2, showUnit: true }),
-          });
-        }
-      },
+      // onStarted: ({ startupTime }) => {
+      //   if (this.config.log?.startUp) {
+      //     Logger.info('Application started', {
+      //       Name: this.config.name,
+      //       'PXL Framework Version': this.applicationVersion,
+      //       'Startup Time': Time.formatTime({ time: startupTime, format: 's', numDecimals: 2, showUnit: true }),
+      //     });
+      //   }
+
+      //   if (this.config.events?.onStarted) {
+      //     this.config.events.onStarted({ app: this, startupTime });
+      //   }
+      // },
+      onStarted: this.onStarted.bind(this),
     };
 
     const stopInstanceOptions: ApplicationStopInstanceOptions = {
-      onStopped: ({ runtime }) => {
-        Logger.info('Application stopped', {
-          Name: this.config.name,
-          'Runtime': Time.formatTime({ time: runtime, format: 's', numDecimals: 2, showUnit: true }),
-        });
-      },
+      // onStopped: ({ runtime }) => {
+      //   if (this.config.log?.shutdown) {
+      //     Logger.info('Application stopped', {
+      //       Name: this.config.name,
+      //       'Runtime': Time.formatTime({ time: runtime, format: 's', numDecimals: 2, showUnit: true }),
+      //     });
+      //   }
+
+      //   if (this.config.events?.onStopped) {
+      //     this.config.events.onStopped({ app: this, runtime });
+      //   }
+      // },
+      onStopped: this.onStopped.bind(this),
     };
 
     if (this.config.cluster?.enabled) {
@@ -178,20 +204,25 @@ export default abstract class BaseApplication {
         processorsDirectory: this.config.queue.processorsDirectory,
       },
       queues: this.config.queue.queues,
-      // jobs: this.config.queue.jobs,
       redisInstance,
       databaseInstance,
     });
-
-    // Create queue
-    // TODO: Pass initial queues to create from config instead
-    // queueManager.createQueue({ name: 'default' });
 
     return { redisInstance, databaseInstance, queueManager };
   }
 
   /**
-   * Before application stop
+   * Application started event
+   */
+  protected onStarted({ startupTime }: { startupTime: number }): void {}
+
+  /**
+   * Application stopped event
+   */
+  protected onStopped({ runtime }: { runtime: number }): void {}
+
+  /**
+   * Before application stop event
    */
   private async onBeforeStop(): Promise<void> {
     // Disconnect from Redis

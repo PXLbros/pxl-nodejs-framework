@@ -82,33 +82,6 @@ export default class QueueManager {
       return;
     }
 
-    // Create queue
-    this.createQueue({ name: queue.name, isExternal: queue.isExternal });
-
-    for (const job of queue.jobs) {
-      if (!queue.isExternal) {
-        const ProcessorClass = jobProcessorClasses[job.id];
-
-        if (!ProcessorClass) {
-          const jobPath = path.join(this.options.processorsDirectory, `${job.id}.ts`);
-
-          throw new Error(`Processor class not found (Job ID: ${job.id} | Path: ${jobPath})`);
-        }
-
-        const processorInstance = new ProcessorClass(this, this.applicationConfig, this.databaseInstance);
-
-        this.jobProcessors.set(job.id, processorInstance);
-      } else {
-        console.log('SKIPPING PROCESSOR REGISTRATION', job.id);
-      }
-
-      if (this.applicationConfig.queue.log?.jobRegistered) {
-        this.log('Job registered', { ID: job.id });
-      }
-    }
-  }
-
-  public createQueue = ({ name, isExternal }: { name: string; isExternal?: boolean }): void => {
     const queueOptions: QueueOptions = {
       connection: this.redisInstance.client,
       defaultJobOptions: {
@@ -117,16 +90,14 @@ export default class QueueManager {
       },
     };
 
-    const queue = new Queue(name, queueOptions);
+    const queueInstance = new Queue(queue.name, queueOptions);
 
-    queue.on('error', this.onQueueError);
-    queue.on('waiting', this.onQueueWaiting);
-    queue.on('progress', this.onQueueProgress);
-    queue.on('removed', this.onQueueRemoved);
+    queueInstance.on('error', this.onQueueError);
+    queueInstance.on('waiting', this.onQueueWaiting);
+    queueInstance.on('progress', this.onQueueProgress);
+    queueInstance.on('removed', this.onQueueRemoved);
 
-    if (!isExternal) {
-      console.log('SKIPPING QUEUE WORKER REGISTRATION', name);
-
+    if (!queue.isExternal) {
       const workerOptions: WorkerOptions = {
         connection: this.redisInstance.client,
         autorun: true,
@@ -142,12 +113,41 @@ export default class QueueManager {
       });
     }
 
-    this.queues.set(name, queue);
+    this.queues.set(queue.name, queueInstance);
 
-    if (this.applicationConfig.queue.log?.queueCreated) {
-      this.log('Created queue', { Name: name });
+    if (this.applicationConfig.queue.log?.queueRegistered) {
+      this.log('Registered queue', { Name: queue.name });
     }
-  };
+
+    // Register job processors
+    this.registerJobProcessors({ queue, jobs: queue.jobs, jobProcessorClasses });
+  }
+
+  private registerJobProcessors({ queue, jobs, jobProcessorClasses }: { queue: QueueItem; jobs: QueueJob[]; jobProcessorClasses: any }): void {
+    if (!jobs) {
+      return;
+    }
+
+    for (const job of jobs) {
+      if (!queue.isExternal) {
+        const ProcessorClass = jobProcessorClasses[job.id];
+
+        if (!ProcessorClass) {
+          const jobPath = path.join(this.options.processorsDirectory, `${job.id}.ts`);
+
+          throw new Error(`Processor class not found (Job ID: ${job.id} | Path: ${jobPath})`);
+        }
+
+        const processorInstance = new ProcessorClass(this, this.applicationConfig, this.databaseInstance);
+
+        this.jobProcessors.set(job.id, processorInstance);
+      }
+
+      if (this.applicationConfig.queue.log?.jobRegistered) {
+        this.log('Job registered', { ID: job.id });
+      }
+    }
+  }
 
   private onQueueError = (error: Error): void => {
     Logger.error(error);

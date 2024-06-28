@@ -1,4 +1,4 @@
-import { WebSocket } from 'ws';
+import { WebSocket, WebSocketServer } from 'ws';
 import DatabaseInstance from '../database/instance.js';
 import QueueManager from '../queue/manager.js';
 import RedisInstance from '../redis/instance.js';
@@ -6,6 +6,11 @@ import { WebSocketBaseControllerType } from './controller/base.interface.js';
 
 export interface WebSocketDebugOptions {
   printRoutes?: boolean;
+}
+
+export interface WebSocketEventsConfig {
+  onServerStarted?: ({ webSocketServer }: { webSocketServer: WebSocketServer }) => void;
+  onConnected?: ({ ws, clientId }: { ws: WebSocket; clientId: string }) => void;
 }
 
 export interface WebSocketOptions {
@@ -35,6 +40,9 @@ export interface WebSocketOptions {
 
   /** WebSocket debug options */
   debug?: WebSocketDebugOptions;
+
+  /** WebSocket events */
+  events?: WebSocketEventsConfig;
 }
 
 export interface WebSocketRoute {
@@ -91,6 +99,7 @@ export enum WebSocketRedisSubscriberEvent {
   ClientConnected = 'clientConnected',
   ClientDisconnected = 'clientDisconnected',
   ClientJoined = 'clientJoined',
+  SendMessage = 'sendMessage',
   SendMessageToAll = 'sendMessageToAll',
   MessageError = 'messageError',
   QueueJobCompleted = 'queueJobCompleted',

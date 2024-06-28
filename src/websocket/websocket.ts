@@ -49,6 +49,7 @@ export default class {
     WebSocketRedisSubscriberEvent.ClientConnected,
     WebSocketRedisSubscriberEvent.ClientDisconnected,
     WebSocketRedisSubscriberEvent.ClientJoined,
+    WebSocketRedisSubscriberEvent.SendMessage,
     WebSocketRedisSubscriberEvent.SendMessageToAll,
     WebSocketRedisSubscriberEvent.MessageError,
     WebSocketRedisSubscriberEvent.QueueJobCompleted,
@@ -369,13 +370,52 @@ export default class {
   }
 
   /**
+   * Connect to WebSocket server.
+   */
+  public async connectToServer(): Promise<void> {
+    const host = this.options.host;
+    const port = this.options.port;
+
+    return new Promise((resolve) => {
+      const ws = new WebSocket(`ws://${host}:${port}`);
+
+      ws.on('open', () => {
+        if (this.options.events?.onConnected) {
+          this.options.events.onConnected({ ws, clientId: '123' });
+        }
+
+        // this.handleServerStart();
+
+        resolve();
+      });
+
+      ws.on('message', (message) => {
+        // this.handleServerMessage({ ws, message });
+      });
+
+      ws.on('close', () => {
+        this.log('Connection closed');
+      });
+    });
+  }
+
+
+  /**
    * Handle WebSocket server start.
    */
   private handleServerStart = (): void => {
+    if (!this.server) {
+      throw new Error('WebSocket server not started');
+    }
+
     this.log('Server started', {
       Host: this.options.host,
       Port: this.options.port,
     });
+
+    if (this.options.events?.onServerStarted) {
+      this.options.events.onServerStarted({ webSocketServer: this.server });
+    }
   };
 
   /**
@@ -556,11 +596,14 @@ export default class {
 
     const runSameWorker = parsedMessage.runSameWorker === true;
 
+    console.log('got subscriber message on channel', channel);
+
     // Check if message is from the same worker
     if (runSameWorker !== true && parsedMessage.workerId === this.workerId) {
       // Ignore the message if it's from the same worker
       return;
     }
+
 
     switch (channel) {
       case WebSocketRedisSubscriberEvent.ClientConnected: {
@@ -585,6 +628,9 @@ export default class {
 
         break;
       }
+      case WebSocketRedisSubscriberEvent.SendMessage: {
+        break;
+      }
       case WebSocketRedisSubscriberEvent.SendMessageToAll: {
         this.broadcastToAllClients(parsedMessage);
 
@@ -599,8 +645,6 @@ export default class {
         break;
       }
       case WebSocketRedisSubscriberEvent.QueueJobCompleted: {
-        console.log('-----------------------> JOB COMPLETED');
-
         const parsedMessage = JSON.parse(message);
 
         this.sendJobDoneMessage({ type: 'jobCompleted', ...parsedMessage });
@@ -662,6 +706,26 @@ export default class {
   };
 
   /**
+   * Send WebSocket message.
+   */
+  public sendMessage = (data: unknown): void => {
+    this.redisInstance.publisherClient.publish(
+      WebSocketRedisSubscriberEvent.SendMessage,
+      JSON.stringify(data),
+    );
+  }
+
+  /**
+   * Send WebSocket message to all clients.
+   */
+  public sendMessageToAll = (data: unknown): void => {
+    this.redisInstance.publisherClient.publish(
+      WebSocketRedisSubscriberEvent.SendMessageToAll,
+      JSON.stringify(data),
+    );
+  }
+
+  /**
    * Set WebSocket client username.
    */
   private setClientUserName({ webSocketClientId, username }: { webSocketClientId: string; username: string }) {
@@ -687,12 +751,14 @@ export default class {
   /**
    * Broadcast to all WebSocket clients.
    */
-  private broadcastToAllClients({ data, excludeClientId }: { data: unknown; excludeClientId?: string }): void {
+  public broadcastToAllClients({ data, excludeClientId }: { data: unknown; excludeClientId?: string }): void {
     if (!this.server) {
       this.log('Server not started when broadcasting to all clients');
 
       return;
     }
+
+    console.log('broadcasting to all clients: ', this.server.clients.size);
 
     // Go through each client
     this.server.clients.forEach((client) => {
