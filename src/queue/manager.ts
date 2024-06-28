@@ -83,20 +83,24 @@ export default class QueueManager {
     }
 
     // Create queue
-    this.createQueue({ name: queue.name });
+    this.createQueue({ name: queue.name, isExternal: queue.isExternal });
 
     for (const job of queue.jobs) {
-      const ProcessorClass = jobProcessorClasses[job.id];
+      if (!queue.isExternal) {
+        const ProcessorClass = jobProcessorClasses[job.id];
 
-      if (!ProcessorClass) {
-        const jobPath = path.join(this.options.processorsDirectory, `${job.id}.ts`);
+        if (!ProcessorClass) {
+          const jobPath = path.join(this.options.processorsDirectory, `${job.id}.ts`);
 
-        throw new Error(`Processor class not found (Job ID: ${job.id} | Path: ${jobPath})`);
+          throw new Error(`Processor class not found (Job ID: ${job.id} | Path: ${jobPath})`);
+        }
+
+        const processorInstance = new ProcessorClass(this, this.applicationConfig, this.databaseInstance);
+
+        this.jobProcessors.set(job.id, processorInstance);
+      } else {
+        console.log('SKIPPING PROCESSOR REGISTRATION', job.id);
       }
-
-      const processorInstance = new ProcessorClass(this, this.applicationConfig, this.databaseInstance);
-
-      this.jobProcessors.set(job.id, processorInstance);
 
       if (this.applicationConfig.queue.log?.jobRegistered) {
         this.log('Job registered', { ID: job.id });
@@ -104,7 +108,7 @@ export default class QueueManager {
     }
   }
 
-  public createQueue = ({ name }: { name: string }): void => {
+  public createQueue = ({ name, isExternal }: { name: string; isExternal?: boolean }): void => {
     const queueOptions: QueueOptions = {
       connection: this.redisInstance.client,
       defaultJobOptions: {
@@ -120,19 +124,23 @@ export default class QueueManager {
     queue.on('progress', this.onQueueProgress);
     queue.on('removed', this.onQueueRemoved);
 
-    const workerOptions: WorkerOptions = {
-      connection: this.redisInstance.client,
-      autorun: true,
-    };
+    if (!isExternal) {
+      console.log('SKIPPING QUEUE WORKER REGISTRATION', name);
 
-    const queueWorker = new QueueWorker({
-      applicationConfig: this.applicationConfig,
-      queueManager: this,
-      name: queue.name,
-      processor: this.workerProcessor,
-      options: workerOptions,
-      redisInstance: this.redisInstance,
-    });
+      const workerOptions: WorkerOptions = {
+        connection: this.redisInstance.client,
+        autorun: true,
+      };
+
+      new QueueWorker({
+        applicationConfig: this.applicationConfig,
+        queueManager: this,
+        name: queue.name,
+        processor: this.workerProcessor,
+        options: workerOptions,
+        redisInstance: this.redisInstance,
+      });
+    }
 
     this.queues.set(name, queue);
 
@@ -189,6 +197,10 @@ export default class QueueManager {
   };
 
   private workerProcessor = async (job: Job): Promise<Processor<any, any, string> | undefined> => {
+    if (!job) {
+      return;
+    }
+
     const startTime = process.hrtime();
 
     // Add start time to job data

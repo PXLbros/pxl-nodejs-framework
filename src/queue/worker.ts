@@ -19,7 +19,6 @@ export default class QueueWorker extends Worker {
     this.applicationConfig = applicationConfig;
 
     this.queueManager = queueManager;
-
     this.redisInstance = redisInstance;
 
     this.on('active', this.onWorkerActive);
