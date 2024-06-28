@@ -1,3 +1,4 @@
+import Table from 'cli-table3';
 import cluster from 'cluster';
 import { RawData, WebSocket, WebSocketServer } from 'ws';
 import { Helper, Loader, Str, Time } from '../util/index.js';
@@ -72,6 +73,10 @@ export default class {
         intervalCheckTime: 1000 * 60 * 5,
         inactiveTime: 1000 * 60 * 10,
         log: false,
+      },
+      debug: {
+        printRoutes: false,
+        printConnectedClients: undefined,
       },
     };
 
@@ -174,8 +179,7 @@ export default class {
 
     if (this.options.debug?.printRoutes) {
       this.log('Routes:');
-
-      console.log(this.printRoutes());
+      this.log(this.printRoutes());
     }
   }
 
@@ -289,10 +293,42 @@ export default class {
     }
   }
 
+  private printConnectedClients = () => {
+    if (this.options.debug?.printConnectedClients === 'simple') {
+      this.printConnectedClientsSimpleLog();
+    } else if (this.options.debug?.printConnectedClients === 'table') {
+      this.printConnectedClientsTable();
+    }
+  }
+
+  private printConnectedClientsTable(): void {
+    const table = new Table({
+      head: ['Client ID', 'Username', 'Last Activity', 'Connected Time'],
+      colWidths: [36, 20, 25, 20]
+    });
+
+    if (this.connectedClients.size === 0) {
+      table.push([{ colSpan: 4, content: 'No connected clients.' }]);
+    } else {
+      const now = Date.now();
+
+      this.connectedClients.forEach((clientInfo, clientId) => {
+        const username = clientInfo.username || 'N/A';
+        // TODO: userType
+        const lastActivity = new Date(clientInfo.lastActivity).toISOString();
+        const connectedTime = Time.formatTime({ time: now - clientInfo.lastActivity, format: 'auto' });
+
+        table.push([clientId, username, lastActivity, connectedTime]);
+      });
+    }
+
+    this.log(`\n${table.toString()}`);
+  }
+
   /**
    * Print connected WebSocket clients.
    */
-  private printConnectedClients(): void {
+  private printConnectedClientsSimpleLog(): void {
     Logger.info('Connected clients', {
       Count: this.connectedClients.size,
     });
@@ -336,8 +372,6 @@ export default class {
    */
   private setDisconnectedClient({ clientId }: { clientId: string }) {
     this.connectedClients.delete(clientId);
-
-    this.printConnectedClients();
   }
 
   /**
@@ -446,6 +480,8 @@ export default class {
     this.log('Client connected', {
       ID: clientId,
     });
+
+    this.printConnectedClients();
   };
 
   /**
@@ -596,8 +632,6 @@ export default class {
 
     const runSameWorker = parsedMessage.runSameWorker === true;
 
-    console.log('got subscriber message on channel', channel);
-
     // Check if message is from the same worker
     if (runSameWorker !== true && parsedMessage.workerId === this.workerId) {
       // Ignore the message if it's from the same worker
@@ -618,6 +652,12 @@ export default class {
       case WebSocketRedisSubscriberEvent.ClientDisconnected: {
         this.setDisconnectedClient({ clientId: parsedMessage.clientId });
 
+        this.log('Client disconnected', {
+          ID: parsedMessage.clientId,
+        });
+
+        this.printConnectedClients();
+
         break;
       }
       case WebSocketRedisSubscriberEvent.ClientJoined: {
@@ -625,6 +665,13 @@ export default class {
           webSocketClientId: parsedMessage.clientId,
           username: parsedMessage.username
         });
+
+        this.log('Client joined', {
+          ID: parsedMessage.clientId,
+          Username: parsedMessage.username,
+        });
+
+        this.printConnectedClients();
 
         break;
       }
@@ -757,8 +804,6 @@ export default class {
 
       return;
     }
-
-    console.log('broadcasting to all clients: ', this.server.clients.size);
 
     // Go through each client
     this.server.clients.forEach((client) => {

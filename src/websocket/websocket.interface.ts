@@ -6,6 +6,7 @@ import { WebSocketBaseControllerType } from './controller/base.interface.js';
 
 export interface WebSocketDebugOptions {
   printRoutes?: boolean;
+  printConnectedClients?: 'simple' | 'table';
 }
 
 export interface WebSocketEventsConfig {

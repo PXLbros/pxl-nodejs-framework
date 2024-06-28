@@ -56,6 +56,6 @@ export default class DatabaseInstance {
   public async disconnect(): Promise<void> {
     await this.orm.close();
 
-    this.databaseManager.log('Disconnected from database');
+    this.databaseManager.log('Disconnected');
   }
 }

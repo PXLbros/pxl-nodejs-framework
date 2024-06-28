@@ -7,6 +7,7 @@ import BaseApplication from './base-application.js';
 import { WebApplicationConfig } from './web-application.interface.js';
 import { Helper, Time } from '../util/index.js';
 import { Logger } from '../logger/index.js';
+// import WebSocketServer from '../websocket/websocket-server.js';
 
 /**
  * Application
@@ -48,11 +49,31 @@ export default class WebApplication extends BaseApplication {
       // Load WebSocket
       this.webSocket.load();
 
-      if (this.config.webSocket.isServer) {
-        // Start WebSocket server
-        this.webSocket.startServer();
-      } else {
-        this.webSocket.connectToServer();
+      switch (this.config.webSocket.type) {
+        case 'server': {
+          // const webSocketServer = new WebSocketServer({
+          //   host: this.config.webSocket.host,
+          //   port: this.config.webSocket.port,
+          //   controllersDirectory: this.config.webSocket.controllersDirectory,
+          // });
+
+          // Start WebSocket server
+          await this.webSocket.startServer();
+
+          break;
+        }
+        case 'client': {
+          await this.webSocket.connectToServer();
+
+          break;
+        }
+        default: {
+          if (!this.config.webSocket.type) {
+            throw new Error('WebSocket type is required');
+          } else {
+            throw new Error(`WebSocket type "${this.config.webSocket.type}" is not supported`);
+          }
+        }
       }
     }
 

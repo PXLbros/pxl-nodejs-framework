@@ -60,6 +60,7 @@
     "@sentry/node": "^7.99.0",
     "axios": "^1.6.2",
     "bullmq": "^5.1.3",
+    "cli-table3": "^0.6.5",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "elevenlabs-node": "^2.0.3",

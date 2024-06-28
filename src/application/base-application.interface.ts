@@ -69,7 +69,8 @@ export interface ApplicationQueueConfig {
 }
 
 export interface ApplicationWebSocketConfig extends WebSocketOptions {
-  isServer?: boolean;
+  /** WebSocket type */
+  type: 'client' | 'server';
 
   /** Whether to enable WebSocket */
   enabled: boolean;
@@ -125,7 +126,7 @@ export interface ApplicationConfig {
   redis: ApplicationRedisConfig;
 
   /** Cache configuration */
-  cache: ApplicationCacheConfig;
+  cache?: ApplicationCacheConfig;
 
   /** Database configuration */
   database: ApplicationDatabaseConfig;
