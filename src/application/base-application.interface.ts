@@ -1,10 +1,7 @@
 import { ClusterManagerConfig } from '../cluster/cluster-manager.interface.js';
 import { QueueItem } from '../queue/index.interface.js';
 import { WebServerDebugOptions, WebServerLogConfig, WebServerOptions, WebServerRoute } from '../webserver/webserver.interface.js';
-import { WebSocketOptions, WebSocketRoute } from '../websocket/websocket.interface.js';
-import BaseApplication from './base-application.js';
-import CommandApplication from './command-application.js';
-import WebApplication from './web-application.js';
+import { WebSocketOptions, WebSocketRoute, WebSocketType } from '../websocket/websocket.interface.js';
 
 export type OnStartedEvent = ({ startupTime }: { startupTime: number }) => void;
 export type OnStoppedEvent = ({ runtime }: { runtime: number }) => void;
@@ -70,7 +67,7 @@ export interface ApplicationQueueConfig {
 
 export interface ApplicationWebSocketConfig extends WebSocketOptions {
   /** WebSocket type */
-  type: 'client' | 'server';
+  type: WebSocketType;
 
   /** Whether to enable WebSocket */
   enabled: boolean;

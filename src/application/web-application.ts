@@ -7,7 +7,8 @@ import BaseApplication from './base-application.js';
 import { WebApplicationConfig } from './web-application.interface.js';
 import { Helper, Time } from '../util/index.js';
 import { Logger } from '../logger/index.js';
-// import WebSocketServer from '../websocket/websocket-server.js';
+import WebSocketServer from '../websocket/websocket-server.js';
+import WebSocketClient from '../websocket/websocket-client.js';
 
 /**
  * Application
@@ -38,32 +39,54 @@ export default class WebApplication extends BaseApplication {
 
   protected async startHandler({ redisInstance, databaseInstance, queueManager }: { redisInstance: RedisInstance; databaseInstance: DatabaseInstance; queueManager: QueueManager }): Promise<void> {
     if (this.config.webSocket?.enabled) {
-      this.webSocket = new WebSocket({
-        options: this.config.webSocket,
-        routes: this.config.webSocket.routes,
-        redisInstance,
-        databaseInstance,
-        queueManager,
-      });
+      // this.webSocket = new WebSocket({
+      //   options: this.config.webSocket,
+      //   routes: this.config.webSocket.routes,
+      //   redisInstance,
+      //   databaseInstance,
+      //   queueManager,
+      // });
 
-      // Load WebSocket
-      this.webSocket.load();
+      // // Load WebSocket
+      // await this.webSocket.load();
+
+      let webSocketServer: WebSocketServer | undefined;
+      let webSocketClient: WebSocketClient | undefined;
 
       switch (this.config.webSocket.type) {
         case 'server': {
-          // const webSocketServer = new WebSocketServer({
-          //   host: this.config.webSocket.host,
-          //   port: this.config.webSocket.port,
-          //   controllersDirectory: this.config.webSocket.controllersDirectory,
-          // });
+          webSocketServer = new WebSocketServer({
+            options: this.config.webSocket,
+            redisInstance,
+            databaseInstance,
+            queueManager,
+            routes: this.config.webSocket.routes,
+            workerId: 1,
+          });
 
           // Start WebSocket server
-          await this.webSocket.startServer();
+          await webSocketServer.startServer();
+
+          console.log('############################# STARTED WEBSOCKET SERVER');
+
 
           break;
         }
         case 'client': {
-          await this.webSocket.connectToServer();
+          webSocketClient = new WebSocketClient({
+            options: this.config.webSocket,
+            redisInstance,
+            databaseInstance,
+            queueManager,
+            routes: this.config.webSocket.routes,
+          });
+
+          await webSocketClient.load();
+
+          await webSocketClient.connectToServer();
+
+          console.log('##################################### CONNECTED TO WEBSOCKET SERVER');
+
 
           break;
         }
@@ -75,6 +98,11 @@ export default class WebApplication extends BaseApplication {
           }
         }
       }
+
+      this.webSocket = new WebSocket({
+        server: webSocketServer,
+        client: webSocketClient,
+      });
     }
 
     if (this.config.webServer?.enabled) {

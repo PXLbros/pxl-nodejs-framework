@@ -4,6 +4,8 @@ import QueueManager from '../queue/manager.js';
 import RedisInstance from '../redis/instance.js';
 import { WebSocketBaseControllerType } from './controller/base.interface.js';
 
+export type WebSocketType = 'client' | 'server';
+
 export interface WebSocketDebugOptions {
   printRoutes?: boolean;
   printConnectedClients?: 'simple' | 'table';
@@ -11,10 +13,13 @@ export interface WebSocketDebugOptions {
 
 export interface WebSocketEventsConfig {
   onServerStarted?: ({ webSocketServer }: { webSocketServer: WebSocketServer }) => void;
-  onConnected?: ({ ws, clientId }: { ws: WebSocket; clientId: string }) => void;
+  onConnected?: ({ ws, clientId }: { ws?: WebSocket; clientId: string }) => void;
 }
 
 export interface WebSocketOptions {
+  /** WebSocket type */
+  type: WebSocketType;
+
   /** WebSocket host */
   host: string;
 
