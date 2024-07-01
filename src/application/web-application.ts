@@ -39,17 +39,6 @@ export default class WebApplication extends BaseApplication {
 
   protected async startHandler({ redisInstance, databaseInstance, queueManager }: { redisInstance: RedisInstance; databaseInstance: DatabaseInstance; queueManager: QueueManager }): Promise<void> {
     if (this.config.webSocket?.enabled) {
-      // this.webSocket = new WebSocket({
-      //   options: this.config.webSocket,
-      //   routes: this.config.webSocket.routes,
-      //   redisInstance,
-      //   databaseInstance,
-      //   queueManager,
-      // });
-
-      // // Load WebSocket
-      // await this.webSocket.load();
-
       let webSocketServer: WebSocketServer | undefined;
       let webSocketClient: WebSocketClient | undefined;
 
@@ -82,24 +71,21 @@ export default class WebApplication extends BaseApplication {
 
           await webSocketClient.connectToServer();
 
-          console.log('##################################### CONNECTED TO WEBSOCKET SERVER');
-
-
           break;
         }
         default: {
           if (!this.config.webSocket.type) {
             throw new Error('WebSocket type is required');
           } else {
-            throw new Error(`WebSocket type "${this.config.webSocket.type}" is not supported`);
+            throw new Error(`WebSocket type is not supported (Type: ${this.config.webSocket.type})`);
           }
         }
       }
 
-      this.webSocket = new WebSocket({
-        server: webSocketServer,
-        client: webSocketClient,
-      });
+      // this.webSocket = new WebSocket({
+      //   server: webSocketServer,
+      //   client: webSocketClient,
+      // });
     }
 
     if (this.config.webServer?.enabled) {

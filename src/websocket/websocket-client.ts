@@ -1,30 +1,23 @@
+// websocket-client.ts
 import WebSocket from 'ws';
-import { Logger } from '../logger/index.js';
-import {
-  WebSocketOptions,
-  WebSocketRoute,
-  WebSocketMessageHandler,
-  WebSocketConnectedClientData,
-  WebSocketRedisSubscriberEvent,
-  WebSocketMessageResponse,
-} from './websocket.interface.js';
-import { Helper, Str, Time } from '../util/index.js';
+import { WebSocketOptions, WebSocketRoute, WebSocketMessageHandler, WebSocketRedisSubscriberEvent } from './websocket.interface.js';
 import RedisInstance from '../redis/instance.js';
 import QueueManager from '../queue/manager.js';
 import DatabaseInstance from '../database/instance.js';
 import { WebSocketClientProps } from './websocket-client.interface.js';
+import { generateClientId, log, parseServerMessage, getRouteKey } from './utils.js';
+import WebSocketBase from './websocket-base.js';
 
-export default class WebSocketClient {
+export default class WebSocketClient extends WebSocketBase {
   private options: WebSocketOptions;
   private redisInstance: RedisInstance;
   private queueManager: QueueManager;
   private databaseInstance: DatabaseInstance;
-  private routes: WebSocketRoute[] = [];
-  private routeHandlers: Map<string, WebSocketMessageHandler> = new Map();
   private ws?: WebSocket;
   private clientId?: string;
 
   constructor(props: WebSocketClientProps) {
+    super();
     this.options = props.options;
     this.redisInstance = props.redisInstance;
     this.queueManager = props.queueManager;
@@ -33,7 +26,7 @@ export default class WebSocketClient {
   }
 
   public async load(): Promise<void> {
-    await this.configureRoutes();
+    await this.configureRoutes(this.options.controllersDirectory, {}); // Assuming controllers are loaded elsewhere
   }
 
   public async connectToServer(): Promise<void> {
@@ -44,8 +37,8 @@ export default class WebSocketClient {
       this.ws = new WebSocket(`ws://${host}:${port}`);
 
       this.ws.on('open', () => {
-        this.clientId = this.generateClientId();
-        this.log('Connected to server', { ID: this.clientId });
+        this.clientId = generateClientId();
+        log('Connected to server', { ID: this.clientId });
 
         if (this.options.events?.onConnected) {
           this.options.events.onConnected({ ws: this.ws, clientId: this.clientId });
@@ -57,103 +50,57 @@ export default class WebSocketClient {
       this.ws.on('message', this.handleServerMessage);
 
       this.ws.on('close', () => {
-        this.log('Connection closed');
+        log('Connection closed');
       });
 
       this.ws.on('error', (error) => {
-        this.log('WebSocket error', { error: error.message });
+        log('WebSocket error', { error: error.message });
       });
     });
   }
 
-  private async configureRoutes(): Promise<void> {
-    for (const route of this.routes) {
-      if (!route.controller) {
-        throw new Error('WebSocket controller not found');
-      }
+  protected getControllerDependencies(): Record<string, unknown> {
+    return {
+      webSocketClient: this,
+      redisInstance: this.redisInstance,
+      queueManager: this.queueManager,
+      databaseInstance: this.databaseInstance,
+    };
+  }
 
-      const controllerInstance = new route.controller({
-        webSocketClient: this,
-        redisInstance: this.redisInstance,
-        queueManager: this.queueManager,
-        databaseInstance: this.databaseInstance,
-      });
-
-      const controllerHandler = controllerInstance[
-        route.action as keyof typeof controllerInstance
-      ] as WebSocketMessageHandler;
-
-      const routeKey = this.getRouteKey({ type: route.type, action: route.action });
-      this.routeHandlers.set(routeKey, controllerHandler);
-    }
-
-    if (this.options.debug?.printRoutes) {
-      this.log('Routes:');
-      console.log(this.printRoutes());
-    }
+  protected shouldPrintRoutes(): boolean {
+    return this.options.debug?.printRoutes ?? false;
   }
 
   private handleServerMessage = async (message: WebSocket.Data): Promise<void> => {
     if (!this.ws || !this.clientId) {
-      this.log('WebSocket not initialized or client ID not set');
+      log('WebSocket not initialized or client ID not set');
       return;
     }
 
     try {
-      const { parsedMessage, messageHandler } = this.parseServerMessage(message);
-
+      const parsedMessage = parseServerMessage(message);
       const action = parsedMessage.action;
       const type = parsedMessage.type;
-
-      this.log('Incoming message', {
-        Action: action ?? '-',
-        Type: type ?? '-',
-      });
-
+      log('Incoming message', { Action: action ?? '-', Type: type ?? '-' });
+      const routeKey = getRouteKey(parsedMessage.type as string, parsedMessage.action as string);
+      const messageHandler = this.routeHandlers.get(routeKey);
+      if (!messageHandler) {
+        throw new Error(`Route handler not found (Route: ${routeKey})`);
+      }
       const messageResponse = await messageHandler(this.ws, this.clientId, parsedMessage.data);
-
       if (messageResponse?.error) {
         throw new Error(messageResponse.error);
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.log(errorMessage);
+      log(errorMessage);
     }
   };
 
-  private parseServerMessage(message: WebSocket.Data): {
-    parsedMessage: Record<string, unknown>;
-    messageHandler: WebSocketMessageHandler;
-  } {
-    let parsedMessage;
-
-    try {
-      parsedMessage = JSON.parse(message.toString());
-    } catch (error) {
-      throw new Error('Failed to parse JSON');
-    }
-
-    if (!parsedMessage) {
-      throw new Error('Invalid WebSocket message');
-    } else if (!parsedMessage.type) {
-      throw new Error('Missing WebSocket message type');
-    } else if (!parsedMessage.action) {
-      throw new Error('Missing WebSocket message action');
-    }
-
-    const routeKey = this.getRouteKey({ type: parsedMessage.type, action: parsedMessage.action });
-    const messageHandler = this.routeHandlers.get(routeKey);
-
-    if (!messageHandler) {
-      throw new Error(`Route handler not found (Route: ${routeKey})`);
-    }
-
-    return { parsedMessage, messageHandler };
-  }
-
   public sendClientMessage = (data: unknown, binary: boolean = false): void => {
     if (!this.ws) {
-      this.log('WebSocket not initialized');
+      log('WebSocket not initialized');
       return;
     }
 
@@ -167,7 +114,7 @@ export default class WebSocketClient {
 
   public setClientJoined(username: string): void {
     if (!this.ws || !this.clientId) {
-      this.log('WebSocket not initialized or client ID not set');
+      log('WebSocket not initialized or client ID not set');
       return;
     }
 
@@ -176,32 +123,5 @@ export default class WebSocketClient {
       action: 'join',
       data: { username },
     });
-  }
-
-  private generateClientId(): string {
-    return Str.generateUniqueId();
-  }
-
-  private getRouteKey({ type, action }: { type: string; action: string }): string {
-    return `${type}:${action}`;
-  }
-
-  private printRoutes(): string {
-    let routesString = '';
-    const routeKeys = Array.from(this.routeHandlers.keys());
-
-    routeKeys.forEach((routeKey, index) => {
-      const [type, action] = routeKey.split(':');
-      routesString += `Type: ${type} -> Action: ${action}`;
-      if (index !== routeKeys.length - 1) {
-        routesString += '\n';
-      }
-    });
-
-    return routesString;
-  }
-
-  private log(message: string, meta?: Record<string, unknown>): void {
-    Logger.custom('webSocket', message, meta);
   }
 }
