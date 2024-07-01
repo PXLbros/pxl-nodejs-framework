@@ -67,9 +67,6 @@ export default class WebApplication extends BaseApplication {
           // Start WebSocket server
           await webSocketServer.startServer();
 
-          console.log('############################# STARTED WEBSOCKET SERVER');
-
-
           break;
         }
         case 'client': {
