@@ -39,7 +39,7 @@ export default class WebSocketClient extends WebSocketBase {
   }
 
   public async load(): Promise<void> {
-    const libraryControllersDirectory = path.join(baseDir, 'websocket', 'controllers');
+    const libraryControllersDirectory = path.join(baseDir, 'websocket', 'controllers', 'client');
 
     await this.configureRoutes(this.defaultRoutes, libraryControllersDirectory);
 
@@ -64,8 +64,8 @@ export default class WebSocketClient extends WebSocketBase {
             clientId: this.clientId,
             join: ({ username }: { username: string }) => {
               this.sendClientMessage({
-                type: 'user',
-                action: 'join',
+                type: 'system',
+                action: 'clientJoin',
                 data: { username },
               });
             },
@@ -78,7 +78,7 @@ export default class WebSocketClient extends WebSocketBase {
       ws.on('message', this.handleIncomingMessage);
 
       ws.on('close', () => {
-        log('Connection closed');
+        log('Connection to server closed');
 
         if (this.options.events?.onDisconnected) {
           this.options.events.onDisconnected({ clientId: this.clientId });

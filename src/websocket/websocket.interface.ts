@@ -2,7 +2,8 @@ import { WebSocket, WebSocketServer } from 'ws';
 import DatabaseInstance from '../database/instance.js';
 import QueueManager from '../queue/manager.js';
 import RedisInstance from '../redis/instance.js';
-import { WebSocketBaseControllerType } from './controller/base.interface.js';
+import { WebSocketServerBaseControllerType } from './controller/server/base.interface.js';
+import { WebSocketClientBaseControllerType } from './controller/client/base.interface.js';
 
 export type WebSocketType = 'client' | 'server';
 
@@ -61,7 +62,7 @@ export interface WebSocketRoute {
   controllerName: string;
 
   /** WebSocket route controller */
-  controller?: WebSocketBaseControllerType;
+  controller?: WebSocketServerBaseControllerType | WebSocketClientBaseControllerType;
 
   /** WebSocket route action */
   action: string;

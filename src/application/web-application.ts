@@ -55,6 +55,9 @@ export default class WebApplication extends BaseApplication {
             workerId: 1,
           });
 
+          // Load WebSocket client
+          await webSocketServer.load();
+
           // Start WebSocket server
           await webSocketServer.startServer();
 
@@ -87,11 +90,6 @@ export default class WebApplication extends BaseApplication {
           }
         }
       }
-
-      // this.webSocket = new WebSocket({
-      //   server: webSocketServer,
-      //   client: webSocketClient,
-      // });
     }
 
     if (this.config.webServer?.enabled) {

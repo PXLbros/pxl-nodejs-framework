@@ -14,6 +14,8 @@ export default class WebSocketClientManager {
   }
 
   getClientList() {
+    // console.log('getClientList', this.clients.entries());
+
     return Array.from(this.clients.entries()).map(([id, { type }]) => ({ id, type }));
   }
 

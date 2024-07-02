@@ -1,6 +1,6 @@
 // websocket-server.ts
 import { RawData, WebSocket, WebSocketServer as WS } from 'ws';
-import { WebSocketOptions, WebSocketRedisSubscriberEvent, WebSocketConnectedClientData } from './websocket.interface.js';
+import { WebSocketOptions, WebSocketRedisSubscriberEvent, WebSocketConnectedClientData, WebSocketRoute } from './websocket.interface.js';
 import RedisInstance from '../redis/instance.js';
 import QueueManager from '../queue/manager.js';
 import DatabaseInstance from '../database/instance.js';
@@ -11,8 +11,18 @@ import WebSocketBase from './websocket-base.js';
 import { Time } from '../util/index.js';
 import { Logger } from '../logger/index.js';
 import { ApplicationConfig } from '../application/base-application.interface.js';
+import path from 'path';
+import { baseDir } from '../index.js';
 
 export default class WebSocketServer extends WebSocketBase {
+  protected defaultRoutes: WebSocketRoute[] = [
+    {
+      type: 'system',
+      action: 'clientJoin',
+      controllerName: 'system',
+    },
+  ];
+
   private server?: WS;
   private connectedClients: Map<string, WebSocketConnectedClientData> = new Map();
   private checkConnectedClientsInterval?: NodeJS.Timeout;
@@ -38,6 +48,14 @@ export default class WebSocketServer extends WebSocketBase {
     if (this.options.disconnectInactiveClients?.enabled) {
       this.checkConnectedClientsInterval = setInterval(() => this.checkInactiveClients(), this.options.disconnectInactiveClients.intervalCheckTime);
     }
+  }
+
+  public async load(): Promise<void> {
+    const libraryControllersDirectory = path.join(baseDir, 'websocket', 'controllers', 'server');
+
+    await this.configureRoutes(this.defaultRoutes, libraryControllersDirectory);
+
+    await this.configureRoutes(this.routes, this.options.controllersDirectory);
   }
 
   public async startServer(): Promise<{ server: WS }> {
@@ -239,6 +257,7 @@ export default class WebSocketServer extends WebSocketBase {
       JSON.stringify({ clientId, runSameWorker: true, username, workerId: this.workerId })
     );
 
+    // Send welcome message back to client
     this.sendClientMessage(ws, { type: 'user', action: 'welcome' });
 
     this.clientManager.broadcastClientList();

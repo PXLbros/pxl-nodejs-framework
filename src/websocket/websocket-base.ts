@@ -1,7 +1,8 @@
 import { existsSync } from 'fs';
 import { WebSocketRoute, WebSocketMessageHandler } from './websocket.interface.js';
 import { log, getRouteKey, parseServerMessage } from './utils.js';
-import { WebSocketBaseControllerType } from './controller/base.interface.js';
+import { WebSocketServerBaseControllerType } from './controller/server/base.interface.js';
+import { WebSocketClientBaseControllerType } from './controller/client/base.interface.js';
 import WebSocket from 'ws';
 import { Helper, Loader } from '../util/index.js';
 
@@ -31,7 +32,10 @@ export default abstract class WebSocketBase {
     });
 
     for (const route of routes) {
-      let ControllerClass: WebSocketBaseControllerType;
+      let ControllerClass: WebSocketServerBaseControllerType | WebSocketClientBaseControllerType;
+
+      console.log('registering route', route);
+
 
       if (route.controller) {
         ControllerClass = route.controller;
@@ -44,7 +48,7 @@ export default abstract class WebSocketBase {
       if (typeof ControllerClass !== 'function') {
         log('Controller not found', {
           Controller: route.controllerName,
-          Path: `${controllersDirectory}/${route.controllerName}.ts`
+          Path: `${controllersDirectory}/${route.controllerName}.js`,
         });
 
         continue;
