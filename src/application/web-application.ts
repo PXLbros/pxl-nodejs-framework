@@ -42,6 +42,41 @@ export default class WebApplication extends BaseApplication {
       let webSocketServer: WebSocketServer | undefined;
       let webSocketClient: WebSocketClient | undefined;
 
+      // To get clustering work, only create the WebSocket server in the primary process
+      // if (cluster.isPrimary) {
+      //   const numCPUs = os.cpus().length;
+      //   const server = createServer();
+
+      //   // Create a WebSocket server
+      //   const wss = new WebSocketServer({ server });
+
+      //   // Fork workers
+      //   for (let i = 0; i < numCPUs; i++) {
+      //     const worker = cluster.fork();
+
+      //     // Pass the server handle to the worker
+      //     worker.send('server', server);
+      //   }
+
+      //   server.listen(8080, () => {
+      //     console.log('Server listening on port 8080');
+      //   });
+
+      // } else {
+      //   process.on('message', (message, serverHandle) => {
+      //     if (message === 'server') {
+      //       const wss = new WebSocketServer({ server: serverHandle });
+
+      //       wss.on('connection', (ws: WebSocket) => {
+      //         ws.on('message', (message: string) => {
+      //           console.log(`Worker ${process.pid} received: ${message}`);
+      //           ws.send(`Worker ${process.pid} echo: ${message}`);
+      //         });
+      //       });
+      //     }
+      //   });
+      // }
+
       switch (this.config.webSocket.type) {
         case 'server': {
           // Initialize WebSocket server
