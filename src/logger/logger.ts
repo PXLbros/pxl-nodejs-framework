@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/node';
+import { nodeProfilingIntegration } from '@sentry/profiling-node';
 import cluster from 'cluster';
 import winston from 'winston';
 
@@ -108,7 +109,7 @@ class Logger {
     Sentry.init({
       dsn: sentryDsn,
       integrations: [
-        new Sentry.Integrations.Http({ tracing: true }),
+        nodeProfilingIntegration(),
       ],
       tracesSampleRate: 1.0,
       environment,

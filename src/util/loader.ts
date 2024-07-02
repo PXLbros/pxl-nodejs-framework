@@ -18,15 +18,24 @@ const loadModulesInDirectory = async ({
 
     if (stats.isDirectory()) {
       continue;
-    } else if (extensions && extensions.length > 0 && !extensions.includes(path.extname(file))) {
+    }
+
+    const ext = path.extname(file);
+    const isDeclarationFile = file.endsWith('.d.ts');
+
+    // Skip files that are not in the specified extensions or are .d.ts files
+    if ((extensions && extensions.length > 0 && !extensions.includes(ext)) || isDeclarationFile) {
       continue;
     }
 
-    const moduleName = file.replace(/\.(ts|js)$/, '');
+    const moduleName = path.basename(file, ext);
 
-    const importedModule = await import(filePath);
-
-    loadedModules[moduleName] = importedModule.default;
+    try {
+      const importedModule = await import(filePath);
+      loadedModules[moduleName] = importedModule.default;
+    } catch (error) {
+      console.error(`Failed to import module ${filePath}:`, error);
+    }
   }
 
   return loadedModules;

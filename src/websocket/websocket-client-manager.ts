@@ -19,6 +19,7 @@ export default class WebSocketClientManager {
 
   broadcastClientList() {
     const clientList = this.getClientList();
+
     this.clients.forEach(({ ws }) => {
       ws.send(JSON.stringify({ type: 'system', action: 'clientList', data: clientList }));
     });

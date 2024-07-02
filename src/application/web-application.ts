@@ -44,7 +44,9 @@ export default class WebApplication extends BaseApplication {
 
       switch (this.config.webSocket.type) {
         case 'server': {
+          // Initialize WebSocket server
           webSocketServer = new WebSocketServer({
+            applicationConfig: this.config,
             options: this.config.webSocket,
             redisInstance,
             databaseInstance,
@@ -59,7 +61,9 @@ export default class WebApplication extends BaseApplication {
           break;
         }
         case 'client': {
+          // Initialize WebSocket client
           webSocketClient = new WebSocketClient({
+            applicationConfig: this.config,
             options: this.config.webSocket,
             redisInstance,
             databaseInstance,
@@ -67,8 +71,10 @@ export default class WebApplication extends BaseApplication {
             routes: this.config.webSocket.routes,
           });
 
+          // Load WebSocket client
           await webSocketClient.load();
 
+          // Connect to WebSocket server
           await webSocketClient.connectToServer();
 
           break;

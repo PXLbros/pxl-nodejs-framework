@@ -10,12 +10,14 @@ import { generateClientId, log, parseServerMessage, getRouteKey } from './utils.
 import WebSocketBase from './websocket-base.js';
 import { Time } from '../util/index.js';
 import { Logger } from '../logger/index.js';
+import { ApplicationConfig } from '../application/base-application.interface.js';
 
 export default class WebSocketServer extends WebSocketBase {
   private server?: WS;
   private connectedClients: Map<string, WebSocketConnectedClientData> = new Map();
   private checkConnectedClientsInterval?: NodeJS.Timeout;
   private workerId: number;
+  private applicationConfig: ApplicationConfig;
   private options: WebSocketOptions;
   private clientManager = new WebSocketClientManager();
   private redisInstance: RedisInstance;
@@ -24,6 +26,8 @@ export default class WebSocketServer extends WebSocketBase {
 
   constructor(props: WebSocketServerProps) {
     super();
+
+    this.applicationConfig = props.applicationConfig;
     this.options = props.options;
     this.redisInstance = props.redisInstance;
     this.queueManager = props.queueManager;
@@ -40,11 +44,13 @@ export default class WebSocketServer extends WebSocketBase {
     return new Promise((resolve) => {
       const server = new WS({ host: this.options.host, port: this.options.port }, () => {
         this.handleServerStart();
+
         resolve({ server });
       });
 
       server.on('error', this.handleServerError);
       server.on('connection', this.handleServerClientConnection);
+
       this.server = server;
     });
   }
@@ -66,7 +72,9 @@ export default class WebSocketServer extends WebSocketBase {
     if (!this.server) {
       throw new Error('WebSocket server not started');
     }
+
     log('Server started', { Host: this.options.host, Port: this.options.port });
+
     if (this.options.events?.onServerStarted) {
       this.options.events.onServerStarted({ webSocketServer: this.server });
     }
@@ -78,19 +86,16 @@ export default class WebSocketServer extends WebSocketBase {
 
   private handleServerClientConnection = (ws: WebSocket): void => {
     const clientId = generateClientId();
+
     this.addConnectedClient({ clientId, ws });
+
     this.clientManager.addClient(clientId, 'clientType', ws);
 
-    ws.on('message', (message) => {
-      try {
-        this.handleServerMessage({ ws, message });
-      } catch (error) {
-        console.log('HANDLE MESSAGE ERROR');
-      }
-    });
+    ws.on('message', (message: RawData) => this.handleClientMessage(ws, message));
 
     ws.on('close', () => {
       this.handleServerClientDisconnection(clientId);
+
       this.clientManager.removeClient(clientId);
     });
 
@@ -99,6 +104,7 @@ export default class WebSocketServer extends WebSocketBase {
 
   private addConnectedClient({ clientId, ws }: { clientId: string; ws: WebSocket }): void {
     const lastActivity = Date.now();
+
     this.setConnectedClient({ clientId, ws, lastActivity });
 
     this.redisInstance.publisherClient.publish(
@@ -109,7 +115,10 @@ export default class WebSocketServer extends WebSocketBase {
 
   private setConnectedClient({ clientId, ws, lastActivity }: { clientId: string; ws: WebSocket | null; lastActivity: number }): void {
     this.connectedClients.set(clientId, { ws, lastActivity: lastActivity });
-    this.printConnectedClients();
+
+    // log('Client connected', { ID: clientId });
+
+    // this.printConnectedClients();
   }
 
   private handleServerClientDisconnection = (clientId: string): void => {
@@ -117,46 +126,32 @@ export default class WebSocketServer extends WebSocketBase {
       WebSocketRedisSubscriberEvent.ClientDisconnected,
       JSON.stringify({ clientId, workerId: this.workerId, runSameWorker: true })
     );
+
     log('Client disconnected', { ID: clientId });
   };
 
-  private handleServerMessage = async ({ ws, message }: { ws: WebSocket; message: RawData }): Promise<void> => {
+  private handleClientMessage = async (ws: WebSocket, message: RawData): Promise<void> => {
     const clientId = this.getClientId({ client: ws });
+
     if (!clientId) {
       log('Client ID not found when handling server message');
+
       return;
     }
 
-    const sendMessageErrorToClient = (error: string) => {
-      this.redisInstance.publisherClient.publish(
-        WebSocketRedisSubscriberEvent.MessageError,
-        JSON.stringify({ runSameWorker: true, clientId, error })
-      );
-    };
-
-    try {
-      const parsedMessage = parseServerMessage(message);
-      const action = parsedMessage.action;
-      const type = parsedMessage.type;
-      log('Incoming message', { 'Client ID': clientId, Action: action ?? '-', Type: type ?? '-' });
-      const routeKey = getRouteKey(parsedMessage.type as string, parsedMessage.action as string);
-      const messageHandler = this.routeHandlers.get(routeKey);
-      if (!messageHandler) {
-        throw new Error(`Route handler not found (Route: ${routeKey})`);
-      }
-      const messageResponse = await messageHandler(ws, clientId, parsedMessage.data);
-      if (messageResponse?.error) {
-        throw new Error(messageResponse.error);
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      log(errorMessage);
-      sendMessageErrorToClient(errorMessage);
-    }
+    await this.handleServerMessage(ws, message, clientId);
   };
+
+  protected handleMessageError(clientId: string, error: string): void {
+    this.redisInstance.publisherClient.publish(
+      WebSocketRedisSubscriberEvent.MessageError,
+      JSON.stringify({ runSameWorker: true, clientId, error })
+    );
+  }
 
   private checkInactiveClients(): void {
     const now = Date.now();
+
     if (this.options.disconnectInactiveClients?.enabled && this.options.disconnectInactiveClients.log) {
       log('Checking inactive clients...');
     }
@@ -166,11 +161,14 @@ export default class WebSocketServer extends WebSocketBase {
       if (this.options.disconnectInactiveClients?.enabled && typeof this.options.disconnectInactiveClients.inactiveTime === 'number') {
         const timeUntilInactive = Math.max(0, this.options.disconnectInactiveClients.inactiveTime - (now - clientInfo.lastActivity));
         const isClientInactive = timeUntilInactive <= 0;
+
         if (this.options.disconnectInactiveClients.log) {
           log('Checking client activity', { ID: clientId, 'Time Until Inactive': Time.formatTime({ time: timeUntilInactive, format: 'auto' }) });
         }
+
         if (isClientInactive) {
           this.disconnectClient({ clientId });
+
           numInactiveClients++;
         }
       }
@@ -187,9 +185,12 @@ export default class WebSocketServer extends WebSocketBase {
 
   private disconnectClient({ clientId }: { clientId: string }) {
     const clientInfo = this.connectedClients.get(clientId);
+
     if (clientInfo?.ws) {
       const connectedTime = Date.now() - clientInfo.lastActivity;
+
       clientInfo.ws.close();
+
       Logger.info('WebSocket client was disconnected due to inactivity', {
         ID: clientId,
         Worker: this.workerId,
@@ -201,15 +202,19 @@ export default class WebSocketServer extends WebSocketBase {
   public broadcastToAllClients({ data, excludeClientId }: { data: unknown; excludeClientId?: string }): void {
     if (!this.server) {
       log('Server not started when broadcasting to all clients');
+
       return;
     }
 
     this.server.clients.forEach((client) => {
       let excludeClient = false;
+
       if (excludeClientId) {
         const clientId = this.getClientId({ client });
+
         excludeClient = clientId === excludeClientId;
       }
+
       if (client.readyState === WebSocket.OPEN && !excludeClient) {
         client.send(JSON.stringify(data));
       }
@@ -222,20 +227,28 @@ export default class WebSocketServer extends WebSocketBase {
 
   public setClientJoined({ ws, username }: { ws: WebSocket; username: string }): void {
     const clientId = this.getClientId({ client: ws });
+
     if (!clientId) {
       log('Client ID not found when setting client joined');
+
       return;
     }
+
     this.redisInstance.publisherClient.publish(
       WebSocketRedisSubscriberEvent.ClientJoined,
       JSON.stringify({ clientId, runSameWorker: true, username, workerId: this.workerId })
     );
+
     this.sendClientMessage(ws, { type: 'user', action: 'welcome' });
+
     this.clientManager.broadcastClientList();
+
+    Logger.info('Client joined', { ID: clientId, Username: username });
   }
 
   public sendClientMessage = (ws: WebSocket, data: unknown, binary: boolean = false): void => {
     const webSocketMessage = JSON.stringify(data);
+
     ws.send(webSocketMessage, { binary });
   };
 

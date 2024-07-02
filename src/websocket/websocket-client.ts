@@ -1,5 +1,4 @@
-// websocket-client.ts
-import WebSocket from 'ws';
+import WebSocket, { RawData } from 'ws';
 import { WebSocketOptions, WebSocketRoute, WebSocketMessageHandler, WebSocketRedisSubscriberEvent } from './websocket.interface.js';
 import RedisInstance from '../redis/instance.js';
 import QueueManager from '../queue/manager.js';
@@ -7,8 +6,20 @@ import DatabaseInstance from '../database/instance.js';
 import { WebSocketClientProps } from './websocket-client.interface.js';
 import { generateClientId, log, parseServerMessage, getRouteKey } from './utils.js';
 import WebSocketBase from './websocket-base.js';
+import { ApplicationConfig } from '../application/base-application.interface.js';
+import path from 'path';
+import { baseDir } from '../index.js';
 
 export default class WebSocketClient extends WebSocketBase {
+  protected defaultRoutes: WebSocketRoute[] = [
+    {
+      type: 'system',
+      action: 'clientList',
+      controllerName: 'system',
+    },
+  ];
+
+  private applicationConfig: ApplicationConfig;
   private options: WebSocketOptions;
   private redisInstance: RedisInstance;
   private queueManager: QueueManager;
@@ -18,6 +29,8 @@ export default class WebSocketClient extends WebSocketBase {
 
   constructor(props: WebSocketClientProps) {
     super();
+
+    this.applicationConfig = props.applicationConfig;
     this.options = props.options;
     this.redisInstance = props.redisInstance;
     this.queueManager = props.queueManager;
@@ -26,7 +39,11 @@ export default class WebSocketClient extends WebSocketBase {
   }
 
   public async load(): Promise<void> {
-    await this.configureRoutes(this.options.controllersDirectory, {}); // Assuming controllers are loaded elsewhere
+    const libraryControllersDirectory = path.join(baseDir, 'websocket', 'controllers');
+
+    await this.configureRoutes(this.defaultRoutes, libraryControllersDirectory);
+
+    await this.configureRoutes(this.routes, this.options.controllersDirectory);
   }
 
   public async connectToServer(): Promise<void> {
@@ -34,32 +51,53 @@ export default class WebSocketClient extends WebSocketBase {
     const port = this.options.port;
 
     return new Promise((resolve) => {
-      this.ws = new WebSocket(`ws://${host}:${port}`);
+      const ws = new WebSocket(`ws://${host}:${port}`);
 
-      this.ws.on('open', () => {
+      ws.on('open', () => {
         this.clientId = generateClientId();
+
         log('Connected to server', { ID: this.clientId });
 
         if (this.options.events?.onConnected) {
-          this.options.events.onConnected({ ws: this.ws, clientId: this.clientId });
+          this.options.events.onConnected({
+            ws,
+            clientId: this.clientId,
+            join: ({ username }: { username: string }) => {
+              this.sendClientMessage({
+                type: 'user',
+                action: 'join',
+                data: { username },
+              });
+            },
+          });
         }
 
         resolve();
       });
 
-      this.ws.on('message', this.handleServerMessage);
+      ws.on('message', this.handleIncomingMessage);
 
-      this.ws.on('close', () => {
+      ws.on('close', () => {
         log('Connection closed');
+
+        if (this.options.events?.onDisconnected) {
+          this.options.events.onDisconnected({ clientId: this.clientId });
+        }
       });
 
-      this.ws.on('error', (error) => {
+      ws.on('error', (error) => {
         log('WebSocket error', { error: error.message });
+
+        if (this.options.events?.onError) {
+          this.options.events.onError({ error: error });
+        }
       });
+
+      this.ws = ws;
     });
   }
 
-  protected getControllerDependencies(): Record<string, unknown> {
+  protected getControllerDependencies(): { webSocketClient: WebSocketClient; redisInstance: RedisInstance; queueManager: QueueManager; databaseInstance: DatabaseInstance } {
     return {
       webSocketClient: this,
       redisInstance: this.redisInstance,
@@ -72,56 +110,33 @@ export default class WebSocketClient extends WebSocketBase {
     return this.options.debug?.printRoutes ?? false;
   }
 
-  private handleServerMessage = async (message: WebSocket.Data): Promise<void> => {
+  private handleIncomingMessage = async (message: RawData): Promise<void> => {
     if (!this.ws || !this.clientId) {
       log('WebSocket not initialized or client ID not set');
+
       return;
     }
 
-    try {
-      const parsedMessage = parseServerMessage(message);
-      const action = parsedMessage.action;
-      const type = parsedMessage.type;
-      log('Incoming message', { Action: action ?? '-', Type: type ?? '-' });
-      const routeKey = getRouteKey(parsedMessage.type as string, parsedMessage.action as string);
-      const messageHandler = this.routeHandlers.get(routeKey);
-      if (!messageHandler) {
-        throw new Error(`Route handler not found (Route: ${routeKey})`);
-      }
-      const messageResponse = await messageHandler(this.ws, this.clientId, parsedMessage.data);
-      if (messageResponse?.error) {
-        throw new Error(messageResponse.error);
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      log(errorMessage);
-    }
+    await this.handleServerMessage(this.ws, message, this.clientId);
   };
+
+  protected handleMessageError(clientId: string, error: string): void {
+    log(error);
+  }
 
   public sendClientMessage = (data: unknown, binary: boolean = false): void => {
     if (!this.ws) {
       log('WebSocket not initialized');
+
       return;
     }
 
     const webSocketMessage = JSON.stringify(data);
+
     this.ws.send(webSocketMessage, { binary });
   };
 
   public sendMessage = (data: unknown): void => {
     this.sendClientMessage(data);
   };
-
-  public setClientJoined(username: string): void {
-    if (!this.ws || !this.clientId) {
-      log('WebSocket not initialized or client ID not set');
-      return;
-    }
-
-    this.sendClientMessage({
-      type: WebSocketRedisSubscriberEvent.ClientJoined,
-      action: 'join',
-      data: { username },
-    });
-  }
 }
