@@ -1,6 +1,9 @@
 #!/bin/bash
 
-APP_DIR=/home/ec2-user/app/docker
+# print all envs
+printenv
+
+APP_DIR=/home/ec2-user/app/pxl-nodejs-framework
 
 echo "Change permissions (Directory: $APP_DIR)..."
 
