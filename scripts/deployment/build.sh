@@ -6,6 +6,11 @@ echo "Build... (Directory: $APP_DIR)"
 
 cd $APP_DIR
 
+pwd
+
+# Source ~/.zshrc
+source ~/.zshrc
+
 nvm use
 
 npm install
