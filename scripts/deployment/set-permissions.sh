@@ -15,3 +15,9 @@ if [ -d "$APP_DIR" ]; then
 else
   echo "Directory does not exist. Skip changing permissions..."
 fi
+
+nvm use
+
+npm install
+
+./node_modules/.bin/yalc push
