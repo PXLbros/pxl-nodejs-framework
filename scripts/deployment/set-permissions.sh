@@ -2,7 +2,7 @@
 
 APP_DIR=/home/ec2-user/app/pxl-nodejs-framework
 
-echo "Change permissions (Directory: $APP_DIR)..."
+echo "Change permissions... (Directory: $APP_DIR)"
 
 # Check if the directory exists
 if [ -d "$APP_DIR" ]; then
@@ -12,11 +12,3 @@ if [ -d "$APP_DIR" ]; then
 else
   echo "Directory does not exist. Skip changing permissions..."
 fi
-
-nvm use
-
-npm install
-
-./node_modules/.bin/yalc push
-
-echo "Done with stuff :-)"

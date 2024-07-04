@@ -14,6 +14,9 @@ hooks:
   AfterInstall:
     - location: scripts/deployment/set-permissions.sh
       timeout: 300
+    - location: scripts/deployment/build.sh
+      timeout: 300
+      runas: ec2-user
     - location: scripts/deployment/start-server.sh
       timeout: 300
       runas: ec2-user
