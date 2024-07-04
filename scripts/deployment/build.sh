@@ -15,6 +15,8 @@ nvm use
 
 npm install
 
+npm run build
+
 ./node_modules/.bin/yalc push
 
-echo "Done with stuff :-)"
+echo "Done!"
