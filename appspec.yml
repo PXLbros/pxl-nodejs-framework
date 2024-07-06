@@ -5,16 +5,10 @@ files:
     destination: /home/ec2-user/app/pxl-nodejs-framework
 file_exists_behavior: OVERWRITE
 hooks:
-  BeforeInstall:
-    - location: scripts/deployment/cleanup.sh
-      runas: ec2-user
-    - location: scripts/deployment/install-dependencies.sh
-      timeout: 300
-      runas: ec2-user
   AfterInstall:
     - location: scripts/deployment/set-permissions.sh
       timeout: 300
-    - location: scripts/deployment/build.sh
+    - location: scripts/deployment/install-and-build.sh
       timeout: 300
       runas: ec2-user
     - location: scripts/deployment/start-server.sh

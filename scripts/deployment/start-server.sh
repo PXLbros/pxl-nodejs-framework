@@ -1,10 +1,7 @@
 #!/bin/bash
 
-# # Manually source nvm
-# export NVM_DIR="$HOME/.nvm"
-# [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+DOCKER_DIR=/home/ec2-user/app/docker
 
-# # pm2 start /home/ec2-user/api/pm2.config.js
+cd $DOCKER_DIR
 
-echo "WOULD START PM2 BUT MAYBE NOT SINCE DOCKER"
-
+docker-compose up --build --detach || { echo "Failed to start containers"; exit 1; }

@@ -15,6 +15,6 @@ npm install
 
 npm run build
 
-./node_modules/.bin/yalc push
+yalc push
 
 echo "Done!"
