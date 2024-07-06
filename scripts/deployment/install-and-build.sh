@@ -17,4 +17,4 @@ npm run build
 
 yalc push
 
-echo "Done!"
+echo "Done installing and building (Service: PXL Node.js Framework)"
