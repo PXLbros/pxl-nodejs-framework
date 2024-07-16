@@ -5,13 +5,15 @@ import WebSocketServer from '../../websocket-server.js';
 import { WebSocketServerBaseControllerConstructorParams } from './base.interface.js';
 
 export default abstract class WebSocketServerBaseController {
-  protected webSocketServer?: WebSocketServer;
+  protected sendMessage: (data: unknown) => void;
+
   protected redisInstance: RedisInstance;
   protected queueManager: QueueManager;
   protected databaseInstance: DatabaseInstance;
 
-  constructor({ webSocketServer, redisInstance, queueManager, databaseInstance }: WebSocketServerBaseControllerConstructorParams) {
-    this.webSocketServer = webSocketServer;
+  constructor({ sendMessage, redisInstance, queueManager, databaseInstance }: WebSocketServerBaseControllerConstructorParams) {
+    this.sendMessage = sendMessage;
+
     this.redisInstance = redisInstance;
     this.queueManager = queueManager;
     this.databaseInstance = databaseInstance;

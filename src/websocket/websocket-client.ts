@@ -1,5 +1,5 @@
 import WebSocket, { RawData } from 'ws';
-import { WebSocketOptions, WebSocketRoute, WebSocketMessageHandler, WebSocketRedisSubscriberEvent } from './websocket.interface.js';
+import { WebSocketOptions, WebSocketRoute, WebSocketMessageHandler, WebSocketRedisSubscriberEvent, WebSocketType } from './websocket.interface.js';
 import RedisInstance from '../redis/instance.js';
 import QueueManager from '../queue/manager.js';
 import DatabaseInstance from '../database/instance.js';
@@ -36,6 +36,10 @@ export default class WebSocketClient extends WebSocketBase {
     this.queueManager = props.queueManager;
     this.databaseInstance = props.databaseInstance;
     this.routes = props.routes;
+  }
+
+  public get type(): WebSocketType {
+    return 'client';
   }
 
   public async load(): Promise<void> {
@@ -97,9 +101,9 @@ export default class WebSocketClient extends WebSocketBase {
     });
   }
 
-  protected getControllerDependencies(): { webSocketClient: WebSocketClient; redisInstance: RedisInstance; queueManager: QueueManager; databaseInstance: DatabaseInstance } {
+  protected getControllerDependencies(): { sendMessage: (data: unknown) => void; redisInstance: RedisInstance; queueManager: QueueManager; databaseInstance: DatabaseInstance } {
     return {
-      webSocketClient: this,
+      sendMessage: this.sendMessage,
       redisInstance: this.redisInstance,
       queueManager: this.queueManager,
       databaseInstance: this.databaseInstance,

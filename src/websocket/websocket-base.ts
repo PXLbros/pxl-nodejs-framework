@@ -1,5 +1,5 @@
 import { existsSync } from 'fs';
-import { WebSocketRoute, WebSocketMessageHandler } from './websocket.interface.js';
+import { WebSocketRoute, WebSocketMessageHandler, WebSocketType } from './websocket.interface.js';
 import { log, getRouteKey, parseServerMessage } from './utils.js';
 import { WebSocketServerBaseControllerType } from './controller/server/base.interface.js';
 import { WebSocketClientBaseControllerType } from './controller/client/base.interface.js';
@@ -12,11 +12,15 @@ export default abstract class WebSocketBase {
 
   protected defaultRoutes: WebSocketRoute[] = [];
 
+  public abstract get type(): WebSocketType;
+
   protected abstract getControllerDependencies(): any;
   protected abstract shouldPrintRoutes(): boolean;
   protected abstract handleMessageError(clientId: string, error: string): void;
 
   protected async configureRoutes(routes: WebSocketRoute[], controllersDirectory: string): Promise<void> {
+    log ('Configuring routes', { Type: this.type, 'Controllers Directory': controllersDirectory });
+
     const controllersDirectoryExists = await existsSync(controllersDirectory);
 
     if (!controllersDirectoryExists) {
@@ -28,14 +32,17 @@ export default abstract class WebSocketBase {
     // Load controllers
     const controllers = await Loader.loadModulesInDirectory({
       directory: controllersDirectory,
-      extensions: ['.js'],
+      extensions: ['.js', '.ts'],
     });
 
     for (const route of routes) {
       let ControllerClass: WebSocketServerBaseControllerType | WebSocketClientBaseControllerType;
 
-      console.log('registering route', route);
-
+      log('Registering route', {
+        Type: route.type,
+        Controller: route.controller ? route.controller.toString() : route.controllerName,
+        Action: route.action,
+      });
 
       if (route.controller) {
         ControllerClass = route.controller;
@@ -54,15 +61,18 @@ export default abstract class WebSocketBase {
         continue;
       }
 
-      const controllerInstance = new ControllerClass(this.getControllerDependencies());
+      const controllerDependencies = this.getControllerDependencies();
+
+      const controllerInstance = new ControllerClass(controllerDependencies);
 
       const controllerHandler = controllerInstance[route.action as keyof typeof controllerInstance] as WebSocketMessageHandler;
+      const routeKey = getRouteKey(route.type, route.action);
 
-      this.routeHandlers.set(getRouteKey(route.type, route.action), controllerHandler);
+      this.routeHandlers.set(routeKey, controllerHandler);
     }
 
     if (this.shouldPrintRoutes()) {
-      log('Routes:');
+      log('Routes:', { Type: this.type });
 
       console.log(this.printRoutes());
     }
@@ -85,7 +95,7 @@ export default abstract class WebSocketBase {
       const messageHandler = this.routeHandlers.get(routeKey);
 
       if (!messageHandler) {
-        throw new Error(`Route handler not found (Route: ${routeKey})`);
+        throw new Error(`Route handler not found (Type: ${type} | Action: ${action})`);
       }
 
       const messageResponse = await messageHandler(ws, clientId, parsedMessage.data);

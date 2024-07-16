@@ -5,7 +5,9 @@ import webSocketClient from '../../websocket-client.js';
 import WebSocketBaseController from './base.js';
 
 export interface WebSocketClientBaseControllerConstructorParams {
-  webSocketClient?: webSocketClient;
+  // webSocketClient?: webSocketClient;
+  sendMessage: (data: unknown) => void;
+
   redisInstance: RedisInstance;
   queueManager: QueueManager;
   databaseInstance: DatabaseInstance;

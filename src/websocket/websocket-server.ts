@@ -1,6 +1,6 @@
 // websocket-server.ts
 import { RawData, WebSocket, WebSocketServer as WS } from 'ws';
-import { WebSocketOptions, WebSocketRedisSubscriberEvent, WebSocketConnectedClientData, WebSocketRoute } from './websocket.interface.js';
+import { WebSocketOptions, WebSocketRedisSubscriberEvent, WebSocketConnectedClientData, WebSocketRoute, WebSocketType } from './websocket.interface.js';
 import RedisInstance from '../redis/instance.js';
 import QueueManager from '../queue/manager.js';
 import DatabaseInstance from '../database/instance.js';
@@ -50,11 +50,17 @@ export default class WebSocketServer extends WebSocketBase {
     }
   }
 
+  public get type(): WebSocketType {
+    return 'server';
+  }
+
   public async load(): Promise<void> {
     const libraryControllersDirectory = path.join(baseDir, 'websocket', 'controllers', 'server');
 
+    // Configure default routes
     await this.configureRoutes(this.defaultRoutes, libraryControllersDirectory);
 
+    // Configure custom routes
     await this.configureRoutes(this.routes, this.options.controllersDirectory);
   }
 
@@ -73,9 +79,9 @@ export default class WebSocketServer extends WebSocketBase {
     });
   }
 
-  protected getControllerDependencies(): Record<string, unknown> {
+  protected getControllerDependencies(): { sendMessage: (data: unknown) => void; redisInstance: RedisInstance; queueManager: QueueManager; databaseInstance: DatabaseInstance } {
     return {
-      webSocketServer: this,
+      sendMessage: this.sendMessage,
       redisInstance: this.redisInstance,
       queueManager: this.queueManager,
       databaseInstance: this.databaseInstance,

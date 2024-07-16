@@ -5,7 +5,7 @@ import RedisInstance from '../redis/instance.js';
 import { WebSocketServerBaseControllerType } from './controller/server/base.interface.js';
 import { WebSocketClientBaseControllerType } from './controller/client/base.interface.js';
 
-export type WebSocketType = 'client' | 'server';
+export type WebSocketType = 'server' | 'client';
 
 export interface WebSocketDebugOptions {
   printRoutes?: boolean;
