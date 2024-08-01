@@ -21,13 +21,17 @@ export default class WebSocketRoomManager {
     const room = this.rooms.get(roomName);
 
     if (!room) {
-      throw new Error(`Room not found (Name: ${roomName})`);
+      log('Room not found when adding client', { Name: roomName });
+
+      return;
     }
 
     // Add client to room
     room.add(clientId);
 
     this.printRooms();
+
+    log('Client joined room', { Room: roomName, ID: clientId, Email: user.email });
   }
 
   public removeClientFromRoom({ roomName, clientId }: { roomName: string; clientId: string }) {
@@ -35,7 +39,9 @@ export default class WebSocketRoomManager {
     const room = this.rooms.get(roomName);
 
     if (!room) {
-      throw new Error(`Room not found (Name: ${roomName})`);
+      log('Room not found when removing client', { Name: roomName });
+
+      return;
     }
 
     // Get clients in room
@@ -55,6 +61,8 @@ export default class WebSocketRoomManager {
     }
 
     this.printRooms();
+
+    log('Client left room', { Room: roomName, ID: clientId });
   }
 
   public removeClientFromAllRooms({ clientId }: { clientId: string }) {
@@ -69,12 +77,26 @@ export default class WebSocketRoomManager {
     this.printRooms();
   }
 
+
+  public isClientInRoom({ clientId, roomName }: { clientId: string; roomName: string }) {
+    // Get clients in room
+    const clientsInRoom = this.rooms.get(roomName);
+
+    if (!clientsInRoom) {
+      return false;
+    }
+
+    // Check if client is in room
+    return clientsInRoom.has(clientId);
+  }
+
   public printRooms() {
     let logOutput = '';
 
     const numRooms = this.rooms.size;
 
     logOutput = `\nRooms (Count: ${numRooms}):\n`;
+    logOutput += '---------------------------------------------------------------------\n';
 
     if (numRooms > 0) {
       // Loop through all rooms

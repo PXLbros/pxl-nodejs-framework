@@ -233,22 +233,12 @@ export default class WebSocketServer extends WebSocketBase {
 
     switch (channel) {
       case WebSocketRedisSubscriberEvent.ClientConnected: {
-        this.clientManager.addClient({
-          clientId: parsedMessage.clientId,
-          ws: null,
-          lastActivity: parsedMessage.lastActivity,
-        });
+        this.onClientConnect({ clientId: parsedMessage.clientId, lastActivity: parsedMessage.lastActivity });
 
         break;
       }
       case WebSocketRedisSubscriberEvent.ClientDisconnected: {
         this.onClientDisconnect({ clientId: parsedMessage.clientId });
-
-        // log('Client disconnected', {
-        //   ID: parsedMessage.clientId,
-        // });
-
-        // this.printConnectedClients();
 
         break;
       }
@@ -266,14 +256,6 @@ export default class WebSocketServer extends WebSocketBase {
           roomName: parsedMessage.room,
           clientId: parsedMessage.clientId,
         });
-
-        log('Client left room', {
-          ID: parsedMessage.clientId,
-          Room: parsedMessage.room,
-        });
-
-        // this.printConnectedClients();
-        // this.roomManager.printRooms();
 
         break;
       }
@@ -453,23 +435,38 @@ export default class WebSocketServer extends WebSocketBase {
 
     if (!clientId) {
       log('Client ID not found when removing client from room');
+
       return;
     }
+
+    // Check if client is in room
+    const clientInRoom = this.roomManager.isClientInRoom({
+      clientId,
+      roomName,
+    });
+
+    if (!clientInRoom) {
+      log('Client not in room when removing client from room', {
+        'Client ID': clientId,
+        'Room Name': roomName,
+      });
+
+      return;
+    }
+
+    this.roomManager.removeClientFromRoom({
+      roomName,
+      clientId,
+    });
 
     this.redisInstance.publisherClient.publish(
       WebSocketRedisSubscriberEvent.ClientLeftRoom,
       JSON.stringify({
         clientId,
-        runSameWorker: true,
         room: roomName,
         workerId: this.workerId,
       }),
     );
-
-    // this.roomManager.removeClientFromRoom({
-    //   roomName,
-    //   clientId,
-    // });
 
     // Optionally send a message to the client
     this.sendClientMessage(ws, {
@@ -479,15 +476,14 @@ export default class WebSocketServer extends WebSocketBase {
         roomName,
       },
     });
+  }
 
-    // this.clientManager.broadcastClientList('leaveRoom');
-
-    log('Client left room', {
-      ID: clientId,
-      Room: roomName,
+  private onClientConnect({ clientId, lastActivity }: { clientId: string; lastActivity: number }): void {
+    this.clientManager.addClient({
+      clientId,
+      ws: null,
+      lastActivity,
     });
-
-    this.roomManager.printRooms();
   }
 
   private onClientDisconnect({ clientId }: { clientId: string }): void {

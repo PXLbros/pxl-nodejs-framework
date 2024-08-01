@@ -102,9 +102,15 @@ export default class WebSocketClientManager {
 
     let logStr = `Connected clients (${numClients}):\n`;
 
-    this.clients.forEach((clientData, clientId) => {
-      logStr += `  ID: ${clientId} | Email: ${clientData.user ? clientData.user.email : '-'}\n`;
-    });
+    if (numClients > 0) {
+      this.clients.forEach((clientData, clientId) => {
+        logStr += `  ID: ${clientId} | Email: ${clientData.user ? clientData.user.email : '-'}\n`;
+      });
+    } else {
+      logStr += 'No clients';
+    }
+
+    logStr += '\n';
 
     log(logStr);
   }
