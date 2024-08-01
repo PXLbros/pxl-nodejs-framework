@@ -19,7 +19,7 @@ export default abstract class WebSocketBase {
   protected abstract handleMessageError(clientId: string, error: string): void;
 
   protected async configureRoutes(routes: WebSocketRoute[], controllersDirectory: string): Promise<void> {
-    log ('Configuring routes', { Type: this.type, 'Controllers Directory': controllersDirectory });
+    // log ('Configuring routes', { Type: this.type, 'Controllers Directory': controllersDirectory });
 
     const controllersDirectoryExists = await existsSync(controllersDirectory);
 

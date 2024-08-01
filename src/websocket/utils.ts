@@ -32,16 +32,3 @@ export function parseServerMessage(message: WebSocket.Data): Record<string, unkn
 export function getRouteKey(type: string, action: string): string {
   return `${type}:${action}`;
 }
-
-export function getRoomName({ clientSlug, projectSlug }: { clientSlug?: string; projectSlug?: string }): string{
-  if (clientSlug && projectSlug) {
-    return `client:${clientSlug}|project:${projectSlug}`;
-  } else if (clientSlug) {
-    return `client:${clientSlug}`;
-  } else if (projectSlug) {
-    return `project:${projectSlug}`;
-  } else {
-    return 'default';
-  }
-};
-

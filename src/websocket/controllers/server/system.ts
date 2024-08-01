@@ -1,7 +1,6 @@
 import { WebSocket } from 'ws';
 import WebSocketServerBaseController from '../../controller/server/base.js';
 import logger from '../../../logger/logger.js';
-import { getRoomName } from '../../utils.js';
 
 export default class SystemController extends WebSocketServerBaseController {
   public clientList = (clientWebSocket: WebSocket, webSocketClientId: string, data: any): any => {
@@ -20,10 +19,18 @@ export default class SystemController extends WebSocketServerBaseController {
 
     const userId = data.userId;
 
-    // Get room name
-    const roomName = getRoomName({ clientSlug: data.clientSlug, projectSlug: data.projectSlug });
-
     // Join room
-    this.webSocketServer.joinRoom({ ws: clientWebSocket, userId, roomName });
+    this.webSocketServer.joinRoom({ ws: clientWebSocket, userId, roomName: data.roomName });
+  }
+
+  public leaveRoom = (clientWebSocket: WebSocket, webSocketClientId: string, data: any): any => {
+    if (!data?.userId) {
+      logger.warn('Missing user ID when leaving room');
+
+      return { error: 'No user ID provided' };
+    }
+
+    // Leave room
+    this.webSocketServer.leaveRoom({ ws: clientWebSocket, roomName: data.roomName });
   }
 }

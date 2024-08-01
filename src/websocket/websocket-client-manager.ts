@@ -1,16 +1,9 @@
 import WebSocket from 'ws';
-import { WebSocketConnectedClientData } from './websocket.interface.js';
 import { log } from './utils.js';
+import { WebSocketClientData } from './websocket-client-manager.interface.js';
 
 export default class WebSocketClientManager {
-  private clients: Map<
-    string,
-    {
-      ws: WebSocket | null;
-      lastActivity: number;
-      [key: string]: any; // Add index signature
-    }
-  > = new Map();
+  private clients: Map<string, WebSocketClientData> = new Map();
 
   public addClient({
     clientId,
@@ -33,10 +26,22 @@ export default class WebSocketClientManager {
     this.printClients();
   }
 
-  public getClientId({ ws }: { ws: WebSocket }): string | undefined {
+  public getClientId({
+    ws,
+  }: {
+    ws: WebSocket;
+  }): string | undefined {
     return [...this.clients.entries()].find(
       ([_, value]) => value.ws === ws,
     )?.[0];
+  }
+
+  public getClient({
+    clientId,
+  }: {
+    clientId: string;
+  }): WebSocketClientData | undefined {
+    return this.clients.get(clientId);
   }
 
   // this.clientManager.updateClient({
@@ -68,13 +73,15 @@ export default class WebSocketClientManager {
     this.printClients();
   }
 
-  removeClient(clientId: string) {
+  public removeClient(clientId: string) {
     this.clients.delete(clientId);
 
     this.broadcastClientList('removeClient');
+
+    this.printClients();
   }
 
-  getClientList() {
+  public getClientList() {
     const clientList: {
       clientId: string;
       lastActivity: number;
@@ -102,7 +109,7 @@ export default class WebSocketClientManager {
     log(logStr);
   }
 
-  broadcastClientList(type: string) {
+  public broadcastClientList(type: string) {
     const clientList = this.getClientList();
 
     this.clients.forEach(({ ws }) => {

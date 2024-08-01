@@ -1,3 +1,4 @@
+import { log } from './utils.js';
 import WebSocketClientManager from './websocket-client-manager.js';
 
 export default class WebSocketRoomManager {
@@ -64,31 +65,42 @@ export default class WebSocketRoomManager {
 
       this.removeClientFromRoom({ roomName: room, clientId });
     });
+
+    this.printRooms();
   }
 
   public printRooms() {
+    let logOutput = '';
+
     const numRooms = this.rooms.size;
 
-    console.log(`Rooms (${numRooms}):`);
+    logOutput = `\nRooms (Count: ${numRooms}):\n`;
 
-    // Loop through all rooms
-    this.rooms.forEach((clientsInRoom, room) => {
-      const numClientsInRoom = clientsInRoom.size;
+    if (numRooms > 0) {
+      // Loop through all rooms
+      let roomNumber = 1;
 
-      console.log(`Room (Name: ${room} | Clients: ${numClientsInRoom})`);
+      this.rooms.forEach((clientsInRoom, room) => {
+        const numClientsInRoom = clientsInRoom.size;
 
+        logOutput += `Room ${roomNumber} (Name: ${room} | Clients: ${numClientsInRoom}):\n`;
+        logOutput += '  Clients:\n';
 
-      console.log('clientsInRoom', clientsInRoom);
+        // Loop through all clients in room
+        clientsInRoom.forEach((clientId) => {
+          const client = this.clientManager.getClient({ clientId });
 
-      // Loop through all clients in room
-      clientsInRoom.forEach((clientId) => {
-        const client = this.clientManager.getClient({ clientId });
+          logOutput += `    Client (ID: ${clientId} | Email: ${client?.user ? client.user.email : ''})\n`;
+        });
 
-        console.log('------- >> client', client);
-
-
-        console.log(`  Client (ID: ${clientId})`);
+        roomNumber++;
       });
-    });
+    } else {
+      logOutput += 'No rooms\n';
+    }
+
+    logOutput += '\n';
+
+    log(logOutput);
   }
 }
