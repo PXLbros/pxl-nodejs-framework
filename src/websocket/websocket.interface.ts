@@ -87,7 +87,7 @@ export interface WebSocketConstructorParams {
 
 export interface WebSocketConnectedClientData {
   /** WebSocket client */
-  ws: WebSocket | null;
+  ws: WebSocket| null;
 
   /** Last activity time */
   lastActivity: number;
@@ -107,7 +107,8 @@ export interface WebSocketMessageHandler {
 export enum WebSocketRedisSubscriberEvent {
   ClientConnected = 'clientConnected',
   ClientDisconnected = 'clientDisconnected',
-  ClientJoined = 'clientJoined',
+  ClientJoinedRoom = 'clientJoinedRoom',
+  ClientLeftRoom = 'clientLeftRoom',
   SendMessage = 'sendMessage',
   SendMessageToAll = 'sendMessageToAll',
   MessageError = 'messageError',

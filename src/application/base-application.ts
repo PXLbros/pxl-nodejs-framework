@@ -181,7 +181,6 @@ export default abstract class BaseApplication {
       // Start standalone application
       await this.startInstance(startInstanceOptions);
 
-
       // Handle standalone application shutdown
       this.handleShutdown({ onStopped: stopInstanceOptions.onStopped });
     }

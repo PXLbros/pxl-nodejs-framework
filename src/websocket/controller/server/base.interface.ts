@@ -5,8 +5,15 @@ import WebSocketServer from '../../websocket-server.js';
 import WebSocketBaseController from './base.js';
 
 export interface WebSocketServerBaseControllerConstructorParams {
-  // webSocketServer?: WebSocketServer;
-  sendMessage: (data: unknown) => void;
+  webSocketServer: WebSocketServer;
+  // sendMessage: (data: unknown) => void;
+  // setClientJoined: ({
+  //   ws,
+  //   username,
+  // }: {
+  //   ws: WebSocket;
+  //   username: string;
+  // }) => void;
 
   redisInstance: RedisInstance;
   queueManager: QueueManager;

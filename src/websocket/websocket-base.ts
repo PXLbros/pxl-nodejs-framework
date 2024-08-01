@@ -74,15 +74,15 @@ export default abstract class WebSocketBase {
     if (this.shouldPrintRoutes()) {
       log('Routes:', { Type: this.type });
 
-      console.log(this.printRoutes());
+      this.printRoutes();
     }
   }
 
   protected async handleServerMessage(ws: WebSocket, message: WebSocket.Data, clientId: string): Promise<void> {
     try {
       const parsedMessage = parseServerMessage(message);
-      const action = parsedMessage.action;
       const type = parsedMessage.type;
+      const action = parsedMessage.action;
 
       log('Incoming message', {
         'Client ID': clientId,
@@ -95,7 +95,7 @@ export default abstract class WebSocketBase {
       const messageHandler = this.routeHandlers.get(routeKey);
 
       if (!messageHandler) {
-        throw new Error(`Route handler not found (Type: ${type} | Action: ${action})`);
+        throw new Error(`Route handler not found (Route Key: ${routeKey} | Type: ${type} | Action: ${action})`);
       }
 
       const messageResponse = await messageHandler(ws, clientId, parsedMessage.data);
@@ -112,7 +112,7 @@ export default abstract class WebSocketBase {
     }
   }
 
-  protected printRoutes(): string {
+  protected printRoutes(): void {
     let routesString = '';
 
     const routeKeys = Array.from(this.routeHandlers.keys());
@@ -127,6 +127,6 @@ export default abstract class WebSocketBase {
       }
     });
 
-    return routesString;
+    log(routesString);
   }
 }

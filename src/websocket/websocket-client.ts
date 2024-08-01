@@ -101,7 +101,12 @@ export default class WebSocketClient extends WebSocketBase {
     });
   }
 
-  protected getControllerDependencies(): { sendMessage: (data: unknown) => void; redisInstance: RedisInstance; queueManager: QueueManager; databaseInstance: DatabaseInstance } {
+  protected getControllerDependencies(): {
+    sendMessage: (data: unknown) => void;
+    redisInstance: RedisInstance;
+    queueManager: QueueManager;
+    databaseInstance: DatabaseInstance;
+  } {
     return {
       sendMessage: this.sendMessage,
       redisInstance: this.redisInstance,
@@ -109,7 +114,6 @@ export default class WebSocketClient extends WebSocketBase {
       databaseInstance: this.databaseInstance,
     };
   }
-
   protected shouldPrintRoutes(): boolean {
     return this.options.debug?.printRoutes ?? false;
   }

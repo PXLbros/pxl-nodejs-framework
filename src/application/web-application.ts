@@ -1,3 +1,4 @@
+import cluster from 'cluster';
 import RedisInstance from '../redis/instance.js';
 import DatabaseInstance from '../database/instance.js';
 import WebServer from '../webserver/webserver.js';
@@ -17,11 +18,17 @@ export default class WebApplication extends BaseApplication {
   /** Web application config */
   protected config: WebApplicationConfig;
 
-  /** WebSocket */
-  public webSocket?: WebSocket;
+  // /** WebSocket */
+  // public webSocket?: WebSocket;
 
   /** Web server */
   public webServer?: WebServer;
+
+  /** WebSocket server */
+  public webSocketServer?: WebSocketServer;
+
+  /** WebSocket client */
+  public webSocketClient?: WebSocketClient;
 
   constructor(config: WebApplicationConfig) {
     super(config);
@@ -42,40 +49,10 @@ export default class WebApplication extends BaseApplication {
       let webSocketServer: WebSocketServer | undefined;
       let webSocketClient: WebSocketClient | undefined;
 
-      // To get clustering work, only create the WebSocket server in the primary process
-      // if (cluster.isPrimary) {
-      //   const numCPUs = os.cpus().length;
-      //   const server = createServer();
+      const workerId = cluster.isWorker && cluster.worker ? cluster.worker.id : null;
 
-      //   // Create a WebSocket server
-      //   const wss = new WebSocketServer({ server });
+      console.log('-----------------------> CLUSTER WORKER ID: ', workerId);
 
-      //   // Fork workers
-      //   for (let i = 0; i < numCPUs; i++) {
-      //     const worker = cluster.fork();
-
-      //     // Pass the server handle to the worker
-      //     worker.send('server', server);
-      //   }
-
-      //   server.listen(8080, () => {
-      //     console.log('Server listening on port 8080');
-      //   });
-
-      // } else {
-      //   process.on('message', (message, serverHandle) => {
-      //     if (message === 'server') {
-      //       const wss = new WebSocketServer({ server: serverHandle });
-
-      //       wss.on('connection', (ws: WebSocket) => {
-      //         ws.on('message', (message: string) => {
-      //           console.log(`Worker ${process.pid} received: ${message}`);
-      //           ws.send(`Worker ${process.pid} echo: ${message}`);
-      //         });
-      //       });
-      //     }
-      //   });
-      // }
 
       switch (this.config.webSocket.type) {
         case 'server': {
@@ -87,14 +64,14 @@ export default class WebApplication extends BaseApplication {
             databaseInstance,
             queueManager,
             routes: this.config.webSocket.routes,
-            workerId: 1,
+            workerId,
           });
 
           // Load WebSocket client
           await webSocketServer.load();
 
           // Start WebSocket server
-          await webSocketServer.startServer();
+          await webSocketServer.start();
 
           break;
         }
@@ -125,6 +102,9 @@ export default class WebApplication extends BaseApplication {
           }
         }
       }
+
+      this.webSocketServer = webSocketServer;
+      this.webSocketClient = webSocketClient;
     }
 
     if (this.config.webServer?.enabled) {
@@ -164,6 +144,11 @@ export default class WebApplication extends BaseApplication {
     if (this.webServer) {
       // Stop web server
       await this.webServer.stop();
+    }
+
+    if (this.webSocketServer) {
+      // Stop WebSocket server
+      await this.webSocketServer.stop();
     }
   }
 

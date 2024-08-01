@@ -11,5 +11,5 @@ export interface WebSocketServerProps {
   queueManager: QueueManager;
   databaseInstance: DatabaseInstance;
   routes: WebSocketRoute[];
-  workerId: number;
+  workerId: number | null;
 }
