@@ -1,3 +1,4 @@
+import cluster from 'cluster';
 import { log } from './utils.js';
 import WebSocketClientManager from './websocket-client-manager.js';
 
@@ -28,6 +29,13 @@ export default class WebSocketRoomManager {
 
     // Add client to room
     room.add(clientId);
+
+    // Set room name in client manager
+    this.clientManager.updateClient({
+      clientId,
+      key: 'roomName',
+      data: roomName,
+    });
 
     this.printRooms();
 
@@ -60,6 +68,13 @@ export default class WebSocketRoomManager {
       this.rooms.delete(roomName);
     }
 
+    // Set room name in client manager
+    this.clientManager.updateClient({
+      clientId,
+      key: 'roomName',
+      data: null,
+    });
+
     this.printRooms();
 
     log('Client left room', { Room: roomName, ID: clientId });
@@ -91,21 +106,22 @@ export default class WebSocketRoomManager {
   }
 
   public printRooms() {
-    let logOutput = '';
-
     const numRooms = this.rooms.size;
 
-    logOutput = `\nRooms (Count: ${numRooms}):\n`;
-    logOutput += '---------------------------------------------------------------------\n';
+    let logOutput = '\n-------------------------------------\n';
+    logOutput += `Rooms (Count: ${numRooms}):\n`;
+    logOutput += '-------------------------------------\n';
 
     if (numRooms > 0) {
+      const workerId = cluster.isWorker && cluster.worker ? cluster.worker.id : null;
+
       // Loop through all rooms
       let roomNumber = 1;
 
       this.rooms.forEach((clientsInRoom, room) => {
         const numClientsInRoom = clientsInRoom.size;
 
-        logOutput += `Room ${roomNumber} (Name: ${room} | Clients: ${numClientsInRoom}):\n`;
+        logOutput += `Room ${roomNumber} (Name: ${room} | Clients: ${numClientsInRoom} | Worker: ${workerId}):\n`;
         logOutput += '  Clients:\n';
 
         // Loop through all clients in room

@@ -1,4 +1,3 @@
-// websocket-server.ts
 import {
   RawData,
   WebSocket,
@@ -7,7 +6,6 @@ import {
 import {
   WebSocketOptions,
   WebSocketRedisSubscriberEvent,
-  WebSocketConnectedClientData,
   WebSocketRoute,
   WebSocketType,
 } from './websocket.interface.js';
@@ -16,14 +14,8 @@ import QueueManager from '../queue/manager.js';
 import DatabaseInstance from '../database/instance.js';
 import { WebSocketServerProps } from './websocket-server.interface.js';
 import WebSocketClientManager from './websocket-client-manager.js';
-import {
-  generateClientId,
-  log,
-  parseServerMessage,
-  getRouteKey,
-} from './utils.js';
+import { generateClientId, log } from './utils.js';
 import WebSocketBase from './websocket-base.js';
-import { Time } from '../util/index.js';
 import { Logger } from '../logger/index.js';
 import { ApplicationConfig } from '../application/base-application.interface.js';
 import path from 'path';
@@ -46,21 +38,18 @@ export default class WebSocketServer extends WebSocketBase {
   ];
 
   private server?: WS;
-  // private connectedClients: Map<
-  //   string,
-  //   WebSocketConnectedClientData
-  // > = new Map();
+
   private checkConnectedClientsInterval?: NodeJS.Timeout;
   private workerId: number | null;
   private applicationConfig: ApplicationConfig;
   private options: WebSocketOptions;
   private clientManager = new WebSocketClientManager();
-  private roomManager = new WebSocketRoomManager({ clientManager: this.clientManager });
+  private roomManager = new WebSocketRoomManager({
+    clientManager: this.clientManager,
+  });
   private redisInstance: RedisInstance;
   private queueManager: QueueManager;
   private databaseInstance: DatabaseInstance;
-
-  // private rooms: Map<string, Set<string>> = new Map();
 
   /** Redis subscriber events */
   private redisSubscriberEvents: string[] = [
@@ -68,6 +57,7 @@ export default class WebSocketServer extends WebSocketBase {
     WebSocketRedisSubscriberEvent.ClientJoinedRoom,
     WebSocketRedisSubscriberEvent.ClientLeftRoom,
     WebSocketRedisSubscriberEvent.ClientDisconnected,
+    WebSocketRedisSubscriberEvent.DisconnectClient,
     WebSocketRedisSubscriberEvent.SendMessage,
     WebSocketRedisSubscriberEvent.SendMessageToAll,
     WebSocketRedisSubscriberEvent.MessageError,
@@ -178,13 +168,20 @@ export default class WebSocketServer extends WebSocketBase {
     }
 
     // Go through each event and subscribe to it
-    this.redisSubscriberEvents.forEach((subscriberEventName) => {
-      // Subscribe to event
-      this.redisInstance.subscriberClient?.subscribe(subscriberEventName);
-    });
+    this.redisSubscriberEvents.forEach(
+      (subscriberEventName) => {
+        // Subscribe to event
+        this.redisInstance.subscriberClient?.subscribe(
+          subscriberEventName,
+        );
+      },
+    );
 
     // Handle subscriber message
-    this.redisInstance.subscriberClient.on('message', this.handleSubscriberMessage);
+    this.redisInstance.subscriberClient.on(
+      'message',
+      this.handleSubscriberMessage,
+    );
 
     log('Server started', {
       Host: this.options.host,
@@ -201,23 +198,29 @@ export default class WebSocketServer extends WebSocketBase {
   /**
    * Handle subscriber message.
    */
-  private handleSubscriberMessage = (channel: string, message: string): void => {
+  private handleSubscriberMessage = (
+    channel: string,
+    message: string,
+  ): void => {
     let parsedMessage: { [key: string]: any };
 
     try {
       parsedMessage = JSON.parse(message);
     } catch (error) {
-        log('Failed to parse subscriber message', {
-          Channel: channel,
-          Message: message,
-          Error: error,
-        });
+      log('Failed to parse subscriber message', {
+        Channel: channel,
+        Message: message,
+        Error: error,
+      });
 
-        return;
+      return;
     }
 
-    const runSameWorker = parsedMessage.runSameWorker === true;
-    const isSameWorker = parsedMessage.workerId === this.workerId;
+    const runSameWorker =
+      parsedMessage.runSameWorker === true;
+
+    const isSameWorker =
+      parsedMessage.workerId === this.workerId;
 
     // Check if message is from the same worker
     if (runSameWorker !== true && isSameWorker) {
@@ -233,12 +236,43 @@ export default class WebSocketServer extends WebSocketBase {
 
     switch (channel) {
       case WebSocketRedisSubscriberEvent.ClientConnected: {
-        this.onClientConnect({ clientId: parsedMessage.clientId, lastActivity: parsedMessage.lastActivity });
+        this.onClientConnect({
+          clientId: parsedMessage.clientId,
+          lastActivity: parsedMessage.lastActivity,
+        });
 
         break;
       }
       case WebSocketRedisSubscriberEvent.ClientDisconnected: {
-        this.onClientDisconnect({ clientId: parsedMessage.clientId });
+        this.onClientDisconnect({
+          clientId: parsedMessage.clientId,
+        });
+
+        break;
+      }
+      case WebSocketRedisSubscriberEvent.DisconnectClient: {
+        const clientToDisconnect =
+          this.clientManager.getClient({
+            clientId: parsedMessage.clientId,
+            // requireWs: true,
+          });
+
+        log(`WE GOT A REQUEST TO POTENTIALLY DISCONNECT LCIENT IF THIS CLIENT IS CONNETED HERE, GET CLIENT ------------------------- ${clientToDisconnect ? clientToDisconnect : 'NO CLIENT'}`);
+        console.log('clientToDisconnect', clientToDisconnect, 'workerId: ', this.workerId);
+
+
+        if (clientToDisconnect) {
+          this.clientManager.disconnectClient({
+            clientId: parsedMessage.clientId,
+          });
+
+          // this.onClientDisconnect({
+          //   clientId: parsedMessage.clientId,
+          // });
+
+          // Remove client from rooms
+          this.roomManager.removeClientFromAllRooms({ clientId: parsedMessage.clientId });
+        }
 
         break;
       }
@@ -300,25 +334,7 @@ export default class WebSocketServer extends WebSocketBase {
         });
       }
     }
-  }
-
-  /**
-   * Set WebSocket client username.
-   */
-  // private setClientUsername({ webSocketClientId, username }: { webSocketClientId: string; username: string }) {
-  //   const clientData = this.connectedClients.get(webSocketClientId);
-
-  //   if (!clientData) {
-  //     log('Client not found when trying to update connected client with username', {
-  //       'Client ID': webSocketClientId,
-  //     });
-
-  //     return;
-  //   }
-
-  //   // Update client data with username
-  //   this.connectedClients.set(webSocketClientId, { ...clientData, username });
-  // }
+  };
 
   private handleServerError = (error: Error): void => {
     Logger.error(error);
@@ -342,7 +358,6 @@ export default class WebSocketServer extends WebSocketBase {
     });
 
     try {
-      // this.setConnectedClient({ clientId, ws, lastActivity });
       this.clientManager.addClient({
         clientId,
         ws,
@@ -363,78 +378,19 @@ export default class WebSocketServer extends WebSocketBase {
     }
   };
 
-  // private addConnectedClient({
-  //   clientId,
-  //   ws,
-  // }: {
-  //   clientId: string;
-  //   ws: WebSocket;
-  // }): void {
-  //   const lastActivity = Date.now();
-
-  //   this.setConnectedClient({ clientId, ws, lastActivity });
-
-  //   this.redisInstance.publisherClient.publish(
-  //     WebSocketRedisSubscriberEvent.ClientConnected,
-  //     JSON.stringify({
-  //       clientId,
-  //       lastActivity,
-  //       workerId: this.workerId,
-  //     }),
-  //   );
-  // }
-
-  // private setConnectedClient({
-  //   clientId,
-  //   ws,
-  //   lastActivity,
-  // }: {
-  //   clientId: string;
-  //   ws: WebSocket | null;
-  //   lastActivity: number;
-  // }): void {
-  //   this.connectedClients.set(clientId, {
-  //     ws,
-  //     lastActivity: lastActivity,
-  //   });
-
-  //   log('Client connected', { ID: clientId });
-
-  //   // this.printConnectedClients();
-  // }
-
-  // /**
-  //  * Set disconnected WebSocket client.
-  //  */
-  // private setDisconnectedClient({ clientId }: { clientId: string }) {
-  //   // Remove client from all rooms
-  //   this.roomManager.removeClientFromAllRooms({ clientId });
-
-  //   // Remove client from connected clients list
-  //   this.connectedClients.delete(clientId);
-  // }
-
-  // private leaveAllRooms(ws: WebSocket): void {
-  //   const clientId = this.clientManager.getClientId({ ws });
-
-  //   if (!clientId) {
-  //     log('Client ID not found when removing client from all rooms');
-
-  //     return;
-  //   }
-
-  //   this.rooms.forEach((clients, roomName) => {
-  //     if (clients && clients.has(clientId)) {
-  //       this.leaveRoom({ ws, roomName });
-  //     }
-  //   });
-  // }
-
-  public leaveRoom({ ws, roomName }: { ws: WebSocket; roomName: string }): void {
+  public leaveRoom({
+    ws,
+    roomName,
+  }: {
+    ws: WebSocket;
+    roomName: string;
+  }): void {
     const clientId = this.clientManager.getClientId({ ws });
 
     if (!clientId) {
-      log('Client ID not found when removing client from room');
+      log(
+        'Client ID not found when removing client from room',
+      );
 
       return;
     }
@@ -446,10 +402,13 @@ export default class WebSocketServer extends WebSocketBase {
     });
 
     if (!clientInRoom) {
-      log('Client not in room when removing client from room', {
-        'Client ID': clientId,
-        'Room Name': roomName,
-      });
+      log(
+        'Client not in room when removing client from room',
+        {
+          'Client ID': clientId,
+          'Room Name': roomName,
+        },
+      );
 
       return;
     }
@@ -478,7 +437,13 @@ export default class WebSocketServer extends WebSocketBase {
     });
   }
 
-  private onClientConnect({ clientId, lastActivity }: { clientId: string; lastActivity: number }): void {
+  private onClientConnect({
+    clientId,
+    lastActivity,
+  }: {
+    clientId: string;
+    lastActivity: number;
+  }): void {
     this.clientManager.addClient({
       clientId,
       ws: null,
@@ -486,34 +451,37 @@ export default class WebSocketServer extends WebSocketBase {
     });
   }
 
-  private onClientDisconnect({ clientId }: { clientId: string }): void {
-    // Set client as disconnected (DO BOTH)
+  private onClientDisconnect({
+    clientId,
+  }: {
+    clientId: string;
+  }): void {
+    // Set client as disconnected
     this.clientManager.removeClient(clientId);
 
-    // Remove client from rooms (DO BOTH)
+    // Remove client from rooms
     this.roomManager.removeClientFromAllRooms({ clientId });
   }
 
   private handleServerClientDisconnection = (
     clientId: string,
   ): void => {
-    const client = this.clientManager.getClient({ clientId });
+    const client = this.clientManager.getClient({
+      clientId,
+    });
 
     if (!client) {
-      log('Client not found when handling server client disconnection', {
-        'Client ID': clientId,
-      });
+      log(
+        'Client not found when handling server client disconnection',
+        {
+          'Client ID': clientId,
+        },
+      );
 
       return;
     }
 
     this.onClientDisconnect({ clientId });
-
-    // const clientData = this.connectedClients.get(clientId);
-
-    // if (clientData?.ws) {
-    //   this.leaveAllRooms(clientData.ws);
-    // }
 
     this.redisInstance.publisherClient.publish(
       WebSocketRedisSubscriberEvent.ClientDisconnected,
@@ -531,7 +499,9 @@ export default class WebSocketServer extends WebSocketBase {
     message: RawData,
   ): Promise<void> => {
     try {
-      const clientId = this.clientManager.getClientId({ ws });
+      const clientId = this.clientManager.getClientId({
+        ws,
+      });
 
       if (!clientId) {
         log(
@@ -540,16 +510,6 @@ export default class WebSocketServer extends WebSocketBase {
 
         return;
       }
-
-      // const parsedMessage = JSON.parse(message.toString());
-
-      // TODO: THIS IS WHAT THE CONTROLLERS ARE FOR
-      // MAKE SYSTEM VERSION OF user and joinRoom/leaveRoom, instead of doing it in SocialAmp API?
-      // if (parsedMessage.action === 'leaveRoom' && parsedMessage.room) {
-      //   this.leaveRoom({ ws, room: parsedMessage.room });
-
-      //   return;
-      // }
 
       // Handle server message
       await this.handleServerMessage(ws, message, clientId);
@@ -680,7 +640,9 @@ export default class WebSocketServer extends WebSocketBase {
       let excludeClient = false;
 
       if (excludeClientId) {
-        const clientId = this.clientManager.getClientId({ ws: client });
+        const clientId = this.clientManager.getClientId({
+          ws: client,
+        });
 
         excludeClient = clientId === excludeClientId;
       }
@@ -704,13 +666,49 @@ export default class WebSocketServer extends WebSocketBase {
   //   )?.[0];
   // }
 
-  private onJoinRoom({ clientId, roomName, userData }: { clientId: string; roomName: string; userData: any }): void {
+  private onJoinRoom({
+    clientId,
+    roomName,
+    userData,
+  }: {
+    clientId: string;
+    roomName: string;
+    userData: any;
+  }): void {
+    // TODO: If config clientCanJoinMultipleRooms !== true, then it should remove the user from existing room first
+    const client = this.clientManager.getClient({
+      clientId,
+    });
+
+    if (!client) {
+      log('Client not found when joining room', {
+        'Client ID': clientId,
+        'Room Name': roomName,
+      });
+
+      return;
+    }
+
+    const clientCanJoinMultipleRooms: any = false;
+
+    if (clientCanJoinMultipleRooms !== true) {
+      if (client.roomName) {
+        // Remove client from current room
+        this.roomManager.removeClientFromRoom({
+          roomName: client.roomName,
+          clientId,
+        });
+      }
+    }
+
     // Update client with user in client manager
     this.clientManager.updateClient({
       clientId,
       key: 'user',
       data: userData,
     });
+
+    console.log('ADDING CLIENT TO ROOM: ', userData);
 
     this.roomManager.addClientToRoom({
       clientId,
@@ -736,13 +734,33 @@ export default class WebSocketServer extends WebSocketBase {
       return;
     }
 
-    // Get user email from database
-    const dbEntityManager = this.databaseInstance.getEntityManager();
+    // Check if client is already in room
+    const isClientInRoom = this.roomManager.isClientInRoom({
+      clientId,
+      roomName,
+    });
 
-    const getUserQuery = 'SELECT email FROM users WHERE id = ?';
+    if (isClientInRoom) {
+      log('Client already in room when joining', {
+        'Client ID': clientId,
+        'Room Name': roomName,
+      });
+
+      return;
+    }
+
+    // Get user email from database
+    const dbEntityManager =
+      this.databaseInstance.getEntityManager();
+
+    const getUserQuery =
+      'SELECT email FROM users WHERE id = ?';
     const getUserParams = [userId];
 
-    const getUserResult = await dbEntityManager.execute(getUserQuery, getUserParams);
+    const getUserResult = await dbEntityManager.execute(
+      getUserQuery,
+      getUserParams,
+    );
 
     if (!getUserResult || getUserResult.length === 0) {
       log('User not found in database', {
@@ -758,6 +776,41 @@ export default class WebSocketServer extends WebSocketBase {
       id: userId,
       ...user,
     };
+
+    // if user with same email is already connected, disconnect the previous connection
+    const existingClient =
+      this.clientManager.getClientByKey({
+        key: 'user.email',
+        value: user.email,
+      });
+
+    console.log('existingClient', existingClient);
+
+    if (existingClient) {
+      console.log(
+        'FOUMD EXISTING CLIENT WITH EMAIL',
+        existingClient,
+      );
+
+      if (existingClient.ws) {
+        this.clientManager.disconnectClient({
+          clientId: existingClient.clientId,
+        });
+      } else {
+        log('PUBLISHED DisconnectClient');
+
+        // Publish to Redis that we should disconnect this client
+        this.redisInstance.publisherClient.publish(
+          WebSocketRedisSubscriberEvent.DisconnectClient,
+          JSON.stringify({
+            clientId,
+            workerId: this.workerId,
+          }),
+        );
+      }
+    } else {
+      console.log('DID NOT FIND EXISTING CLIENT WITH WS');
+    }
 
     this.onJoinRoom({
       clientId,

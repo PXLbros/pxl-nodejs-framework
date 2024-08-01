@@ -51,9 +51,6 @@ export default class WebApplication extends BaseApplication {
 
       const workerId = cluster.isWorker && cluster.worker ? cluster.worker.id : null;
 
-      console.log('-----------------------> CLUSTER WORKER ID: ', workerId);
-
-
       switch (this.config.webSocket.type) {
         case 'server': {
           // Initialize WebSocket server

@@ -2,6 +2,7 @@ import * as Sentry from '@sentry/node';
 import { nodeProfilingIntegration } from '@sentry/profiling-node';
 import cluster from 'cluster';
 import winston from 'winston';
+import { LogOptions } from '../websocket/utils.js';
 
 export type LoggerLevels = 'error' | 'warn' | 'info' | 'command' | 'database' | 'redis' | 'webServer' | 'webSocket' | 'queue' | 'queueJob' | 'dataSource' | 'debug';
 
@@ -80,7 +81,7 @@ class Logger {
   private getCustomFormat(): winston.Logform.Format {
     return winston.format.printf(({ level, message, timestamp, ...meta }) => {
       if (cluster.isWorker && cluster.worker) {
-        meta['Worker'] = cluster.worker.process.pid;
+        meta['Worker'] = cluster.worker.id; // .process.pid;
       }
 
       const metaString = Object.entries(meta)
@@ -118,7 +119,10 @@ class Logger {
     this.isSentryInitialized = true;
   }
 
-  public log(level: LoggerLevels, message: unknown, meta?: Record<string, unknown>): void {
+  public log(level: LoggerLevels, message: unknown, meta?: Record<string, unknown>, options?: LogOptions): void {
+    // if (options?.muteWorker) {
+    // }
+
     if (message instanceof Error) {
       const errorMessage = message.stack || message.toString();
       this.logger.log(level, errorMessage, meta);
@@ -129,24 +133,24 @@ class Logger {
     }
   }
 
-  public debug(message: unknown, meta?: Record<string, unknown>): void {
-    this.log('debug', message, meta);
+  public debug(message: unknown, meta?: Record<string, unknown>, options?: LogOptions): void {
+    this.log('debug', message, meta, options);
   }
 
-  public info(message: unknown, meta?: Record<string, unknown>): void {
-    this.log('info', message, meta);
+  public info(message: unknown, meta?: Record<string, unknown>, options?: LogOptions): void {
+    this.log('info', message, meta, options);
   }
 
-  public warn(message: unknown, meta?: Record<string, unknown>): void {
-    this.log('warn', message, meta);
+  public warn(message: unknown, meta?: Record<string, unknown>, options?: LogOptions): void {
+    this.log('warn', message, meta, options);
   }
 
-  public error(error: Error | unknown): void {
-    this.log('error', error);
+  public error(error: Error | unknown, options?: LogOptions): void {
+    this.log('error', error, undefined, options);
   }
 
-  public custom(level: LoggerLevels, message: unknown, meta?: Record<string, unknown>): void {
-    this.log(level, message, meta);
+  public custom(level: LoggerLevels, message: unknown, meta?: Record<string, unknown>, options?: LogOptions): void {
+    this.log(level, message, meta, options);
   }
 }
 

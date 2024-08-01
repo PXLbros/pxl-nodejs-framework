@@ -38,11 +38,11 @@ export default abstract class WebSocketBase {
     for (const route of routes) {
       let ControllerClass: WebSocketServerBaseControllerType | WebSocketClientBaseControllerType;
 
-      log('Registering route', {
-        Type: route.type,
-        Controller: route.controller ? route.controller.toString() : route.controllerName,
-        Action: route.action,
-      });
+      // log('Registering route', {
+      //   Type: route.type,
+      //   Controller: route.controller ? route.controller.toString() : route.controllerName,
+      //   Action: route.action,
+      // });
 
       if (route.controller) {
         ControllerClass = route.controller;

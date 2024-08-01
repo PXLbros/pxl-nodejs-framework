@@ -1,6 +1,9 @@
 import WebSocket from 'ws';
 import { log } from './utils.js';
 import { WebSocketClientData } from './websocket-client-manager.interface.js';
+import WebSocketRoomManager from './websocket-room-manager.js';
+import { Helper, Time } from '../util/index.js';
+import cluster from 'cluster';
 
 export default class WebSocketClientManager {
   private clients: Map<string, WebSocketClientData> = new Map();
@@ -38,17 +41,20 @@ export default class WebSocketClientManager {
 
   public getClient({
     clientId,
+    requireWs,
   }: {
     clientId: string;
+    requireWs?: boolean;
   }): WebSocketClientData | undefined {
-    return this.clients.get(clientId);
+    const client = this.clients.get(clientId);
+
+    if (requireWs && !client?.ws) {
+      return undefined;
+    }
+
+    return client;
   }
 
-  // this.clientManager.updateClient({
-  //   clientId,
-  //   key: 'user',
-  //   data: userData,
-  // });
   public updateClient({
     clientId,
     key,
@@ -97,22 +103,98 @@ export default class WebSocketClientManager {
     return clientList;
   }
 
+  public getClientByKey({
+    key,
+    value,
+    requireWs,
+  }: {
+    key: string;
+    value: string;
+    requireWs?: boolean;
+  }) {
+    console.log('clients', this.clients);
+
+
+    const client = [...this.clients.entries()].find(
+      ([_, clientData]) => {
+        const deepKeyValue = Helper.getValueFromObject(clientData, key);
+
+        const value2 = deepKeyValue === value;
+
+        return value2;
+      }
+    );
+
+    console.log('client before format: ', client);
+
+
+    const formattedClient = client ? {
+      clientId: client[0],
+      ...client[1],
+    } : undefined;
+
+    console.log('client after format: ', formattedClient);
+
+    if (requireWs && !formattedClient?.ws) {
+      return undefined;
+    }
+
+    return formattedClient;
+  }
+
+  public disconnectClient({ clientId }: { clientId: string }) {
+    const clientInfo = this.clients.get(clientId);
+
+    // TODO: Need to check if the client to be disconnected WS is on this worker that received the request, otherwise need to request to Redis and let all workers check
+
+    console.log('disconnected client, has ws?: ' , clientInfo?.ws ? 'yes' : 'no');
+
+    if (clientInfo?.ws) {
+      const connectedTime = Date.now() - clientInfo.lastActivity;
+
+      clientInfo.ws.close();
+
+      log(
+        'WebSocket client was disconnected due to inactivity',
+        {
+          ID: clientId,
+          'Time Connected': Time.formatTime({
+            time: connectedTime,
+            format: 's',
+          }),
+        },
+      );
+    }
+
+    this.removeClient(clientId);
+
+    log('Client disconnected', { ID: clientId });
+
+    this.printClients();
+  }
+
   public printClients() {
     const numClients = this.clients.size;
 
-    let logStr = `Connected clients (${numClients}):\n`;
+    const workerId = cluster.isWorker && cluster.worker ? cluster.worker.id : null;
+
+    let logOutput = '\n-------------------------------------\n';
+    logOutput += `Connected clients (Count: ${numClients} | Worker: ${workerId}):\n`;
+    logOutput += '-------------------------------------\n';
 
     if (numClients > 0) {
       this.clients.forEach((clientData, clientId) => {
-        logStr += `  ID: ${clientId} | Email: ${clientData.user ? clientData.user.email : '-'}\n`;
+        logOutput += `  ID: ${clientId} | Email: ${clientData.user ? clientData.user.email : '-'}\n`;
       });
     } else {
-      logStr += 'No clients';
+      logOutput += 'No clients';
     }
 
-    logStr += '\n';
+    logOutput += '\n';
 
-    log(logStr);
+    log(logOutput, undefined, {
+      muteWorker: true,
+    });
   }
 
   public broadcastClientList(type: string) {

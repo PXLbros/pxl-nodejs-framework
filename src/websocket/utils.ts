@@ -1,12 +1,16 @@
 import WebSocket from 'ws';
 import { Logger } from '../logger/index.js';
 
+export interface LogOptions {
+  muteWorker?: boolean;
+}
+
 export function generateClientId(): string {
   return Math.random().toString(36).substr(2, 9);
 }
 
-export function log(message: string, meta?: Record<string, unknown>): void {
-  Logger.custom('webSocket', message, meta);
+export function log(message: string, meta?: Record<string, unknown>, options?: LogOptions): void {
+  Logger.custom('webSocket', message, meta, options);
 }
 
 export function parseServerMessage(message: WebSocket.Data): Record<string, unknown> {

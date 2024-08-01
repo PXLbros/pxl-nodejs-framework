@@ -47,6 +47,11 @@ export interface WebSocketOptions {
     log?: boolean;
   };
 
+  rooms?: {
+    enabled?: boolean;
+    clientCanJoinMultipleRooms?: boolean;
+  },
+
   /** WebSocket debug options */
   debug?: WebSocketDebugOptions;
 
@@ -107,6 +112,7 @@ export interface WebSocketMessageHandler {
 export enum WebSocketRedisSubscriberEvent {
   ClientConnected = 'clientConnected',
   ClientDisconnected = 'clientDisconnected',
+  DisconnectClient = 'disconnectClient',
   ClientJoinedRoom = 'clientJoinedRoom',
   ClientLeftRoom = 'clientLeftRoom',
   SendMessage = 'sendMessage',
