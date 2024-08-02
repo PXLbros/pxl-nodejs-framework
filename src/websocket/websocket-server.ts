@@ -43,7 +43,7 @@ export default class WebSocketServer extends WebSocketBase {
   private workerId: number | null;
   private applicationConfig: ApplicationConfig;
   private options: WebSocketOptions;
-  private clientManager = new WebSocketClientManager();
+  public clientManager = new WebSocketClientManager();
   private roomManager = new WebSocketRoomManager({
     clientManager: this.clientManager,
   });
@@ -834,17 +834,21 @@ export default class WebSocketServer extends WebSocketBase {
     ws.send(webSocketMessage, { binary });
   };
 
-  public sendMessage = (data: unknown): void => {
+  public sendMessage = ({ data }: { data: unknown }): void => {
+    const formattedData = { ...(data as object), workerId: this.workerId };
+
     this.redisInstance.publisherClient.publish(
       WebSocketRedisSubscriberEvent.SendMessage,
-      JSON.stringify(data),
+      JSON.stringify(formattedData),
     );
   };
 
-  public sendMessageToAll = (data: unknown): void => {
+  public sendMessageToAll = ({ data }: { data: unknown }): void => {
+    const formattedData = { ...(data as object), workerId: this.workerId };
+
     this.redisInstance.publisherClient.publish(
       WebSocketRedisSubscriberEvent.SendMessageToAll,
-      JSON.stringify(data),
+      JSON.stringify(formattedData),
     );
   };
 }
