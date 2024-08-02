@@ -708,8 +708,6 @@ export default class WebSocketServer extends WebSocketBase {
       data: userData,
     });
 
-    console.log('ADDING CLIENT TO ROOM: ', userData);
-
     this.roomManager.addClientToRoom({
       clientId,
       user: userData,
@@ -778,39 +776,28 @@ export default class WebSocketServer extends WebSocketBase {
     };
 
     // if user with same email is already connected, disconnect the previous connection
-    const existingClient =
-      this.clientManager.getClientByKey({
-        key: 'user.email',
-        value: user.email,
-      });
+    // const existingClient =
+    //   this.clientManager.getClientByKey({
+    //     key: 'user.email',
+    //     value: user.email,
+    //   });
 
-    console.log('existingClient', existingClient);
-
-    if (existingClient) {
-      console.log(
-        'FOUMD EXISTING CLIENT WITH EMAIL',
-        existingClient,
-      );
-
-      if (existingClient.ws) {
-        this.clientManager.disconnectClient({
-          clientId: existingClient.clientId,
-        });
-      } else {
-        log('PUBLISHED DisconnectClient');
-
-        // Publish to Redis that we should disconnect this client
-        this.redisInstance.publisherClient.publish(
-          WebSocketRedisSubscriberEvent.DisconnectClient,
-          JSON.stringify({
-            clientId,
-            workerId: this.workerId,
-          }),
-        );
-      }
-    } else {
-      console.log('DID NOT FIND EXISTING CLIENT WITH WS');
-    }
+    // if (existingClient) {
+    //   if (existingClient.ws) {
+    //     this.clientManager.disconnectClient({
+    //       clientId: existingClient.clientId,
+    //     });
+    //   } else {
+    //     // Publish to Redis that we should disconnect this client
+    //     this.redisInstance.publisherClient.publish(
+    //       WebSocketRedisSubscriberEvent.DisconnectClient,
+    //       JSON.stringify({
+    //         clientId,
+    //         workerId: this.workerId,
+    //       }),
+    //     );
+    //   }
+    // }
 
     this.onJoinRoom({
       clientId,

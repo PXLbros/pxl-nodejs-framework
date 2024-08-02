@@ -91,12 +91,14 @@ export default class WebSocketClientManager {
     const clientList: {
       clientId: string;
       lastActivity: number;
+      roomName?: string;
     }[] = [];
 
-    this.clients.forEach(({ lastActivity }, clientId) => {
+    this.clients.forEach(({ lastActivity, roomName }, clientId) => {
       clientList.push({
         clientId,
         lastActivity,
+        roomName,
       });
     });
 
@@ -112,9 +114,6 @@ export default class WebSocketClientManager {
     value: string;
     requireWs?: boolean;
   }) {
-    console.log('clients', this.clients);
-
-
     const client = [...this.clients.entries()].find(
       ([_, clientData]) => {
         const deepKeyValue = Helper.getValueFromObject(clientData, key);
@@ -125,15 +124,10 @@ export default class WebSocketClientManager {
       }
     );
 
-    console.log('client before format: ', client);
-
-
     const formattedClient = client ? {
       clientId: client[0],
       ...client[1],
     } : undefined;
-
-    console.log('client after format: ', formattedClient);
 
     if (requireWs && !formattedClient?.ws) {
       return undefined;
@@ -146,8 +140,7 @@ export default class WebSocketClientManager {
     const clientInfo = this.clients.get(clientId);
 
     // TODO: Need to check if the client to be disconnected WS is on this worker that received the request, otherwise need to request to Redis and let all workers check
-
-    console.log('disconnected client, has ws?: ' , clientInfo?.ws ? 'yes' : 'no');
+    // console.log('disconnected client, has ws?: ' , clientInfo?.ws ? 'yes' : 'no');
 
     if (clientInfo?.ws) {
       const connectedTime = Date.now() - clientInfo.lastActivity;
@@ -184,7 +177,7 @@ export default class WebSocketClientManager {
 
     if (numClients > 0) {
       this.clients.forEach((clientData, clientId) => {
-        logOutput += `  ID: ${clientId} | Email: ${clientData.user ? clientData.user.email : '-'}\n`;
+        logOutput += `ID: ${clientId} | Email: ${clientData.user ? clientData.user.email : '-'}\n`;
       });
     } else {
       logOutput += 'No clients';
@@ -205,9 +198,14 @@ export default class WebSocketClientManager {
         return;
       }
 
+      console.log('sending clinent list to client: ', ws.url);
+
+
       ws.send(
         JSON.stringify({
-          type,
+          type: 'system',
+          action: 'clientList',
+          clientListType: type,
           data: clientList,
         }),
       );

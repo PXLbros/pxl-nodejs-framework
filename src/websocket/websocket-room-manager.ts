@@ -11,7 +11,7 @@ export default class WebSocketRoomManager {
     this.clientManager = clientManager;
   }
 
-  public addClientToRoom({ clientId, user, roomName }: { clientId: string; user: any; roomName: string; }) {
+  public addClientToRoom({ clientId, user, roomName, broadcast }: { clientId: string; user: any; roomName: string; broadcast?: boolean }) {
     // Check if room exists
     if (!this.rooms.has(roomName)) {
       // Create room
@@ -37,12 +37,16 @@ export default class WebSocketRoomManager {
       data: roomName,
     });
 
+    if (broadcast !== false) {
+      this.clientManager.broadcastClientList('clientAddedToRoom');
+    }
+
     this.printRooms();
 
     log('Client joined room', { Room: roomName, ID: clientId, Email: user.email });
   }
 
-  public removeClientFromRoom({ roomName, clientId }: { roomName: string; clientId: string }) {
+  public removeClientFromRoom({ roomName, clientId, broadcast }: { roomName: string; clientId: string; broadcast?: boolean }) {
     // Get room from room name
     const room = this.rooms.get(roomName);
 
@@ -75,6 +79,10 @@ export default class WebSocketRoomManager {
       data: null,
     });
 
+    if (broadcast !== false) {
+      this.clientManager.broadcastClientList('clientRemovedFromRoom');
+    }
+
     this.printRooms();
 
     log('Client left room', { Room: roomName, ID: clientId });
@@ -86,8 +94,10 @@ export default class WebSocketRoomManager {
         return;
       }
 
-      this.removeClientFromRoom({ roomName: room, clientId });
+      this.removeClientFromRoom({ roomName: room, clientId, broadcast: false });
     });
+
+    this.clientManager.broadcastClientList('clientRemovedFromAllRooms');
 
     this.printRooms();
   }

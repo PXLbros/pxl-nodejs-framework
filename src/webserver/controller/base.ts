@@ -51,7 +51,7 @@ export default abstract class {
       }
     }
 
-    Logger.error(error);
+    Logger.custom('webServer', errorMessage);
 
     reply.status(statusCode).send({ error: errorMessage });
   }
