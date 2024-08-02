@@ -92,13 +92,15 @@ export default class WebSocketClientManager {
       clientId: string;
       lastActivity: number;
       roomName?: string;
+      user?: any;
     }[] = [];
 
-    this.clients.forEach(({ lastActivity, roomName }, clientId) => {
+    this.clients.forEach(({ lastActivity, roomName, user }, clientId) => {
       clientList.push({
         clientId,
         lastActivity,
         roomName,
+        user,
       });
     });
 
