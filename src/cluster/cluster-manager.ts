@@ -45,6 +45,7 @@ export default class ClusterManager {
 
     cluster.on('online', (worker) => {
       Logger.debug('Started cluster worker', {
+        ID: worker.id,
         PID: worker.process.pid,
       });
     });
