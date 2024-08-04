@@ -66,11 +66,24 @@ export default class WebSocketClient extends WebSocketBase {
           this.options.events.onConnected({
             ws,
             clientId: this.clientId,
-            join: ({ username }: { username: string }) => {
+            join: ({ userId, userType, roomName, onSuccess }: { userId?: string; userType?: string; roomName: string; onSuccess?: (data: any) => void }) => {
+              console.log('--------------------------------- JOINING ROOM');
+
               this.sendClientMessage({
                 type: 'system',
-                action: 'clientJoin',
-                data: { username },
+                action: 'joinRoom',
+                data: {
+                  userId,
+                  userType,
+                  roomName,
+                },
+                onSuccess: (data: any) => {
+                  console.log('------------------------------ LOOOOOOOOOOOOOOOGED IN!');
+
+                  if (typeof onSuccess === 'function') {
+                    onSuccess(data);
+                  }
+                },
               });
             },
           });
@@ -123,6 +136,12 @@ export default class WebSocketClient extends WebSocketBase {
       log('WebSocket not initialized or client ID not set');
 
       return;
+    }
+
+    if (this.options.events?.onMessage) {
+      const parsedMessage = parseServerMessage(message);
+
+      this.options.events.onMessage({ ws: this.ws, clientId: this.clientId, data: parsedMessage });
     }
 
     await this.handleServerMessage(this.ws, message, this.clientId);

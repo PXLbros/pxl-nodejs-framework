@@ -718,10 +718,12 @@ export default class WebSocketServer extends WebSocketBase {
   public async joinRoom({
     ws,
     userId,
+    userType,
     roomName,
   }: {
     ws: WebSocket;
-    userId: number;
+    userId?: number;
+    userType?: string;
     roomName: string;
   }): Promise<void> {
     const clientId = this.clientManager.getClientId({ ws });
@@ -747,33 +749,39 @@ export default class WebSocketServer extends WebSocketBase {
       return;
     }
 
-    // Get user email from database
-    const dbEntityManager =
-      this.databaseInstance.getEntityManager();
+    let userData: any = {};
 
-    const getUserQuery =
-      'SELECT email FROM users WHERE id = ?';
-    const getUserParams = [userId];
+    if (userId) {
+      // Get user email from database
+      const dbEntityManager =
+        this.databaseInstance.getEntityManager();
 
-    const getUserResult = await dbEntityManager.execute(
-      getUserQuery,
-      getUserParams,
-    );
+      const getUserQuery =
+        'SELECT email FROM users WHERE id = ?';
+      const getUserParams = [userId];
 
-    if (!getUserResult || getUserResult.length === 0) {
-      log('User not found in database', {
-        'User ID': userId,
-      });
+      const getUserResult = await dbEntityManager.execute(
+        getUserQuery,
+        getUserParams,
+      );
 
-      return;
+      if (!getUserResult || getUserResult.length === 0) {
+        log('User not found in database', {
+          'User ID': userId,
+        });
+
+        return;
+      }
+
+      const user = getUserResult[0];
+
+      userData = {
+        id: userId,
+        ...user,
+      };
     }
 
-    const user = getUserResult[0];
-
-    const userData = {
-      id: userId,
-      ...user,
-    };
+    userData.userType = userType;
 
     // if user with same email is already connected, disconnect the previous connection
     // const existingClient =
@@ -820,7 +828,9 @@ export default class WebSocketServer extends WebSocketBase {
     this.sendClientMessage(ws, {
       type: 'ack',
       action: 'joinRoom',
-      data: {},
+      data: {
+        roomName,
+      },
     });
   }
 
@@ -851,4 +861,8 @@ export default class WebSocketServer extends WebSocketBase {
       JSON.stringify(formattedData),
     );
   };
+
+  public getClients({ userType }: { userType?: string }): any[] {
+    return this.clientManager.getClients({ userType });
+  }
 }

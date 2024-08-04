@@ -93,14 +93,16 @@ export default class WebSocketClientManager {
       lastActivity: number;
       roomName?: string;
       user?: any;
+      userType?: string;
     }[] = [];
 
-    this.clients.forEach(({ lastActivity, roomName, user }, clientId) => {
+    this.clients.forEach(({ lastActivity, roomName, user, userType }, clientId) => {
       clientList.push({
         clientId,
         lastActivity,
         roomName,
         user,
+        userType,
       });
     });
 
@@ -136,6 +138,20 @@ export default class WebSocketClientManager {
     }
 
     return formattedClient;
+  }
+
+  public getClients({ userType }: { userType?: string }) {
+    const clients: WebSocketClientData[] = [];
+
+    this.clients.forEach((clientData) => {
+      if (userType && clientData.user?.userType !== userType) {
+        return;
+      }
+
+      clients.push(clientData);
+    });
+
+    return clients;
   }
 
   public disconnectClient({ clientId }: { clientId: string }) {
@@ -179,7 +195,7 @@ export default class WebSocketClientManager {
 
     if (numClients > 0) {
       this.clients.forEach((clientData, clientId) => {
-        logOutput += `ID: ${clientId} | Email: ${clientData.user ? clientData.user.email : '-'}\n`;
+        logOutput += `ID: ${clientId} | User Type: ${clientData?.user?.userType || '-'} | Email: ${clientData.user?.email ? clientData.user.email : '-'}\n`;
       });
     } else {
       logOutput += 'No clients';
@@ -199,9 +215,6 @@ export default class WebSocketClientManager {
       if (!ws) {
         return;
       }
-
-      console.log('sending clinent list to client: ', ws.url);
-
 
       ws.send(
         JSON.stringify({

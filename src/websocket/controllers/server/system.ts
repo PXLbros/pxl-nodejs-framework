@@ -11,16 +11,17 @@ export default class SystemController extends WebSocketServerBaseController {
   }
 
   public joinRoom = (clientWebSocket: WebSocket, webSocketClientId: string, data: any): any => {
-    if (!data?.userId) {
-      logger.warn('Missing user ID when joining room');
+    // if (!data?.userId) {
+    //   logger.warn('Missing user ID when joining room');
 
-      return { error: 'No user ID provided' };
-    }
+    //   return { error: 'No user ID provided' };
+    // }
 
-    const userId = data.userId;
+    const userId = data.userId || null;
+    const userType = data.userType || null;
 
     // Join room
-    this.webSocketServer.joinRoom({ ws: clientWebSocket, userId, roomName: data.roomName });
+    this.webSocketServer.joinRoom({ ws: clientWebSocket, userId, userType, roomName: data.roomName });
   }
 
   public leaveRoom = (clientWebSocket: WebSocket, webSocketClientId: string, data: any): any => {

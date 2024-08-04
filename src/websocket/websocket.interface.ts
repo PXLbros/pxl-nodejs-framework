@@ -14,9 +14,10 @@ export interface WebSocketDebugOptions {
 
 export interface WebSocketEventsConfig {
   onServerStarted?: ({ webSocketServer }: { webSocketServer: WebSocketServer }) => void;
-  onConnected?: ({ ws, clientId, join }: { ws: WebSocket; clientId: string; join({ username }: { username: string }): void }) => void;
+  onConnected?: ({ ws, clientId, join }: { ws: WebSocket; clientId: string; join({ userId, userType, roomName }: { userId?: string; userType?: string; roomName: string }): void }) => void;
   onDisconnected?: ({ clientId }: { clientId?: string }) => void;
   onError?: ({ error }: { error: Error }) => void;
+  onMessage?: ({ ws, clientId, data }: { ws: WebSocket; clientId: string; data: any }) => void;
 }
 
 export interface WebSocketOptions {

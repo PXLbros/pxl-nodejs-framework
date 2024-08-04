@@ -94,14 +94,19 @@ export default abstract class WebSocketBase {
 
       const messageHandler = this.routeHandlers.get(routeKey);
 
-      if (!messageHandler) {
-        throw new Error(`Route handler not found (Route Key: ${routeKey} | Type: ${type} | Action: ${action})`);
-      }
+      if (messageHandler) {
+        const messageResponse = await messageHandler(ws, clientId, parsedMessage.data);
 
-      const messageResponse = await messageHandler(ws, clientId, parsedMessage.data);
+        if (messageResponse?.error) {
+          throw new Error(messageResponse.error);
+        }
 
-      if (messageResponse?.error) {
-        throw new Error(messageResponse.error);
+        // If messageResponse.respond
+        // Send success message?
+      } else {
+        // throw new Error(`Route handler not found (Route Key: ${routeKey} | Type: ${type} | Action: ${action})`);
+
+        log('Route handler not found', { RouteKey: routeKey, Type: type, Action: action });
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';

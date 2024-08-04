@@ -43,7 +43,7 @@ export default class WebSocketRoomManager {
 
     this.printRooms();
 
-    log('Client joined room', { Room: roomName, ID: clientId, Email: user.email });
+    log('Client joined room', { 'User Type': user?.userType || '-', Room: roomName, ID: clientId, Email: user.email || '-' });
   }
 
   public removeClientFromRoom({ roomName, clientId, broadcast }: { roomName: string; clientId: string; broadcast?: boolean }) {
@@ -138,7 +138,7 @@ export default class WebSocketRoomManager {
         clientsInRoom.forEach((clientId) => {
           const client = this.clientManager.getClient({ clientId });
 
-          logOutput += `    Client (ID: ${clientId} | Email: ${client?.user ? client.user.email : ''})\n`;
+          logOutput += `    Client (ID: ${clientId} | User Type: ${client?.user?.userType || '-'} | Email: ${client?.user?.email ? client.user.email : '-'})\n`;
         });
 
         roomNumber++;
