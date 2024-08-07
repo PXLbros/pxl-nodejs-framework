@@ -41,6 +41,7 @@ export default class WebSocketServer extends WebSocketBase {
 
   private checkConnectedClientsInterval?: NodeJS.Timeout;
   private workerId: number | null;
+  private uniqueInstanceId: string;
   private applicationConfig: ApplicationConfig;
   private options: WebSocketOptions;
   public clientManager = new WebSocketClientManager();
@@ -63,11 +64,13 @@ export default class WebSocketServer extends WebSocketBase {
     WebSocketRedisSubscriberEvent.MessageError,
     WebSocketRedisSubscriberEvent.QueueJobCompleted,
     WebSocketRedisSubscriberEvent.QueueJobError,
+    WebSocketRedisSubscriberEvent.Custom,
   ];
 
   constructor(props: WebSocketServerProps) {
     super();
 
+    this.uniqueInstanceId = props.uniqueInstanceId;
     this.applicationConfig = props.applicationConfig;
     this.options = props.options;
     this.redisInstance = props.redisInstance;
@@ -198,10 +201,10 @@ export default class WebSocketServer extends WebSocketBase {
   /**
    * Handle subscriber message.
    */
-  private handleSubscriberMessage = (
+  private handleSubscriberMessage = async  (
     channel: string,
     message: string,
-  ): void => {
+  ): Promise<void> => {
     let parsedMessage: { [key: string]: any };
 
     try {
@@ -324,6 +327,24 @@ export default class WebSocketServer extends WebSocketBase {
         parsedMessage.data = parsedMessage.error;
 
         // this.sendJobDoneMessage({ type: 'jobError', ...parsedMessage });
+
+        break;
+      }
+      case WebSocketRedisSubscriberEvent.Custom: {
+        console.log('A CUSTOm EVENT WAS SENT, DO CUSTOM LOGIC FROM APP');
+
+        // // Custom event
+        // if (this.options.events?.onCustomEvent) {
+        //   this.options.events.onCustomEvent({
+        //     channel,
+        //     message: parsedMessage,
+        //   });
+        // }
+
+        // Handle custom message
+
+        console.log('parsedMessage', parsedMessage);
+
 
         break;
       }
@@ -512,8 +533,20 @@ export default class WebSocketServer extends WebSocketBase {
       }
 
       // Handle server message
-      await this.handleServerMessage(ws, message, clientId);
+      const serverMessageResponse = await this.handleServerMessage(ws, message, clientId);
+
+      this.sendClientMessage(ws, {
+        type: serverMessageResponse.type,
+        action: serverMessageResponse.action,
+        response: serverMessageResponse?.response,
+      });
+
+      if (serverMessageResponse?.response?.error) {
+        // throw new Error(serverMessageResponse?.response?.error);
+      }
     } catch (error) {
+      Logger.error(error);
+
       log('Error handling client message', {
         Error: error,
       });
@@ -719,19 +752,19 @@ export default class WebSocketServer extends WebSocketBase {
     ws,
     userId,
     userType,
+    username,
     roomName,
   }: {
     ws: WebSocket;
     userId?: number;
     userType?: string;
+    username?: string;
     roomName: string;
-  }): Promise<void> {
+  }) {
     const clientId = this.clientManager.getClientId({ ws });
 
     if (!clientId) {
-      log('Client ID not found when setting client joined');
-
-      return;
+      throw new Error('Client ID not found when joining room');
     }
 
     // Check if client is already in room
@@ -741,15 +774,13 @@ export default class WebSocketServer extends WebSocketBase {
     });
 
     if (isClientInRoom) {
-      log('Client already in room when joining', {
-        'Client ID': clientId,
-        'Room Name': roomName,
-      });
-
-      return;
+      throw new Error('Client already in room when joining');
     }
 
     let userData: any = {};
+
+    // // Get WebSocket client ID
+    // const webSocketId = this.clientManager.getClientId({ ws });
 
     if (userId) {
       // Get user email from database
@@ -766,11 +797,7 @@ export default class WebSocketServer extends WebSocketBase {
       );
 
       if (!getUserResult || getUserResult.length === 0) {
-        log('User not found in database', {
-          'User ID': userId,
-        });
-
-        return;
+        throw new Error('User not found in database');
       }
 
       const user = getUserResult[0];
@@ -779,6 +806,12 @@ export default class WebSocketServer extends WebSocketBase {
         id: userId,
         ...user,
       };
+    }
+
+    // userData.uniqueId = webSocketId;
+
+    if (username) {
+      userData.username = username;
     }
 
     userData.userType = userType;
@@ -824,14 +857,7 @@ export default class WebSocketServer extends WebSocketBase {
       }),
     );
 
-    // Send welcome message back to client
-    this.sendClientMessage(ws, {
-      type: 'ack',
-      action: 'joinRoom',
-      data: {
-        roomName,
-      },
-    });
+    return true;
   }
 
   public sendClientMessage = (
@@ -861,6 +887,18 @@ export default class WebSocketServer extends WebSocketBase {
       JSON.stringify(formattedData),
     );
   };
+
+  public sendCustomMessage = ({ data }: { data: unknown }): void => {
+    const formattedData = { ...(data as object), workerId: this.workerId };
+
+    console.log('SEND CUSTOM MESSAGE:', formattedData);
+
+
+    this.redisInstance.publisherClient.publish(
+      WebSocketRedisSubscriberEvent.Custom,
+      JSON.stringify(formattedData),
+    );
+  }
 
   public getClients({ userType }: { userType?: string }): any[] {
     return this.clientManager.getClients({ userType });

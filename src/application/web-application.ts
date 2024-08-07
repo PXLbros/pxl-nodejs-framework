@@ -55,6 +55,7 @@ export default class WebApplication extends BaseApplication {
         case 'server': {
           // Initialize WebSocket server
           webSocketServer = new WebSocketServer({
+            uniqueInstanceId: this.uniqueInstanceId,
             applicationConfig: this.config,
             options: this.config.webSocket,
             redisInstance,
@@ -156,6 +157,7 @@ export default class WebApplication extends BaseApplication {
     if (this.config.log?.startUp) {
       Logger.info('Application started', {
         Name: this.config.name,
+        'Instance ID': this.config.instanceId,
         'PXL Framework Version': this.applicationVersion,
         'Startup Time': Time.formatTime({ time: startupTime, format: 's', numDecimals: 2, showUnit: true }),
       });
@@ -170,6 +172,7 @@ export default class WebApplication extends BaseApplication {
     if (this.config.log?.shutdown) {
       Logger.info('Application stopped', {
         Name: this.config.name,
+        'Instance ID': this.config.instanceId,
         'Runtime': Time.formatTime({ time: runtime, format: 's', numDecimals: 2, showUnit: true }),
       });
     }

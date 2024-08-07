@@ -45,4 +45,35 @@ export default class RedisInstance {
       }
     });
   }
+
+  public async setCache({ key, value, expirationInSeconds }: { key: string; value: unknown; expirationInSeconds?: number }): Promise<void> {
+    let formattedValue: string | number | Buffer;
+
+    if (typeof value === 'object') {
+      formattedValue = JSON.stringify(value);
+    } else if (typeof value === 'number') {
+      formattedValue = value;
+    } else if (typeof value === 'string') {
+      formattedValue = value;
+    } else {
+      throw new Error('Unsupported value type');
+    }
+
+    if (expirationInSeconds) {
+      await this.client.set(key, formattedValue, 'EX', expirationInSeconds);
+    } else {
+      await this.client.set(key, formattedValue);
+    }
+  }
+
+  public async getCache({ key }: { key: string }): Promise<string | null> {
+    const cacheValue = this.client.get(key);
+
+    return cacheValue;
+  }
+
+  public async deleteCache({ key }: { key: string
+  }): Promise<void> {
+    await this.client.del(key);
+  }
 }

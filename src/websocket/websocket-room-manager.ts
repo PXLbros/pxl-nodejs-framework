@@ -138,7 +138,7 @@ export default class WebSocketRoomManager {
         clientsInRoom.forEach((clientId) => {
           const client = this.clientManager.getClient({ clientId });
 
-          logOutput += `    Client (ID: ${clientId} | User Type: ${client?.user?.userType || '-'} | Email: ${client?.user?.email ? client.user.email : '-'})\n`;
+          logOutput += `    Client (ID: ${clientId} | Username: ${client?.user?.username || '-'} | User Type: ${client?.user?.userType || '-'} | Email: ${client?.user?.email ? client.user.email : '-'})\n`;
         });
 
         roomNumber++;

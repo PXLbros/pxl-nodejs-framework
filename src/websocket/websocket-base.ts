@@ -78,7 +78,7 @@ export default abstract class WebSocketBase {
     }
   }
 
-  protected async handleServerMessage(ws: WebSocket, message: WebSocket.Data, clientId: string): Promise<void> {
+  protected async handleServerMessage(ws: WebSocket, message: WebSocket.Data, clientId: string): Promise<void | any> {
     try {
       const parsedMessage = parseServerMessage(message);
       const type = parsedMessage.type;
@@ -97,12 +97,11 @@ export default abstract class WebSocketBase {
       if (messageHandler) {
         const messageResponse = await messageHandler(ws, clientId, parsedMessage.data);
 
-        if (messageResponse?.error) {
-          throw new Error(messageResponse.error);
-        }
-
-        // If messageResponse.respond
-        // Send success message?
+        return {
+          type,
+          action,
+          response: messageResponse,
+        };
       } else {
         // throw new Error(`Route handler not found (Route Key: ${routeKey} | Type: ${type} | Action: ${action})`);
 

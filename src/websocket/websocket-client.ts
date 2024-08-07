@@ -66,23 +66,25 @@ export default class WebSocketClient extends WebSocketBase {
           this.options.events.onConnected({
             ws,
             clientId: this.clientId,
-            join: ({ userId, userType, roomName, onSuccess }: { userId?: string; userType?: string; roomName: string; onSuccess?: (data: any) => void }) => {
-              console.log('--------------------------------- JOINING ROOM');
-
+            joinRoom: ({
+              userId,
+              userType,
+              username,
+              roomName,
+            }: {
+              userId?: string;
+              userType?: string;
+              username: string;
+              roomName: string;
+            }) => {
               this.sendClientMessage({
                 type: 'system',
                 action: 'joinRoom',
                 data: {
                   userId,
                   userType,
+                  username,
                   roomName,
-                },
-                onSuccess: (data: any) => {
-                  console.log('------------------------------ LOOOOOOOOOOOOOOOGED IN!');
-
-                  if (typeof onSuccess === 'function') {
-                    onSuccess(data);
-                  }
                 },
               });
             },
@@ -159,6 +161,15 @@ export default class WebSocketClient extends WebSocketBase {
     }
 
     const webSocketMessage = JSON.stringify(data);
+
+    // // Listen for ack message with same action
+    // this.ws.once('message', (message: RawData) => {
+    //   console.log('------------------------------ GOT MESSAGE BACK!', message);
+    //   const parseServerMessage = JSON.parse(message.toString());
+
+    //   console.log('------------------------------ GOT MESSAGE BACK! (parsed)', parseServerMessage);
+
+    // });
 
     this.ws.send(webSocketMessage, { binary });
   };

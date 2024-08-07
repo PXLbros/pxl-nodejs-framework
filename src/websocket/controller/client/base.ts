@@ -12,8 +12,6 @@ export default abstract class WebSocketServerBaseController {
   protected databaseInstance: DatabaseInstance;
 
   constructor({ sendMessage, redisInstance, queueManager, databaseInstance }: WebSocketClientBaseControllerConstructorParams) {
-    console.log('PASSING webSocketClient to controller : ', webSocketClient);
-
     this.sendMessage = sendMessage;
 
     this.redisInstance = redisInstance;

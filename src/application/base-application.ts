@@ -6,11 +6,14 @@ import { ApplicationConfig, ApplicationStartInstanceOptions, ApplicationStopInst
 import path from 'path';
 import ClusterManager from '../cluster/cluster-manager.js';
 import RedisInstance from '../redis/instance.js';
-import { Time } from '../util/index.js';
-import { Logger } from '../logger/index.js';
+import { OS, Time } from '../util/index.js';
 import CacheManager from '../cache/manager.js';
+import os from 'os';
 
 export default abstract class BaseApplication {
+  /** Unique instance ID */
+  public uniqueInstanceId: string;
+
   /** Shutdown signals */
   protected shutdownSignals: NodeJS.Signals[] = ['SIGTERM', 'SIGINT'];
 
@@ -46,6 +49,10 @@ export default abstract class BaseApplication {
    * Application constructor
    */
   constructor(config: ApplicationConfig) {
+    const computerName = os.hostname();
+
+    this.uniqueInstanceId = `${config.instanceId}-${computerName}-${OS.getUniqueComputerId()}`;
+
     this.config = config;
 
     // const schema = Joi.object({

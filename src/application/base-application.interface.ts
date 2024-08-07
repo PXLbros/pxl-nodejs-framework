@@ -113,6 +113,9 @@ export interface ApplicationConfig {
   /** Application name */
   name: string;
 
+  /** Application instance ID */
+  instanceId: string;
+
   /** Root directory */
   rootDirectory: string;
 

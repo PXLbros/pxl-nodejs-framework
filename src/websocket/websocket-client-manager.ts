@@ -93,7 +93,6 @@ export default class WebSocketClientManager {
       lastActivity: number;
       roomName?: string;
       user?: any;
-      userType?: string;
     }[] = [];
 
     this.clients.forEach(({ lastActivity, roomName, user, userType }, clientId) => {
@@ -102,7 +101,6 @@ export default class WebSocketClientManager {
         lastActivity,
         roomName,
         user,
-        userType,
       });
     });
 
@@ -143,10 +141,12 @@ export default class WebSocketClientManager {
   public getClients({ userType }: { userType?: string }) {
     const clients: WebSocketClientData[] = [];
 
-    this.clients.forEach((clientData) => {
+    this.clients.forEach((clientData, clientId) => {
       if (userType && clientData.user?.userType !== userType) {
         return;
       }
+
+      clientData.clientId = clientId;
 
       clients.push(clientData);
     });
@@ -156,9 +156,6 @@ export default class WebSocketClientManager {
 
   public disconnectClient({ clientId }: { clientId: string }) {
     const clientInfo = this.clients.get(clientId);
-
-    // TODO: Need to check if the client to be disconnected WS is on this worker that received the request, otherwise need to request to Redis and let all workers check
-    // console.log('disconnected client, has ws?: ' , clientInfo?.ws ? 'yes' : 'no');
 
     if (clientInfo?.ws) {
       const connectedTime = Date.now() - clientInfo.lastActivity;
@@ -194,8 +191,8 @@ export default class WebSocketClientManager {
     logOutput += '-------------------------------------\n';
 
     if (numClients > 0) {
-      this.clients.forEach((clientData, clientId) => {
-        logOutput += `ID: ${clientId} | User Type: ${clientData?.user?.userType || '-'} | Email: ${clientData.user?.email ? clientData.user.email : '-'}\n`;
+      this.clients.forEach((client, clientId) => {
+        logOutput += `ID: ${clientId} | Username: ${client?.user?.username || '-'} | User Type: ${client?.user?.userType || '-'} | Email: ${client.user?.email ? client.user.email : '-'}\n`;
       });
     } else {
       logOutput += 'No clients';

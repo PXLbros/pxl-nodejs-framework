@@ -13,11 +13,45 @@ export interface WebSocketDebugOptions {
 }
 
 export interface WebSocketEventsConfig {
-  onServerStarted?: ({ webSocketServer }: { webSocketServer: WebSocketServer }) => void;
-  onConnected?: ({ ws, clientId, join }: { ws: WebSocket; clientId: string; join({ userId, userType, roomName }: { userId?: string; userType?: string; roomName: string }): void }) => void;
-  onDisconnected?: ({ clientId }: { clientId?: string }) => void;
+  onServerStarted?: ({
+    webSocketServer,
+  }: {
+    webSocketServer: WebSocketServer;
+  }) => void;
+  onConnected?: ({
+    ws,
+    clientId,
+    joinRoom,
+  }: {
+    ws: WebSocket;
+    clientId: string;
+    joinRoom({
+      userId,
+      userType,
+      username,
+      roomName,
+    }: {
+      userId?: string;
+      userType?: string;
+      username?: string;
+      roomName: string;
+    }): void;
+  }) => void;
+  onDisconnected?: ({
+    clientId,
+  }: {
+    clientId?: string;
+  }) => void;
   onError?: ({ error }: { error: Error }) => void;
-  onMessage?: ({ ws, clientId, data }: { ws: WebSocket; clientId: string; data: any }) => void;
+  onMessage?: ({
+    ws,
+    clientId,
+    data,
+  }: {
+    ws: WebSocket;
+    clientId: string;
+    data: any;
+  }) => void;
 }
 
 export interface WebSocketOptions {
@@ -121,4 +155,5 @@ export enum WebSocketRedisSubscriberEvent {
   MessageError = 'messageError',
   QueueJobCompleted = 'queueJobCompleted',
   QueueJobError = 'queueJobError',
+  Custom = 'custom',
 }

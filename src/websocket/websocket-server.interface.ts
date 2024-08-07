@@ -5,6 +5,7 @@ import { RedisInstance } from '../redis/index.js';
 import { WebSocketOptions, WebSocketRoute } from './websocket.interface.js';
 
 export interface WebSocketServerProps {
+  uniqueInstanceId: string;
   applicationConfig: ApplicationConfig;
   options: WebSocketOptions;
   redisInstance: RedisInstance;
