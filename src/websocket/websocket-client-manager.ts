@@ -93,17 +93,13 @@ export default class WebSocketClientManager {
   public getClientList() {
     const clientList: {
       clientId: string;
-      lastActivity: number;
-      roomName?: string;
-      user?: any;
+      [key: string]: any;
     }[] = [];
 
-    this.clients.forEach(({ lastActivity, roomName, user, userType }, clientId) => {
+    this.clients.forEach((clientData, clientId) => {
       clientList.push({
         clientId,
-        lastActivity,
-        roomName,
-        user,
+        ...clientData,
       });
     });
 
@@ -114,18 +110,26 @@ export default class WebSocketClientManager {
     key,
     value,
     requireWs,
+    userType,
   }: {
     key: string;
     value: string;
     requireWs?: boolean;
+    userType?: string;
   }) {
-    const client = [...this.clients.entries()].find(
+    const clients = [...this.clients.entries()];
+
+    const client = clients.find(
       ([_, clientData]) => {
         const deepKeyValue = Helper.getValueFromObject(clientData, key);
 
-        const value2 = deepKeyValue === value;
+        const isValueMatching = deepKeyValue === value;
 
-        return value2;
+        if (userType && clientData.user?.userType !== userType) {
+          return false;
+        }
+
+        return isValueMatching;
       }
     );
 

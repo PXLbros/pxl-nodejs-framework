@@ -331,20 +331,7 @@ export default class WebSocketServer extends WebSocketBase {
         break;
       }
       case WebSocketRedisSubscriberEvent.Custom: {
-        console.log('A CUSTOm EVENT WAS SENT, DO CUSTOM LOGIC FROM APP');
-
-        // // Custom event
-        // if (this.options.events?.onCustomEvent) {
-        //   this.options.events.onCustomEvent({
-        //     channel,
-        //     message: parsedMessage,
-        //   });
-        // }
-
-        // Handle custom message
-
-        console.log('parsedMessage', parsedMessage);
-
+        // Custom logic is being handled in the app
 
         break;
       }
@@ -897,7 +884,6 @@ export default class WebSocketServer extends WebSocketBase {
     const formattedData = { ...(data as object), workerId: this.workerId };
 
     console.log('SEND CUSTOM MESSAGE:', formattedData);
-
 
     this.redisInstance.publisherClient.publish(
       WebSocketRedisSubscriberEvent.Custom,

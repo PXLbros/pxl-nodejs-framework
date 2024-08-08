@@ -6,6 +6,7 @@ const __dirname = path.dirname(__filename);
 
 export { __dirname as baseDir };
 
+export * from './api-requester/index.js';
 export * from './application/index.js';
 export * from './auth/index.js';
 export * from './cache/index.js';
