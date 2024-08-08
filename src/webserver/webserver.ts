@@ -273,32 +273,34 @@ class WebServer {
           break;
         }
         case WebServerRouteType.Entity: {
-          const entityModel = await Loader.loadEntityModule({ entitiesDirectory: this.applicationConfig.database.entitiesDirectory, entityName: route.entityName });
+          if (this.applicationConfig.database && this.applicationConfig.database.enabled === true) {
+            const entityModel = await Loader.loadEntityModule({ entitiesDirectory: this.applicationConfig.database.entitiesDirectory, entityName: route.entityName });
 
-          const entityValidationSchema = entityModel.schema?.describe();
+            const entityValidationSchema = entityModel.schema?.describe();
 
-          const formattedEntityValidationSchema = entityValidationSchema ? {
-            type: 'object',
-            properties: Object.fromEntries(
-              Object.entries(entityValidationSchema.keys).map(([key, value]) => [key, { type: (value as any).type }])
-            ),
-            required: Object.keys(entityValidationSchema.keys).filter(key => entityValidationSchema.keys[key].flags?.presence === 'required'),
-          } : {};
+            const formattedEntityValidationSchema = entityValidationSchema ? {
+              type: 'object',
+              properties: Object.fromEntries(
+                Object.entries(entityValidationSchema.keys).map(([key, value]) => [key, { type: (value as any).type }])
+              ),
+              required: Object.keys(entityValidationSchema.keys).filter(key => entityValidationSchema.keys[key].flags?.presence === 'required'),
+            } : {};
 
-          const entityRouteDefinitions = WebServerUtil.getEntityRouteDefinitions({
-            basePath: route.path,
-            entityValidationSchema: formattedEntityValidationSchema,
-          });
-
-          for (const entityRouteDefinition of entityRouteDefinitions) {
-            this.defineRoute({
-              controllerInstance,
-              controllerName,
-              routeMethod: entityRouteDefinition.method,
-              routePath: entityRouteDefinition.path,
-              routeAction: entityRouteDefinition.action,
-              routeValidation: entityRouteDefinition.validationSchema,
+            const entityRouteDefinitions = WebServerUtil.getEntityRouteDefinitions({
+              basePath: route.path,
+              entityValidationSchema: formattedEntityValidationSchema,
             });
+
+            for (const entityRouteDefinition of entityRouteDefinitions) {
+              this.defineRoute({
+                controllerInstance,
+                controllerName,
+                routeMethod: entityRouteDefinition.method,
+                routePath: entityRouteDefinition.path,
+                routeAction: entityRouteDefinition.action,
+                routeValidation: entityRouteDefinition.validationSchema,
+              });
+            }
           }
 
           break;

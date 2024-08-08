@@ -20,7 +20,7 @@ export default class QueueManager {
   private options: QueueManagerOptions;
 
   private redisInstance: RedisInstance;
-  private databaseInstance: DatabaseInstance;
+  private databaseInstance?: DatabaseInstance;
 
   private queues: Map<string, Queue> = new Map();
 
@@ -138,7 +138,7 @@ export default class QueueManager {
           throw new Error(`Processor class not found (Job ID: ${job.id} | Path: ${jobPath})`);
         }
 
-        const processorInstance = new ProcessorClass(this, this.applicationConfig, this.databaseInstance);
+        const processorInstance = new ProcessorClass(this, this.applicationConfig, this.redisInstance, this.databaseInstance);
 
         this.jobProcessors.set(job.id, processorInstance);
       }

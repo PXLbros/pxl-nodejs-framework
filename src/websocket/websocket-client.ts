@@ -162,15 +162,6 @@ export default class WebSocketClient extends WebSocketBase {
 
     const webSocketMessage = JSON.stringify(data);
 
-    // // Listen for ack message with same action
-    // this.ws.once('message', (message: RawData) => {
-    //   console.log('------------------------------ GOT MESSAGE BACK!', message);
-    //   const parseServerMessage = JSON.parse(message.toString());
-
-    //   console.log('------------------------------ GOT MESSAGE BACK! (parsed)', parseServerMessage);
-
-    // });
-
     this.ws.send(webSocketMessage, { binary });
   };
 

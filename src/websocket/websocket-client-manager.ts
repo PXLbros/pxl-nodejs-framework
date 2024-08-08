@@ -1,7 +1,6 @@
 import WebSocket from 'ws';
 import { log } from './utils.js';
 import { WebSocketClientData } from './websocket-client-manager.interface.js';
-import WebSocketRoomManager from './websocket-room-manager.js';
 import { Helper, Time } from '../util/index.js';
 import cluster from 'cluster';
 
@@ -59,10 +58,12 @@ export default class WebSocketClientManager {
     clientId,
     key,
     data,
+    broadcastClientList,
   }: {
     clientId: string;
     key: string;
     data: any;
+    broadcastClientList?: boolean;
   }) {
     const client = this.clients.get(clientId);
 
@@ -74,7 +75,9 @@ export default class WebSocketClientManager {
 
     this.clients.set(clientId, client);
 
-    this.broadcastClientList('updateClient');
+    if (broadcastClientList !== false) {
+      this.broadcastClientList('updateClient');
+    }
 
     this.printClients();
   }
@@ -138,7 +141,7 @@ export default class WebSocketClientManager {
     return formattedClient;
   }
 
-  public getClients({ userType }: { userType?: string }) {
+  public getClients({ userType }: { userType?: string } = {}) {
     const clients: WebSocketClientData[] = [];
 
     this.clients.forEach((clientData, clientId) => {

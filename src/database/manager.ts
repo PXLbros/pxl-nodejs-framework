@@ -4,7 +4,7 @@ import { ApplicationDatabaseOptions } from './manager.interface.js';
 import { Logger } from '../logger/index.js';
 
 /**
- * Database Manager
+ * Database manager
  */
 export default class DatabaseManager {
   private logger: typeof Logger = Logger;
@@ -14,7 +14,7 @@ export default class DatabaseManager {
   private instances: DatabaseInstance[] = [];
 
   /**
-   * Database Manager constructor
+   * Database manager constructor
    */
   constructor(options: ApplicationDatabaseOptions) {
     this.options = options;

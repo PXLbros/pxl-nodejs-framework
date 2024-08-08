@@ -15,6 +15,10 @@ export default class CommandApplication extends BaseApplication {
     super(config);
 
     const defaultConfig: Partial<CommandApplicationConfig> = {
+      cluster: {
+        enabled: false,
+      },
+
       log: {
         startUp: false,
       },
@@ -24,7 +28,11 @@ export default class CommandApplication extends BaseApplication {
       },
     };
 
-    const mergedConfig = Helper.defaultsDeep(config, defaultConfig);
+    const mergedConfig: CommandApplicationConfig = Helper.defaultsDeep(config, defaultConfig);
+
+    if (mergedConfig.cluster) {
+      mergedConfig.cluster.enabled = false;
+    }
 
     this.config = mergedConfig;
   }

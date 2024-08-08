@@ -1,6 +1,7 @@
 import { ClusterManagerConfig } from '../cluster/cluster-manager.interface.js';
 import { QueueItem } from '../queue/index.interface.js';
 import { WebServerDebugOptions, WebServerLogConfig, WebServerOptions, WebServerRoute } from '../webserver/webserver.interface.js';
+import WebSocketServer from '../websocket/websocket-server.js';
 import { WebSocketOptions, WebSocketRoute, WebSocketType } from '../websocket/websocket.interface.js';
 
 export type OnStartedEvent = ({ startupTime }: { startupTime: number }) => void;
@@ -29,6 +30,9 @@ export interface ApplicationRedisConfig {
 export interface ApplicationCacheConfig {}
 
 export interface ApplicationDatabaseConfig {
+  /** Whether to enable database */
+  enabled: boolean;
+
   /** Database host */
   host: string;
 
@@ -74,6 +78,9 @@ export interface ApplicationWebSocketConfig extends WebSocketOptions {
 
   /** WebSocket routes */
   routes: WebSocketRoute[];
+
+  /** WebSocket subscriber event handler */
+  subscriberEventHandler?: (options: { channel: string; message: any; webSocketServer: WebSocketServer }) => void;
 }
 
 export interface ApplicationWebServerConfig extends WebServerOptions {
@@ -129,7 +136,7 @@ export interface ApplicationConfig {
   cache?: ApplicationCacheConfig;
 
   /** Database configuration */
-  database: ApplicationDatabaseConfig;
+  database?: ApplicationDatabaseConfig;
 
   /** Queue configuration */
   queue: ApplicationQueueConfig;

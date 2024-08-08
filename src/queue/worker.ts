@@ -10,7 +10,6 @@ export default class QueueWorker extends Worker {
   private applicationConfig: ApplicationConfig;
 
   private queueManager: QueueManager;
-
   private redisInstance: RedisInstance;
 
   constructor({ applicationConfig, queueManager, name, processor, options, redisInstance }: QueueWorkerConstructorParams) {

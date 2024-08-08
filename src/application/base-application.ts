@@ -36,7 +36,7 @@ export default abstract class BaseApplication {
   public cacheManager: CacheManager;
 
   /** Database manager */
-  public databaseManager: DatabaseManager;
+  public databaseManager?: DatabaseManager;
 
   /** Queue manager */
   public queueManager?: QueueManager;
@@ -94,26 +94,28 @@ export default abstract class BaseApplication {
       redisManager: this.redisManager,
     });
 
-    const defaultEntitiesDirectory = path.join(this.config.rootDirectory, 'src', 'database', 'entities');
+    if (this.config.database && this.config.database.enabled === true) {
+      const defaultEntitiesDirectory = path.join(this.config.rootDirectory, 'src', 'database', 'entities');
 
-    if (!this.config.database.entitiesDirectory) {
-      this.config.database.entitiesDirectory = defaultEntitiesDirectory;
+      if (!this.config.database.entitiesDirectory) {
+        this.config.database.entitiesDirectory = defaultEntitiesDirectory;
+      }
+
+      if (!existsSync(this.config.database.entitiesDirectory)) {
+        throw new Error(`Database entities directory not found (Path: ${this.config.database.entitiesDirectory})`);
+      }
+
+      // Initialize Database manager
+      this.databaseManager = new DatabaseManager({
+        applicationConfig: this.config,
+        host: this.config.database.host,
+        port: this.config.database.port,
+        username: this.config.database.username,
+        password: this.config.database.password,
+        databaseName: this.config.database.databaseName,
+        entitiesDirectory: this.config.database.entitiesDirectory,
+      });
     }
-
-    if (!existsSync(this.config.database.entitiesDirectory)) {
-      throw new Error(`Database entities directory not found (Path: ${this.config.database.entitiesDirectory})`);
-    }
-
-    // Initialize Database manager
-    this.databaseManager = new DatabaseManager({
-      applicationConfig: this.config,
-      host: this.config.database.host,
-      port: this.config.database.port,
-      username: this.config.database.username,
-      password: this.config.database.password,
-      databaseName: this.config.database.databaseName,
-      entitiesDirectory: this.config.database.entitiesDirectory,
-    });
   }
 
   /**
@@ -196,12 +198,12 @@ export default abstract class BaseApplication {
   /**
    * Before application start
    */
-  private async onBeforeStart(): Promise<{ redisInstance: RedisInstance; databaseInstance: DatabaseInstance; queueManager: QueueManager }> {
+  private async onBeforeStart(): Promise<{ redisInstance: RedisInstance; databaseInstance: DatabaseInstance | null; queueManager: QueueManager }> {
     // Connect to Redis
     const redisInstance = await this.redisManager.connect();
 
     // Connect to database
-    const databaseInstance = await this.databaseManager.connect();
+    const databaseInstance = this.databaseManager ? await this.databaseManager.connect() : null;
 
     // Initialize queue
     const queueManager = new QueueManager({
@@ -234,8 +236,10 @@ export default abstract class BaseApplication {
     // Disconnect from Redis
     await this.redisManager.disconnect();
 
-    // Disconnect from database
-    await this.databaseManager.disconnect();
+    if (this.databaseManager) {
+      // Disconnect from database
+      await this.databaseManager.disconnect();
+    }
   }
 
   /**
@@ -264,7 +268,7 @@ export default abstract class BaseApplication {
     }
   }
 
-  protected abstract startHandler({ redisInstance, databaseInstance, queueManager }: { redisInstance: RedisInstance; databaseInstance: DatabaseInstance; queueManager: QueueManager }): Promise<void>;
+  protected abstract startHandler({ redisInstance, databaseInstance, queueManager }: { redisInstance: RedisInstance; databaseInstance?: DatabaseInstance | null; queueManager: QueueManager }): Promise<void>;
 
   protected abstract stopCallback(): void;
 

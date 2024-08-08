@@ -19,7 +19,7 @@ import WebSocketBase from './websocket-base.js';
 import { Logger } from '../logger/index.js';
 import { ApplicationConfig } from '../application/base-application.interface.js';
 import path from 'path';
-import { baseDir } from '../index.js';
+import { baseDir, WebApplicationConfig } from '../index.js';
 import WebSocketRoomManager from './websocket-room-manager.js';
 import logger from '../logger/logger.js';
 
@@ -42,7 +42,7 @@ export default class WebSocketServer extends WebSocketBase {
   private checkConnectedClientsInterval?: NodeJS.Timeout;
   private workerId: number | null;
   private uniqueInstanceId: string;
-  private applicationConfig: ApplicationConfig;
+  private applicationConfig: WebApplicationConfig;
   private options: WebSocketOptions;
   public clientManager = new WebSocketClientManager();
   private roomManager = new WebSocketRoomManager({
@@ -354,6 +354,11 @@ export default class WebSocketServer extends WebSocketBase {
           Message: message,
         });
       }
+    }
+
+    if (typeof this.applicationConfig.webSocket?.subscriberEventHandler === 'function') {
+      // Execute custom application subscriber event handler
+      this.applicationConfig.webSocket.subscriberEventHandler({ channel, message: parsedMessage, webSocketServer: this });
     }
   };
 
