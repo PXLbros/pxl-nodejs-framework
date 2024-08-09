@@ -10,6 +10,7 @@ import { QueueManager } from '../../queue/index.js';
 import { DynamicEntity } from '../../database/dynamic-entity.js';
 import { ApplicationConfig } from '../../application/base-application.interface.js';
 import { generateFormFields } from '../../database/dynamic-entity-form-decorators.js';
+import { Logger } from '../../logger/index.js';
 
 export default abstract class EntityController extends BaseController {
   protected abstract entityName: string;
@@ -134,9 +135,27 @@ export default abstract class EntityController extends BaseController {
       const reservedQueryKeys = ['page', 'limit', 'filters', 'sort', 'populate'];
 
       for (const key in request.query) {
-        if (!reservedQueryKeys.includes(key) && entityProperties.includes(key)) {
-          options.filters[key] = request.query[key];
+        console.log('key', key);
+
+        if (reservedQueryKeys.includes(key)) {
+          Logger.warn('Query key reserved', { key });
+
+          continue;
         }
+
+        if (!entityProperties.includes(key)) {
+          Logger.warn('Query key not allowed', { Key: key, 'Allowed Keys': entityProperties.join(', ') });
+
+          continue;
+        }
+
+        const queryValue = request.query[key];
+
+        if (!queryValue) {
+          continue;
+        }
+
+        options.filters[key] = queryValue;
       }
 
       const populate = request.query.populate ? request.query.populate.split(',') : [];
