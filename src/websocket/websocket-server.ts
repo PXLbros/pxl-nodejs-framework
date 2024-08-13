@@ -201,7 +201,7 @@ export default class WebSocketServer extends WebSocketBase {
   /**
    * Handle subscriber message.
    */
-  private handleSubscriberMessage = async  (
+  private handleSubscriberMessage = async (
     channel: string,
     message: string,
   ): Promise<void> => {
@@ -260,9 +260,16 @@ export default class WebSocketServer extends WebSocketBase {
             // requireWs: true,
           });
 
-        log(`WE GOT A REQUEST TO POTENTIALLY DISCONNECT LCIENT IF THIS CLIENT IS CONNETED HERE, GET CLIENT ------------------------- ${clientToDisconnect ? clientToDisconnect : 'NO CLIENT'}`);
-        console.log('clientToDisconnect', clientToDisconnect, 'workerId: ', this.workerId);
+        log(
+          `GOT A REQUEST TO POTENTIALLY DISCONNECT LCIENT IF THIS CLIENT IS CONNETED HERE, GET CLIENT ------------------------- ${clientToDisconnect ? clientToDisconnect : 'NO CLIENT'}`,
+        );
 
+        console.log(
+          'clientToDisconnect',
+          clientToDisconnect,
+          'workerId: ',
+          this.workerId,
+        );
 
         if (clientToDisconnect) {
           this.clientManager.disconnectClient({
@@ -274,7 +281,9 @@ export default class WebSocketServer extends WebSocketBase {
           // });
 
           // Remove client from rooms
-          this.roomManager.removeClientFromAllRooms({ clientId: parsedMessage.clientId });
+          this.roomManager.removeClientFromAllRooms({
+            clientId: parsedMessage.clientId,
+          });
         }
 
         break;
@@ -343,9 +352,19 @@ export default class WebSocketServer extends WebSocketBase {
       }
     }
 
-    if (typeof this.applicationConfig.webSocket?.subscriberEventHandler === 'function') {
+    if (
+      typeof this.applicationConfig.webSocket
+        ?.subscriberEventHandler === 'function'
+    ) {
       // Execute custom application subscriber event handler
-      this.applicationConfig.webSocket.subscriberEventHandler({ channel, message: parsedMessage, webSocketServer: this });
+      this.applicationConfig.webSocket.subscriberEventHandler(
+        {
+          channel,
+          message: parsedMessage,
+          webSocketServer: this,
+          databaseInstance: this.databaseInstance,
+        },
+      );
     }
   };
 
@@ -525,16 +544,27 @@ export default class WebSocketServer extends WebSocketBase {
       }
 
       // Handle server message
-      const serverMessageResponse = await this.handleServerMessage(ws, message, clientId);
+      const serverMessageResponse =
+        await this.handleServerMessage(
+          ws,
+          message,
+          clientId,
+        );
 
-      this.sendClientMessage(ws, {
-        type: serverMessageResponse.type,
-        action: serverMessageResponse.action,
-        response: serverMessageResponse?.response,
-      });
+      if (serverMessageResponse) {
+        this.sendClientMessage(ws, {
+          type: serverMessageResponse.type,
+          action: serverMessageResponse.action,
+          response: serverMessageResponse?.response,
+        });
 
-      if (serverMessageResponse?.response?.error) {
-        // throw new Error(serverMessageResponse?.response?.error);
+        if (serverMessageResponse?.response?.error) {
+          // throw new Error(serverMessageResponse?.response?.error);
+
+          Logger.error(
+            serverMessageResponse.response.error,
+          );
+        }
       }
     } catch (error) {
       Logger.error(error);
@@ -756,7 +786,9 @@ export default class WebSocketServer extends WebSocketBase {
     const clientId = this.clientManager.getClientId({ ws });
 
     if (!clientId) {
-      throw new Error('Client ID not found when joining room');
+      throw new Error(
+        'Client ID not found when joining room',
+      );
     }
 
     // Check if client is already in room
@@ -766,7 +798,9 @@ export default class WebSocketServer extends WebSocketBase {
     });
 
     if (isClientInRoom) {
-      throw new Error('Client already in room when joining');
+      throw new Error(
+        'Client already in room when joining',
+      );
     }
 
     let userData: any = {};
@@ -862,8 +896,15 @@ export default class WebSocketServer extends WebSocketBase {
     ws.send(webSocketMessage, { binary });
   };
 
-  public sendMessage = ({ data }: { data: unknown }): void => {
-    const formattedData = { ...(data as object), workerId: this.workerId };
+  public sendMessage = ({
+    data,
+  }: {
+    data: unknown;
+  }): void => {
+    const formattedData = {
+      ...(data as object),
+      workerId: this.workerId,
+    };
 
     this.redisInstance.publisherClient.publish(
       WebSocketRedisSubscriberEvent.SendMessage,
@@ -871,8 +912,15 @@ export default class WebSocketServer extends WebSocketBase {
     );
   };
 
-  public sendMessageToAll = ({ data }: { data: unknown }): void => {
-    const formattedData = { ...(data as object), workerId: this.workerId };
+  public sendMessageToAll = ({
+    data,
+  }: {
+    data: unknown;
+  }): void => {
+    const formattedData = {
+      ...(data as object),
+      workerId: this.workerId,
+    };
 
     this.redisInstance.publisherClient.publish(
       WebSocketRedisSubscriberEvent.SendMessageToAll,
@@ -880,8 +928,15 @@ export default class WebSocketServer extends WebSocketBase {
     );
   };
 
-  public sendCustomMessage = ({ data }: { data: unknown }): void => {
-    const formattedData = { ...(data as object), workerId: this.workerId };
+  public sendCustomMessage = ({
+    data,
+  }: {
+    data: unknown;
+  }): void => {
+    const formattedData = {
+      ...(data as object),
+      workerId: this.workerId,
+    };
 
     console.log('SEND CUSTOM MESSAGE:', formattedData);
 
@@ -889,9 +944,13 @@ export default class WebSocketServer extends WebSocketBase {
       WebSocketRedisSubscriberEvent.Custom,
       JSON.stringify(formattedData),
     );
-  }
+  };
 
-  public getClients({ userType }: { userType?: string }): any[] {
+  public getClients({
+    userType,
+  }: {
+    userType?: string;
+  }): any[] {
     return this.clientManager.getClients({ userType });
   }
 }

@@ -1,4 +1,5 @@
 import { ClusterManagerConfig } from '../cluster/cluster-manager.interface.js';
+import DatabaseInstance from '../database/instance.js';
 import { QueueItem } from '../queue/index.interface.js';
 import { WebServerDebugOptions, WebServerLogConfig, WebServerOptions, WebServerRoute } from '../webserver/webserver.interface.js';
 import WebSocketServer from '../websocket/websocket-server.js';
@@ -80,7 +81,7 @@ export interface ApplicationWebSocketConfig extends WebSocketOptions {
   routes: WebSocketRoute[];
 
   /** WebSocket subscriber event handler */
-  subscriberEventHandler?: (options: { channel: string; message: any; webSocketServer: WebSocketServer }) => void;
+  subscriberEventHandler?: (options: { channel: string; message: any; webSocketServer: WebSocketServer; databaseInstance: DatabaseInstance }) => void;
 }
 
 export interface ApplicationWebServerConfig extends WebServerOptions {

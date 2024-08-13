@@ -109,7 +109,6 @@ export default abstract class EntityController extends BaseController {
 
       if (!EntityClass) {
         this.sendErrorResponse(reply, 'Entity not found');
-
         return;
       }
 
@@ -121,6 +120,17 @@ export default abstract class EntityController extends BaseController {
       // Filtering and sorting
       const filters = request.query.filters ? JSON.parse(request.query.filters) : {};
       const orderBy = request.query.sort ? JSON.parse(request.query.sort) : { id: 'ASC' };
+
+      const normalizedQuery: { [key: string]: any } = {};
+
+      for (const key in request.query) {
+        if (key.endsWith('[]')) {
+          const normalizedKey = key.slice(0, -2);
+          normalizedQuery[normalizedKey] = request.query[key];
+        } else {
+          normalizedQuery[key] = request.query[key];
+        }
+      }
 
       // Build query options
       const options = {
@@ -134,11 +144,9 @@ export default abstract class EntityController extends BaseController {
 
       const reservedQueryKeys = ['page', 'limit', 'filters', 'sort', 'populate'];
 
-      for (const key in request.query) {
-        console.log('key', key);
-
+      for (const key in normalizedQuery) {
         if (reservedQueryKeys.includes(key)) {
-          Logger.warn('Query key reserved', { key });
+          // Logger.warn('Query key reserved', { key });
 
           continue;
         }
@@ -149,13 +157,23 @@ export default abstract class EntityController extends BaseController {
           continue;
         }
 
-        const queryValue = request.query[key];
+        let queryValue = normalizedQuery[key];
 
         if (!queryValue) {
           continue;
         }
 
-        options.filters[key] = queryValue;
+        // if queryValue contains comma, split it
+        if (typeof queryValue === 'string' && queryValue.includes(',')) {
+          queryValue = queryValue.split(',');
+        }
+
+        // Check if the queryValue is an array or a single value
+        if (Array.isArray(queryValue)) {
+          options.filters[key] = { $in: queryValue };
+        } else {
+          options.filters[key] = queryValue;
+        }
       }
 
       const populate = request.query.populate ? request.query.populate.split(',') : [];
@@ -182,6 +200,7 @@ export default abstract class EntityController extends BaseController {
       this.sendErrorResponse(reply, error);
     }
   };
+
 
   public getOne = async (
     request: FastifyRequest<{ Params: { id: number }; Querystring: { with: string } }>,
