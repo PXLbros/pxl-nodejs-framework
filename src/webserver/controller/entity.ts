@@ -203,18 +203,17 @@ export default abstract class EntityController extends BaseController {
 
 
   public getOne = async (
-    request: FastifyRequest<{ Params: { id: number }; Querystring: { with: string } }>,
+    request: FastifyRequest<{ Params: { id: number }; Querystring: { populate: string } }>,
     reply: FastifyReply,
   ) => {
     try {
-      const queryWith = request.query.with || null;
-      const withList: string[] = queryWith ? queryWith.split(',') : [];
+      const queryPopulate = request.query.populate || null;
+      const populateList: string[] = queryPopulate ? queryPopulate.split(',') : [];
 
       const EntityClass = await this.getEntity();
 
       if (!EntityClass) {
         this.sendErrorResponse(reply, 'Entity not found');
-
         return;
       }
 
@@ -222,7 +221,7 @@ export default abstract class EntityController extends BaseController {
 
       // const item = await this.entityManager.findOne(this.entityName, { id });
       // @ts-ignore
-      const item = await this.entityManager.findOne(this.entityName, { id }, { populate: withList });
+      const item = await this.entityManager.findOne(this.entityName, { id }, { populate: populateList });
 
       if (!item) {
         return this.sendNotFoundResponse(reply, `${EntityClass.singularNameCapitalized} not found`);

@@ -3,7 +3,6 @@ import RedisInstance from '../redis/instance.js';
 import DatabaseInstance from '../database/instance.js';
 import WebServer from '../webserver/webserver.js';
 import QueueManager from '../queue/manager.js';
-import WebSocket from '../websocket/websocket.js';
 import BaseApplication from './base-application.js';
 import { WebApplicationConfig } from './web-application.interface.js';
 import { Helper, Time } from '../util/index.js';
@@ -17,9 +16,6 @@ import WebSocketClient from '../websocket/websocket-client.js';
 export default class WebApplication extends BaseApplication {
   /** Web application config */
   protected config: WebApplicationConfig;
-
-  // /** WebSocket */
-  // public webSocket?: WebSocket;
 
   /** Web server */
   public webServer?: WebServer;

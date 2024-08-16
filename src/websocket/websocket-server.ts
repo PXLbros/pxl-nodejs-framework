@@ -17,7 +17,6 @@ import WebSocketClientManager from './websocket-client-manager.js';
 import { generateClientId, log } from './utils.js';
 import WebSocketBase from './websocket-base.js';
 import { Logger } from '../logger/index.js';
-import { ApplicationConfig } from '../application/base-application.interface.js';
 import path from 'path';
 import { baseDir, WebApplicationConfig } from '../index.js';
 import WebSocketRoomManager from './websocket-room-manager.js';
