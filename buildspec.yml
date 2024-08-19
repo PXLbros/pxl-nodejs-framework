@@ -15,7 +15,7 @@ phases:
   post_build:
     commands:
       - echo "Build and installation completed, copy to S3..."
-      - aws s3 cp --recursive ./ s3://socialamp-dev-npm/dev/ --exclude "*" --include "*.tgz" --acl private --metadata-directive REPLACE
+      - aws s3 cp --recursive ./ s3://socialamp-dev-npm/pxl-nodejs-framework/ --exclude "*" --include "*.tgz" --acl private --metadata-directive REPLACE
       - echo "Copy to S3 completed."
 artifacts:
   files:
