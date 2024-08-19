@@ -1,0 +1,26 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 20
+    commands:
+      - echo Installing dependencies...
+      - # - Install Node.js framework here (copy from S3)
+      - npm ci
+  build:
+    commands:
+      - echo Building the application...
+      - npm run build
+  post_build:
+    commands:
+      - echo "Build and installation completed, copy to S3..."
+      - aws s3 cp --recursive ./ s3://socialamp-dev-npm/dev/ --exclude "*" --include "*.tgz" --acl private --metadata-directive REPLACE,
+      - echo "Copy to S3 completed."
+artifacts:
+  files:
+    - '**/*'
+  base-directory: '.'
+cache:
+  paths:
+    - node_modules/**/*
