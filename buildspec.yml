@@ -6,16 +6,8 @@ phases:
       nodejs: 20
   build:
     commands:
-            # commands: [
-            #   'COMMON_API_PACKAGE_FILENAME=$(npm pack | tail -1)',
-            #   `cp $COMMON_API_PACKAGE_FILENAME ${this.config.commonApi.tgzFilename}`,
-            #   'ls *.tgz',
-            # ],
       - echo Building the application...
-      - PACKAGE_FILENAME=$(npm pack | tail -1)
-      - echo "Package filename: $PACKAGE_FILENAME"
-      - echo "Copying package file..."
-      - cp $PACKAGE_FILENAME pxl-nodejs-framework.tgz
+      - PACKAGE_FILENAME=$(npm pack | tail -1) && echo "Package filename: $PACKAGE_FILENAME" && echo "Copying package file..." && cp $PACKAGE_FILENAME pxl-nodejs-framework.tgz
   post_build:
     commands:
       - echo "Build and installation completed, copy to S3..."
