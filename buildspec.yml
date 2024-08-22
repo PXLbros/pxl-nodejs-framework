@@ -14,7 +14,7 @@ phases:
       - yalc publish
       - cd ~/.yalc/packages
       - ls -la
-      - cp ~/.yalc/packages/* ./.yalc
+      - cp -r ~/.yalc/packages/* ./.yalc
   post_build:
     commands:
       - echo "Build and installation completed, copying to S3..."
