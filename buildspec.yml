@@ -6,18 +6,13 @@ phases:
       nodejs: 20
     commands:
       - echo Installing dependencies...
+      - npm install -g yalc
       - npm install
   build:
     commands:
       # TODO: This can maybe be fixed by running yalc publish here, and save that to S3 (instead of packing)
       # Then on the API side, it just copies the .yalc directory from S3 instead of running Yalc
 
-      - echo Building the application...
-      # - npm install -g yalc
-      # - yalc publish
-      - ls
-      - npm install
-      - ls
       # Package .yalc folder to tgz
       -
       # - npm run build:minimal
@@ -26,9 +21,15 @@ phases:
       #   echo "Package filename: $PACKAGE_FILENAME"
       #   echo "Copying package file..."
       #   cp $PACKAGE_FILENAME pxl-nodejs-framework.tgz
+
+      - yalc publish
   post_build:
     commands:
       - echo "Build and installation completed, copy to S3..."
+      - PACKAGE_NAME=$(node -p "require('./package.json').name")
+      - PACKAGE_VERSION=$(node -p "require('./package.json').version")
+      - PACKAGE_FILE="$HOME/.yalc/${PACKAGE_NAME}/package.tgz"
+      - echo "Package file: $PACKAGE_FILE"
       - aws s3 cp --recursive ./ s3://socialamp-dev-npm/pxl-nodejs-framework/ --exclude "*" --include ".yalc/" --acl private --metadata-directive REPLACE
       - echo "Copy to S3 completed."
 artifacts:
