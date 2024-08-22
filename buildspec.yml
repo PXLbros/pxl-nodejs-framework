@@ -14,12 +14,11 @@ phases:
       - yalc publish
       - cd ~/.yalc/packages
       - ls -la
+      - cp ~/.yalc/packages/* ./.yalc
   post_build:
     commands:
       - echo "Build and installation completed, copying to S3..."
-      # Combining these into a single shell script command
-      # - |
-      # - aws s3 cp --recursive $HOME/.yalc/${PACKAGE_NAME}/ s3://socialamp-dev-npm/pxl-nodejs-framework/ --acl private --metadata-directive REPLACE
+      - aws s3 cp --recursive .yalc/ s3://socialamp-dev-npm/pxl-nodejs-framework/ --acl private --metadata-directive REPLACE
       # - echo "Copy to S3 completed."
 artifacts:
   files:
