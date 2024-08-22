@@ -12,6 +12,8 @@ phases:
     commands:
       - echo "Publishing package with Yalc..."
       - yalc publish
+      - cd ~/.yalc
+      - ls -la
   post_build:
     commands:
       - echo "Build and installation completed, copying to S3..."
