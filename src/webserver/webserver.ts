@@ -93,6 +93,13 @@ class WebServer {
     this.fastifyServer.addHook('onResponse', async (request, reply) => this.onResponse(request, reply));
     this.fastifyServer.addHook('onError', async (request, reply, error) => this.onError(request, reply, error));
     this.fastifyServer.addHook('onClose', async () => this.onClose());
+
+    // if (process.env.NODE_ENV === 'local') {
+    //   this.fastifyServer.addHook('onSend', (request, reply, payload, done) => {
+    //     reply.header('Cache-Control', 'no-store');
+    //     done();
+    //   });
+    // }
   }
 
   private async onListen(): Promise<void> {

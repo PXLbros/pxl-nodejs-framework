@@ -20,7 +20,19 @@ function slugify({ text }: { text: string }): string {
     .replace(/-+$/, ''); // Trim - from end of text
 }
 
+/**
+ * Make text title case.
+ */
+function titleCase({ text }: { text: string }): string {
+  return text
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
 export default {
   generateUniqueId,
   slugify,
+  titleCase,
 };

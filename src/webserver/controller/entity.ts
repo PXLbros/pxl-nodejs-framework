@@ -262,7 +262,7 @@ export default abstract class EntityController extends BaseController {
         }
       }
 
-      const { error, value } = EntityClass.validate(request.body);
+      const { error, value } = EntityClass.validate(request.body, true);
 
       if (error) {
         return this.sendErrorResponse(reply, error.message);
@@ -290,7 +290,7 @@ export default abstract class EntityController extends BaseController {
 
       const id = request.params.id;
 
-      const { error, value } = EntityClass.validate(request.body);
+      const { error, value } = EntityClass.validate(request.body, false);
 
       if (error) {
         return this.sendErrorResponse(reply, error.message);

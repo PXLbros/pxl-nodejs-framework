@@ -3,6 +3,7 @@ import { Schema, ValidationResult } from 'joi';
 
 export abstract class DynamicEntity extends BaseEntity {
   public static schema: Schema;
+  public static schemaUpdate: Schema;
 
   public static get singularName(): string {
     return 'Item';
@@ -28,11 +29,13 @@ export abstract class DynamicEntity extends BaseEntity {
     return this.pluralName.charAt(0).toUpperCase() + this.pluralName.slice(1).toLowerCase();
   }
 
-  public static validate<T>(item: T): ValidationResult {
-    if (!this.schema) {
+  public static validate<T>(item: T, isCreating: boolean): ValidationResult {
+    const schemaName = isCreating ? 'schema'  : 'schemaUpdate';
+
+    if (!this[schemaName]) {
       throw new Error('Schema not defined in entity.');
     }
 
-    return this.schema.validate(item, { abortEarly: false });
+    return this[schemaName].validate(item, { abortEarly: false });
   }
 }

@@ -118,9 +118,9 @@ export default class WebSocketRoomManager {
   public printRooms() {
     const numRooms = this.rooms.size;
 
-    let logOutput = '\n-------------------------------------\n';
+    let logOutput = '\n-------------------------------------------------------\n';
     logOutput += `Rooms (Count: ${numRooms}):\n`;
-    logOutput += '-------------------------------------\n';
+    logOutput += '-------------------------------------------------------\n';
 
     if (numRooms > 0) {
       const workerId = cluster.isWorker && cluster.worker ? cluster.worker.id : null;

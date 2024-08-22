@@ -193,9 +193,9 @@ export default class WebSocketClientManager {
 
     const workerId = cluster.isWorker && cluster.worker ? cluster.worker.id : null;
 
-    let logOutput = '\n-------------------------------------\n';
+    let logOutput = '\n-------------------------------------------------------\n';
     logOutput += `Connected clients (Count: ${numClients} | Worker: ${workerId}):\n`;
-    logOutput += '-------------------------------------\n';
+    logOutput += '-------------------------------------------------------\n';
 
     if (numClients > 0) {
       this.clients.forEach((client, clientId) => {
