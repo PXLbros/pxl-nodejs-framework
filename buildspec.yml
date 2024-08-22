@@ -13,8 +13,11 @@ phases:
       # Then on the API side, it just copies the .yalc directory from S3 instead of running Yalc
 
       - echo Building the application...
-      - npm install -g yalc
-      - yalc publish
+      # - npm install -g yalc
+      # - yalc publish
+      - ls
+      - npm install
+      - ls
       # Package .yalc folder to tgz
       -
       # - npm run build:minimal
