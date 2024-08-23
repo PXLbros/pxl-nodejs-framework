@@ -29,10 +29,12 @@ export default abstract class WebSocketBase {
       return;
     }
 
+    const scriptFileExtension = Helper.getScriptFileExtension();
+
     // Load controllers
     const controllers = await Loader.loadModulesInDirectory({
       directory: controllersDirectory,
-      extensions: ['.js', '.ts'],
+      extensions: [`.${scriptFileExtension}`],
     });
 
     for (const route of routes) {
@@ -55,7 +57,7 @@ export default abstract class WebSocketBase {
       if (typeof ControllerClass !== 'function') {
         log('Controller not found', {
           Controller: route.controllerName,
-          Path: `${controllersDirectory}/${route.controllerName}.js`,
+          Path: `${controllersDirectory}/${route.controllerName}.${scriptFileExtension}`,
         });
 
         continue;

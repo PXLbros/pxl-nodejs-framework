@@ -5,21 +5,22 @@ phases:
     runtime-versions:
       nodejs: 20
     commands:
-      - echo "Installing dependencies..."
-      - npm install -g yalc
+      - echo Installing dependencies...
       - npm install
   build:
     commands:
-      - echo "Publishing package with Yalc..."
-      - yalc publish
-      - cd ~/.yalc/packages
-      - ls -la
-      - cp -r ~/.yalc/packages/* ./.yalc
+      - echo Building the application...
+      - npm run build:minimal
+      - |
+        PACKAGE_FILENAME=$(npm pack | tail -1)
+        echo "Package filename: $PACKAGE_FILENAME"
+        echo "Copying package file..."
+        cp $PACKAGE_FILENAME pxl-nodejs-framework.tgz
   post_build:
     commands:
-      - echo "Build and installation completed, copying to S3..."
-      - aws s3 cp --recursive .yalc/ s3://socialamp-dev-npm/pxl-nodejs-framework/ --acl private --metadata-directive REPLACE
-      # - echo "Copy to S3 completed."
+      - echo "Build and installation completed, copy to S3..."
+      - aws s3 cp --recursive ./ s3://socialamp-dev-npm/pxl-nodejs-framework/ --exclude "*" --include "*.tgz" --acl private --metadata-directive REPLACE
+      - echo "Copy to S3 completed."
 artifacts:
   files:
     - '**/*'

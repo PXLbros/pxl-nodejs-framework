@@ -59,7 +59,7 @@ export default class QueueManager {
     try {
       const jobProcessorClasses = await Loader.loadModulesInDirectory({
         directory: this.options.processorsDirectory,
-        extensions: ['.ts'],
+        extensions: [`.${Helper.getScriptFileExtension()}`],
       });
 
       for (const queue of queues) {
@@ -128,12 +128,14 @@ export default class QueueManager {
       return;
     }
 
+    const scriptFileExtension = Helper.getScriptFileExtension();
+
     for (const job of jobs) {
       if (!queue.isExternal) {
         const ProcessorClass = jobProcessorClasses[job.id];
 
         if (!ProcessorClass) {
-          const jobPath = path.join(this.options.processorsDirectory, `${job.id}.ts`);
+          const jobPath = path.join(this.options.processorsDirectory, `${job.id}.${scriptFileExtension}`);
 
           throw new Error(`Processor class not found (Job ID: ${job.id} | Path: ${jobPath})`);
         }

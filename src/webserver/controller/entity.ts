@@ -11,6 +11,7 @@ import { DynamicEntity } from '../../database/dynamic-entity.js';
 import { ApplicationConfig } from '../../application/base-application.interface.js';
 import { generateFormFields } from '../../database/dynamic-entity-form-decorators.js';
 import { Logger } from '../../logger/index.js';
+import { Helper } from '../../util/index.js';
 
 export default abstract class EntityController extends BaseController {
   protected abstract entityName: string;
@@ -39,7 +40,7 @@ export default abstract class EntityController extends BaseController {
     }
 
     // Define entity module path
-    const entityModulePath = path.join(this.applicationConfig.database.entitiesDirectory, `${this.entityName}.ts`);
+    const entityModulePath = path.join(this.applicationConfig.database.entitiesDirectory, `${this.entityName}.${Helper.getScriptFileExtension()}`);
 
     // Import entity module
     const entityModule = await import(entityModulePath);

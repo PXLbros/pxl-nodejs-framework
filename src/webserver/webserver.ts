@@ -208,7 +208,7 @@ class WebServer {
     // Load controllers
     const controllers = await Loader.loadModulesInDirectory({
       directory: this.options.controllersDirectory,
-      extensions: ['.ts'],
+      extensions: [`.${Helper.getScriptFileExtension()}`],
     });
 
     // Add health check route

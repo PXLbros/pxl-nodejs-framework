@@ -62,9 +62,14 @@ function getValueFromArray(arr: AnyObject[], path: string): any[] {
     return arr.map(obj => getValueFromObject(obj, path));
 }
 
+function getScriptFileExtension(): string {
+  return process.env.NODE_ENV === 'local' ? 'ts' : 'js';
+}
+
 export default {
   defaultsDeep,
   isObject,
   getValueFromArray,
   getValueFromObject,
+  getScriptFileExtension,
 }

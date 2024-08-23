@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { Helper } from './index.js';
 
 const loadModulesInDirectory = async ({
   directory,
@@ -43,7 +44,7 @@ const loadModulesInDirectory = async ({
 
 const loadEntityModule = async ({ entitiesDirectory, entityName }: { entitiesDirectory: string; entityName: string }): Promise<any> => {
   // Define entity module path
-  const entityModulePath = path.join(entitiesDirectory, `${entityName}.ts`);
+  const entityModulePath = path.join(entitiesDirectory, `${entityName}.${Helper.getScriptFileExtension()}`);
 
   // Import entity module
   const entityModule = await import(entityModulePath);
