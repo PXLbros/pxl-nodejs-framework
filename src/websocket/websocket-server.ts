@@ -21,6 +21,7 @@ import path from 'path';
 import { baseDir, WebApplicationConfig } from '../index.js';
 import WebSocketRoomManager from './websocket-room-manager.js';
 import logger from '../logger/logger.js';
+import { FastifyInstance } from 'fastify';
 
 export default class WebSocketServer extends WebSocketBase {
   protected defaultRoutes: WebSocketRoute[] = [
@@ -104,12 +105,14 @@ export default class WebSocketServer extends WebSocketBase {
     );
   }
 
-  public async start(): Promise<{ server: WS }> {
+  public async start({ fastifyServer }: { fastifyServer: FastifyInstance }): Promise<{ server: WS }> {
     return new Promise((resolve) => {
       const server = new WS(
         {
-          host: this.options.host,
-          port: this.options.port,
+          // host: this.options.host,
+          // port: this.options.port,
+          // server: fastifyServer.server,
+          noServer: true,
         },
         () => {
           this.handleServerStart();
@@ -118,7 +121,18 @@ export default class WebSocketServer extends WebSocketBase {
         },
       );
 
+      fastifyServer.server.on('upgrade', (request, socket, head) => {
+        if (request.url === '/ws') {
+          server.handleUpgrade(request, socket, head, (ws) => {
+            server.emit('connection', ws, request);
+          });
+        } else {
+          socket.destroy();
+        }
+      });
+
       server.on('error', this.handleServerError);
+
       server.on(
         'connection',
         this.handleServerClientConnection,

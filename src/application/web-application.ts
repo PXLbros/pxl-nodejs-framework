@@ -41,11 +41,43 @@ export default class WebApplication extends BaseApplication {
   }
 
   protected async startHandler({ redisInstance, databaseInstance, queueManager }: { redisInstance: RedisInstance; databaseInstance: DatabaseInstance; queueManager: QueueManager }): Promise<void> {
+    if (this.config.webServer?.enabled) {
+      // Initialize web server
+      this.webServer = new WebServer({
+        applicationConfig: this.config,
+
+        // config: this.config.webServer,
+        options: {
+          host: this.config.webServer.host,
+          port: this.config.webServer.port,
+          controllersDirectory: this.config.webServer.controllersDirectory,
+          cors: this.config.webServer.cors,
+          log: this.config.webServer.log,
+          debug: this.config.webServer.debug,
+        },
+
+        routes: this.config.webServer.routes,
+
+        redisInstance,
+        databaseInstance,
+        queueManager,
+      });
+
+      // Load web server
+      await this.webServer.load();
+
+      // Start web server
+      // await this.webServer.start({ webSocketServer: this.webSocketServer?.server });
+      await this.webServer.start();
+    }
+
     if (this.config.webSocket?.enabled) {
+      if (!this.webServer) {
+        throw new Error('WebSocket requires web server to be enabled');
+      }
+
       let webSocketServer: WebSocketServer | undefined;
       let webSocketClient: WebSocketClient | undefined;
-
-      const workerId = cluster.isWorker && cluster.worker ? cluster.worker.id : null;
 
       switch (this.config.webSocket.type) {
         case 'server': {
@@ -58,14 +90,14 @@ export default class WebApplication extends BaseApplication {
             databaseInstance,
             queueManager,
             routes: this.config.webSocket.routes,
-            workerId,
+            workerId: this.workerId,
           });
 
           // Load WebSocket client
           await webSocketServer.load();
 
           // Start WebSocket server
-          await webSocketServer.start();
+          await webSocketServer.start({ fastifyServer: this.webServer.fastifyServer });
 
           break;
         }
@@ -99,35 +131,6 @@ export default class WebApplication extends BaseApplication {
 
       this.webSocketServer = webSocketServer;
       this.webSocketClient = webSocketClient;
-    }
-
-    if (this.config.webServer?.enabled) {
-      // Initialize web server
-      this.webServer = new WebServer({
-        applicationConfig: this.config,
-
-        // config: this.config.webServer,
-        options: {
-          host: this.config.webServer.host,
-          port: this.config.webServer.port,
-          controllersDirectory: this.config.webServer.controllersDirectory,
-          cors: this.config.webServer.cors,
-          log: this.config.webServer.log,
-          debug: this.config.webServer.debug,
-        },
-
-        routes: this.config.webServer.routes,
-
-        redisInstance,
-        databaseInstance,
-        queueManager,
-      });
-
-      // Load web server
-      await this.webServer.load();
-
-      // Start web server
-      await this.webServer.start();
     }
   }
 

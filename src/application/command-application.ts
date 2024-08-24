@@ -66,7 +66,7 @@ export default class CommandApplication extends BaseApplication {
     // Load commands
     const commands = await Loader.loadModulesInDirectory({
       directory: this.config.commandsDirectory,
-      extensions: ['.ts'],
+      extensions: ['.ts', '.js'],
     });
 
     // Find command by name

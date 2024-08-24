@@ -1,3 +1,4 @@
+import cluster from 'cluster';
 import { existsSync } from 'fs';
 import { DatabaseInstance, DatabaseManager } from '../database/index.js';
 import QueueManager from '../queue/manager.js';
@@ -22,6 +23,9 @@ export default abstract class BaseApplication {
 
   /** Whether application is stopping */
   protected isStopping = false;
+
+  /** Cluster worker ID */
+  protected workerId = cluster.isWorker && cluster.worker ? cluster.worker.id : null;
 
   /** Application config */
   protected config: ApplicationConfig;

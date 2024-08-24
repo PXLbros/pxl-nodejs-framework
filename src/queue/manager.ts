@@ -59,7 +59,7 @@ export default class QueueManager {
     try {
       const jobProcessorClasses = await Loader.loadModulesInDirectory({
         directory: this.options.processorsDirectory,
-        extensions: [`.${Helper.getScriptFileExtension()}`],
+        extensions: ['.ts', '.js'],
       });
 
       for (const queue of queues) {

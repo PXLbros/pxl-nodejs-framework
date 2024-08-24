@@ -31,7 +31,7 @@ class WebServer {
   private queueManager: QueueManager;
   private databaseInstance: DatabaseInstance;
 
-  private fastifyServer: FastifyInstance;
+  public fastifyServer: FastifyInstance;
 
   constructor(params: WebServerConstructorParams) {
     // Define default options
@@ -208,7 +208,7 @@ class WebServer {
     // Load controllers
     const controllers = await Loader.loadModulesInDirectory({
       directory: this.options.controllersDirectory,
-      extensions: [`.${Helper.getScriptFileExtension()}`],
+      extensions: ['.ts', '.js'],
     });
 
     // Add health check route
