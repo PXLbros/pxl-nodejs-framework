@@ -106,6 +106,8 @@ export default class WebSocketServer extends WebSocketBase {
   }
 
   public async start({ fastifyServer }: { fastifyServer: FastifyInstance }): Promise<{ server: WS }> {
+    console.log('-------------------------------- TEST');
+
     return new Promise((resolve) => {
       const server = new WS(
         {
