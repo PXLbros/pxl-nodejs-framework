@@ -51,11 +51,12 @@ export default class WebSocketClient extends WebSocketBase {
   }
 
   public async connectToServer(): Promise<void> {
-    const host = this.options.host;
-    const port = this.options.port;
+    const url = this.options.url;
+    // const host = this.options.host;
+    // const port = this.options.port;
 
     return new Promise((resolve) => {
-      const ws = new WebSocket(`ws://${host}:${port}`);
+      const ws = new WebSocket(url);
 
       ws.on('open', () => {
         this.clientId = generateClientId();
