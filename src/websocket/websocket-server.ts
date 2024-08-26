@@ -119,8 +119,6 @@ export default class WebSocketServer extends WebSocketBase {
       this.handleServerStart();
 
       fastifyServer.server.on('upgrade', (request, socket, head) => {
-        console.log('////////////////// upgrade!', request.url);
-
         if (request.url === '/ws') {
           server.handleUpgrade(request, socket, head, (ws) => {
             server.emit('connection', ws, request);
