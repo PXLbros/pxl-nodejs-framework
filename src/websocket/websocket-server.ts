@@ -106,24 +106,21 @@ export default class WebSocketServer extends WebSocketBase {
   }
 
   public async start({ fastifyServer }: { fastifyServer: FastifyInstance }): Promise<{ server: WS }> {
-    console.log('-------------------------------- TEST');
-
     return new Promise((resolve) => {
       const server = new WS(
         {
-          // host: this.options.host,
-          // port: this.options.port,
-          // server: fastifyServer.server,
-          noServer: true,
-        },
-        () => {
-          this.handleServerStart();
-
-          resolve({ server });
-        },
+          noServer: true, // We're handling the server externally
+        }
       );
 
+      this.server = server;
+
+      // Ensure this is called after the server has been properly set up
+      this.handleServerStart();
+
       fastifyServer.server.on('upgrade', (request, socket, head) => {
+        console.log('////////////////// upgrade!', request.url);
+
         if (request.url === '/ws') {
           server.handleUpgrade(request, socket, head, (ws) => {
             server.emit('connection', ws, request);
@@ -135,12 +132,10 @@ export default class WebSocketServer extends WebSocketBase {
 
       server.on('error', this.handleServerError);
 
-      server.on(
-        'connection',
-        this.handleServerClientConnection,
-      );
+      server.on('connection', this.handleServerClientConnection);
 
-      this.server = server;
+      // Resolve the promise with the server instance
+      resolve({ server });
     });
   }
 

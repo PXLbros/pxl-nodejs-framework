@@ -46,7 +46,16 @@ export default class RedisInstance {
     });
   }
 
-  public async setCache({ key, value, expirationInSeconds }: { key: string; value: unknown; expirationInSeconds?: number }): Promise<void> {
+  /**
+   * Sets a value in the cache with an optional expiration time.
+   *
+   * @param key - The key to set in the cache.
+   * @param value - The value to set in the cache.
+   * @param expiration - The expiration time in seconds (optional).
+   * @throws Error if the value type is not supported.
+   * @returns A Promise that resolves when the value is set in the cache.
+   */
+  public async setCache({ key, value, expiration }: { key: string; value: unknown; expiration?: number }): Promise<void> {
     let formattedValue: string | number | Buffer;
 
     if (typeof value === 'object') {
@@ -59,8 +68,8 @@ export default class RedisInstance {
       throw new Error('Unsupported value type');
     }
 
-    if (expirationInSeconds) {
-      await this.client.set(key, formattedValue, 'EX', expirationInSeconds);
+    if (expiration) {
+      await this.client.set(key, formattedValue, 'EX', expiration);
     } else {
       await this.client.set(key, formattedValue);
     }

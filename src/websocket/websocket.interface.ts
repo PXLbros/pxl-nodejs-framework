@@ -59,10 +59,10 @@ export interface WebSocketOptions {
   type: WebSocketType;
 
   /** WebSocket host */
-  host: string;
+  host?: string;
 
   /** WebSocket port */
-  port: number;
+  port?: number;
 
   /** WebSocket URL */
   url: string;
