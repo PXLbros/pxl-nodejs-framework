@@ -19,14 +19,14 @@ const generateJwtTokens = async ({
   // Import JWT secret key
   const importedJwtSecretKey = await importJwtSecretKey({ jwtSecretKey });
 
-  const jwtAccessTokenLifetime = 2;
+  const jwtAccessTokenLifetimeInHours = 1;
   const jwtRefreshTokenLifetime = 30 * 24;
 
   // Generate JWT access token
   const jwtAccessToken = await generateJwtToken({
     secretKey: importedJwtSecretKey,
     payload,
-    expirationTime: jwtAccessTokenLifetime,
+    expirationTime: jwtAccessTokenLifetimeInHours,
   });
 
   // Generate JWT refresh token
@@ -45,7 +45,7 @@ const generateJwtTokens = async ({
     type: 'Bearer',
     accessToken: jwtAccessToken,
     refreshToken: jwtRefreshToken,
-    expiresAt: new Date(new Date().getTime() + jwtAccessTokenLifetime * 60 * 60 * 1000),
+    expiresAt: new Date(new Date().getTime() + jwtAccessTokenLifetimeInHours * 60 * 60 * 1000),
   };
 
   return jwtToken;

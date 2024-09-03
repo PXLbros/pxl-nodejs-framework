@@ -153,7 +153,10 @@ export default abstract class EntityController extends BaseController {
         }
 
         if (!entityProperties.includes(key)) {
-          Logger.warn('Query key not allowed', { Key: key, 'Allowed Keys': entityProperties.join(', ') });
+          Logger.warn('Query key not allowed', {
+            Key: key,
+            'Allowed Keys': entityProperties.join(', ')
+          });
 
           continue;
         }
