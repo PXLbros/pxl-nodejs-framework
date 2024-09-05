@@ -144,7 +144,7 @@ export default class WebSocketClient extends WebSocketBase {
     if (this.options.events?.onMessage) {
       const parsedMessage = parseServerMessage(message);
 
-      this.options.events.onMessage({ ws: this.ws, clientId: this.clientId, data: parsedMessage });
+      this.options.events.onMessage({ ws: this.ws, clientId: this.clientId, data: parsedMessage, queueManager: this.queueManager });
     }
 
     await this.handleServerMessage(this.ws, message, this.clientId);

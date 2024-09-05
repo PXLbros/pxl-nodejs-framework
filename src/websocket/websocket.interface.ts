@@ -47,10 +47,12 @@ export interface WebSocketEventsConfig {
     ws,
     clientId,
     data,
+    queueManager,
   }: {
     ws: WebSocket;
     clientId: string;
     data: any;
+    queueManager: QueueManager;
   }) => void;
 }
 

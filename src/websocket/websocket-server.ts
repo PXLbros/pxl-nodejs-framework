@@ -322,10 +322,10 @@ export default class WebSocketServer extends WebSocketBase {
         break;
       }
       case WebSocketRedisSubscriberEvent.MessageError: {
-        // this.sendMessageError({
-        //   webSocketClientId: parsedMessage.clientId,
-        //   error: parsedMessage.error,
-        // });
+        this.sendMessageError({
+          webSocketClientId: parsedMessage.clientId,
+          error: parsedMessage.error,
+        });
 
         break;
       }
@@ -716,6 +716,42 @@ export default class WebSocketServer extends WebSocketBase {
       ) {
         client.send(JSON.stringify(data));
       }
+    });
+  }
+
+  public sendMessageError({
+    webSocketClientId,
+    error,
+  }: {
+    webSocketClientId: string;
+    error: string;
+  }): void {
+    const client = this.clientManager.getClient({
+      clientId: webSocketClientId,
+    });
+
+    if (!client) {
+      log('Client not found when sending message error', {
+        'Client ID': webSocketClientId,
+        Error: error,
+      });
+
+      return;
+    } else if (!client.ws) {
+      log('Client WebSocket not found when sending message error', {
+        'Client ID': webSocketClientId,
+        Error: error,
+      });
+
+      return;
+    }
+
+    this.sendClientMessage(client.ws, {
+      type: 'error',
+      action: 'message',
+      data: {
+        error,
+      },
     });
   }
 
