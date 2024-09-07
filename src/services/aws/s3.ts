@@ -18,7 +18,9 @@ export default class AwsS3 {
   constructor(options: Partial<AwsS3ConstructorOptions>) {
     // Define default options
     const defaultOptions: Partial<AwsS3ConstructorOptions> = {
+      region: 'us-east-1',
       localstack: {
+        enabled: false,
         port: 4566,
       },
     };
@@ -29,8 +31,9 @@ export default class AwsS3 {
       region: 'us-east-1',
     };
 
-    if (process.env.NODE_ENV === 'local') {
+    if (this.options.localstack.enabled) {
       s3ClientConfig.endpoint = `http://s3.localhost.localstack.cloud:${this.options.localstack.port}`;
+
       s3ClientConfig.credentials = {
         accessKeyId: 'test',
         secretAccessKey: 'test',
@@ -43,7 +46,7 @@ export default class AwsS3 {
   private getBucketUrl({ bucketName, path }: { bucketName: string; path: string }) {
     let url;
 
-    if (process.env.NODE_ENV === 'local') {
+    if (this.options.localstack.enabled) {
       url = `http://localhost:${this.options.localstack.port}/${bucketName}/${path}`;
     } else {
       url = `https://${bucketName}.s3.amazonaws.com/${path}`;
