@@ -100,6 +100,7 @@ export default abstract class EntityController extends BaseController {
         limit: string;
         filters: string;
         sort: string;
+        'sort-order': string;
         [key: string]: any;
       };
     }>,
@@ -120,7 +121,8 @@ export default abstract class EntityController extends BaseController {
 
       // Filtering and sorting
       const filters = request.query.filters ? JSON.parse(request.query.filters) : {};
-      const orderBy = request.query.sort ? JSON.parse(request.query.sort) : { id: 'ASC' };
+      const sortOrder = request.query['sort-order'] || 'ASC';
+      const orderBy = request.query.sort ? JSON.parse(request.query.sort) : { id: sortOrder };
 
       const normalizedQuery: { [key: string]: any } = {};
 
@@ -153,7 +155,7 @@ export default abstract class EntityController extends BaseController {
         }
 
         if (!entityProperties.includes(key)) {
-          Logger.warn('Query key not allowed', {
+          Logger.warn('Query key not allowedd', {
             Key: key,
             'Allowed Keys': entityProperties.join(', ')
           });
