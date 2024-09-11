@@ -6,4 +6,8 @@ export interface AwsS3LocalstackOptions {
 export interface AwsS3ConstructorOptions {
   region: string;
   localstack: AwsS3LocalstackOptions;
+  credentials?: {
+    accessKeyId?: string;
+    secretAccessKey?: string;
+  };
 }

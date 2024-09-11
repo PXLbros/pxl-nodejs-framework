@@ -38,6 +38,13 @@ export default class AwsS3 {
         accessKeyId: 'test',
         secretAccessKey: 'test',
       };
+    } else {
+      if (this.options.credentials?.accessKeyId && this.options.credentials?.secretAccessKey) {
+        s3ClientConfig.credentials = {
+          accessKeyId: this.options.credentials.accessKeyId,
+          secretAccessKey: this.options.credentials.secretAccessKey,
+        };
+      }
     }
 
     this.client = new S3Client(s3ClientConfig);
