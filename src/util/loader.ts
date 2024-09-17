@@ -33,6 +33,7 @@ const loadModulesInDirectory = async ({
 
     try {
       const importedModule = await import(filePath);
+
       loadedModules[moduleName] = importedModule.default;
     } catch (error) {
       console.error(`Failed to import module ${filePath}:`, error);

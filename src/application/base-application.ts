@@ -220,6 +220,9 @@ export default abstract class BaseApplication {
       databaseInstance,
     });
 
+    // Register queues
+    await queueManager.registerQueues({ queues: this.config.queue.queues });
+
     return { redisInstance, databaseInstance, queueManager };
   }
 

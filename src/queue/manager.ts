@@ -37,12 +37,9 @@ export default class QueueManager {
 
     this.redisInstance = redisInstance;
     this.databaseInstance = databaseInstance;
-
-    // Register jobs
-    this.registerQueues({ queues });
   }
 
-  private async registerQueues({ queues }: { queues: QueueItem[] }): Promise<void> {
+  public async registerQueues({ queues }: { queues: QueueItem[] }): Promise<void> {
     if (!queues) {
       return;
     }
@@ -79,6 +76,8 @@ export default class QueueManager {
 
   private registerQueue({ queue, jobProcessorClasses }: { queue: QueueItem; jobProcessorClasses: any }): void {
     if (!queue.jobs) {
+      Logger.warn('No jobs found for queue, skip register', { Name: queue.name });
+
       return;
     }
 
