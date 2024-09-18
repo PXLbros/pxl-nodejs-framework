@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import path from 'path';
-import { EntityManager } from '@mikro-orm/postgresql';
+import { EntityManager } from '@mikro-orm/core';
 import { FastifyReply, FastifyRequest } from 'fastify';
 import { StatusCodes } from 'http-status-codes';
 import BaseController from './base.js';
@@ -93,6 +93,35 @@ export default abstract class EntityController extends BaseController {
     }
   };
 
+   // Pre-getMany hook (can be overridden in the child controller)
+   protected async preGetMany({
+    entityManager,
+    request,
+    reply
+  }: {
+    entityManager: EntityManager;
+    request: FastifyRequest;
+    reply: FastifyReply;
+  }): Promise<void> {
+    // Default implementation: do nothing
+  }
+
+  // Post-getMany hook (can be overridden in the child controller)
+  // await this.postGetMany({ entityManager: this.entityManager, request, reply, data });
+  protected async postGetMany({
+    entityManager,
+    request,
+    reply,
+    data,
+  }: {
+    entityManager: EntityManager;
+    request: FastifyRequest;
+    reply: FastifyReply;
+    data: { items: any[]; total: number; page: number; totalPages: number; limit: number };
+  }): Promise<void> {
+    // Default implementation: do nothing
+  }
+
   public getMany = async (
     request: FastifyRequest<{
       Querystring: {
@@ -104,9 +133,12 @@ export default abstract class EntityController extends BaseController {
         [key: string]: any;
       };
     }>,
-    reply: FastifyReply,
+    reply: FastifyReply
   ) => {
     try {
+      // Call preGetMany hook
+      await this.preGetMany({ entityManager: this.entityManager, request, reply });
+
       const EntityClass = await this.getEntity();
 
       if (!EntityClass) {
@@ -149,16 +181,11 @@ export default abstract class EntityController extends BaseController {
 
       for (const key in normalizedQuery) {
         if (reservedQueryKeys.includes(key)) {
-          // Logger.warn('Query key reserved', { key });
-
           continue;
         }
 
         if (!entityProperties.includes(key)) {
-          Logger.warn('Query key not allowed', {
-            Key: key,
-            'Allowed Keys': entityProperties.join(', ')
-          });
+          // Key query not found in entity properties so ignore (might be used in other cases)
 
           continue;
         }
@@ -185,28 +212,42 @@ export default abstract class EntityController extends BaseController {
       const populate = request.query.populate ? request.query.populate.split(',') : [];
 
       // Fetch items from the database
-      const [items, total] = await this.entityManager.findAndCount(this.entityName, options.filters, {
-        limit: options.limit,
-        offset: options.offset,
-        orderBy: options.orderBy,
-        populate,
-      });
+      const [items, total] = await this.entityManager.findAndCount(
+        this.entityName,
+        options.filters,
+        {
+          limit: options.limit,
+          offset: options.offset,
+          orderBy: options.orderBy,
+          populate,
+        }
+      );
 
       // Calculate total pages
       const totalPages = Math.ceil(total / limit);
 
-      reply.send({
-        data: items,
-        total_items: total,
+      const data = {
+        items,
+        total,
         page,
-        total_pages: totalPages,
+        totalPages,
         limit,
+      };
+
+      // Call postGetMany hook
+      await this.postGetMany({ entityManager: this.entityManager, request, reply, data });
+
+      reply.send({
+        data: data.items,
+        total_items: data.total,
+        page: data.page,
+        total_pages: data.totalPages,
+        limit: data.limit,
       });
     } catch (error) {
       this.sendErrorResponse(reply, error);
     }
   };
-
 
   public getOne = async (
     request: FastifyRequest<{ Params: { id: number }; Querystring: { populate: string } }>,
