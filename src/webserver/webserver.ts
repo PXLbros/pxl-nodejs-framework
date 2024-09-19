@@ -112,6 +112,7 @@ class WebServer {
         Port: port,
         // CORS: this.options.cors?.enabled && this.options.cors?..length > 0 ? this.options.corsUrls.join(', ') : 'Disabled',
         CORS: this.options.cors?.enabled ? this.options.cors.urls.join(', ') : 'Disabled',
+        'Fastify Version': this.fastifyServer.version,
       });
     }
   }

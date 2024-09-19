@@ -131,7 +131,7 @@ export default class WebSocketRoomManager {
       this.rooms.forEach((clientsInRoom, room) => {
         const numClientsInRoom = clientsInRoom.size;
 
-        logOutput += `Room ${roomNumber} (Name: ${room} | Clients: ${numClientsInRoom} | Worker: ${workerId}):\n`;
+        logOutput += `Room ${roomNumber} (Name: ${room} | Clients: ${numClientsInRoom}${workerId ? ` | Worker: ${workerId}` : ''}):\n`;
         logOutput += '  Clients:\n';
 
         // Loop through all clients in room
