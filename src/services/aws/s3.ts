@@ -32,7 +32,10 @@ export default class AwsS3 {
     };
 
     if (this.options.localstack.enabled) {
-      s3ClientConfig.endpoint = `http://s3.localhost.localstack.cloud:${this.options.localstack.port}`;
+      s3ClientConfig.forcePathStyle = true;
+
+      // s3ClientConfig.endpoint = `http://s3.localhost.localstack.cloud:${this.options.localstack.port}`; // Works when the Node.js API is calling from within the Docker container
+      s3ClientConfig.endpoint = `http://localhost:${this.options.localstack.port}`;
 
       s3ClientConfig.credentials = {
         accessKeyId: 'test',
