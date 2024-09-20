@@ -2,5 +2,5 @@
   "watch": ["src", "test"],
   "ext": "ts",
   "ignore": [],
-  "exec": "npm run build && yalc push"
+  "exec": "npm run build && yalc clean --all && yalc push"
 }
