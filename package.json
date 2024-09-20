@@ -20,7 +20,7 @@
     "dev": "nodemon",
     "dev:new": "node pxl serve",
     "clean": "del-cli dist",
-    "build": "npm run clean && tsc && yalc clean --all && yalc push",
+    "build": "npm run clean && tsc && yalc push",
     "build:minimal": "tsc"
   },
   "keywords": [],
