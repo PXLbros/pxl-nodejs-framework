@@ -154,7 +154,7 @@ export default class WebApplication extends BaseApplication {
    */
   protected async onStarted({ startupTime }: { startupTime: number }): Promise<void> {
     if (this.config.log?.startUp) {
-      Logger.info('Application started v1', {
+      Logger.info('Application started v2', {
         Name: this.config.name,
         'Instance ID': this.config.instanceId,
         'PXL Framework Version': this.applicationVersion,
