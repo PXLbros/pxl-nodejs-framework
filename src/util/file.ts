@@ -1,5 +1,43 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import * as https from 'https';
+import { pipeline } from 'stream';
+import { promisify } from 'util';
+import ffmpeg from 'fluent-ffmpeg';
+
+const pipelineAsync = promisify(pipeline);
+
+async function convertFile({
+  inputFilePath,
+  outputFilePath,
+  format,
+}: {
+  inputFilePath: string;
+  outputFilePath: string;
+  format: string;
+}): Promise<void> {
+  return new Promise((resolve, reject) => {
+    console.log(`Starting conversion: ${inputFilePath} -> ${outputFilePath} (format: ${format})`);
+
+    const command = ffmpeg(inputFilePath)
+      .output(outputFilePath)
+      .outputFormat(format === 'jpg' ? 'mjpeg' : format)  // Using 'mjpeg' for jpg
+      .on('progress', (progress: any) => {
+        console.log(`Processing: ${Math.round(progress.percent)}% done`);
+      })
+      .on('end', () => {
+        console.log('Conversion finished successfully');
+        resolve();
+      })
+      .on('error', (err: Error) => {
+        console.error('Error during conversion:', err);
+        reject(err);
+      });
+
+    // Start processing
+    command.run();
+  });
+}
 
 /**
  * Copy a file or directory synchronously
@@ -34,11 +72,65 @@ function copySync(src: string, dest: string): void {
 }
 
 /**
+ * Download file from URL
+ *
+ * @param url The URL to download the file from
+ * @param destinationPath The path to save the downloaded file
+ */
+async function downloadFile({
+  url,
+  destinationPath,
+}: {
+  url: string;
+  destinationPath: string;
+}): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const file = fs.createWriteStream(destinationPath);
+
+    https
+      .get(url, (response) => {
+        // Check if response status is OK (200–299)
+        if (
+          response.statusCode &&
+          response.statusCode >= 200 &&
+          response.statusCode < 300
+        ) {
+          pipelineAsync(response, file)
+            .then(() => resolve())
+            .catch((err) => {
+              fs.unlink(destinationPath, () => reject(err)); // Clean up partially written file on error
+            });
+        } else {
+          fs.unlink(destinationPath, () => {
+            reject(
+              new Error(
+                `Failed to download file, status code: ${response.statusCode}`,
+              ),
+            );
+          });
+        }
+      })
+      .on('error', (err) => {
+        fs.unlink(destinationPath, () => reject(err)); // Handle request errors
+      });
+
+    // Handle file stream errors
+    file.on('error', (err) => {
+      fs.unlink(destinationPath, () => reject(err));
+    });
+  });
+}
+
+/**
  * Format file size.
  *
  * @param bytes The file size in bytes
  */
-function formatFileSize({ bytes }: { bytes: number }): string {
+function formatFileSize({
+  bytes,
+}: {
+  bytes: number;
+}): string {
   const sizes = ['bytes', 'kB', 'MB', 'GB', 'TB'];
   if (bytes === 0) return '0 bytes';
 
@@ -79,7 +171,9 @@ function removeSync(target: string): void {
 }
 
 export default {
+  convertFile,
   copySync,
+  downloadFile,
   formatFileSize,
   removeSync,
-}
+};
