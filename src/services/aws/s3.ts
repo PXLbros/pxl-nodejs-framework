@@ -2,6 +2,7 @@ import {
   CompleteMultipartUploadCommand,
   CreateMultipartUploadCommand,
   S3Client,
+  GetObjectCommand,
   UploadPartCommand,
   PutObjectCommand,
   PutObjectCommandInput,
@@ -9,6 +10,20 @@ import {
 } from '@aws-sdk/client-s3';
 import { Helper } from '../../util/index.js';
 import { AwsS3ConstructorOptions } from './s3.interface.js';
+import { createWriteStream } from 'fs';
+import { existsSync } from 'fs';
+import { pipeline } from 'stream';
+import { promisify } from 'util';
+import { Readable } from 'stream';
+import { Logger } from '../../logger/index.js';
+
+const asyncPipeline = promisify(pipeline);
+
+interface DownloadFileOptions {
+  bucketName: string;
+  key: string;
+  destinationFilePath: string;
+}
 
 export default class AwsS3 {
   private client: S3Client;
@@ -34,8 +49,14 @@ export default class AwsS3 {
     if (this.options.localstack.enabled) {
       s3ClientConfig.forcePathStyle = true;
 
+      if (!this.options.endpoint) {
+        throw new Error('Endpoint is required when using LocalStack');
+      }
+
       // s3ClientConfig.endpoint = `http://s3.localhost.localstack.cloud:${this.options.localstack.port}`; // Works when the Node.js API is calling from within the Docker container
-      s3ClientConfig.endpoint = `http://localhost:${this.options.localstack.port}`;
+      // s3ClientConfig.endpoint = `http://localhost:${this.options.localstack.port}`; // works out side of the container (media generator example)
+
+      s3ClientConfig.endpoint = this.options.endpoint;
 
       s3ClientConfig.credentials = {
         accessKeyId: 'test',
@@ -162,5 +183,47 @@ export default class AwsS3 {
     const response = await this.client.send(command);
 
     return response.Location;
+  }
+
+  async downloadFile({ bucketName, key, destinationFilePath }: DownloadFileOptions): Promise<void> {
+    const decodedKey = decodeURIComponent(key);
+    const bucketKey = decodedKey;
+
+    // console.log(`Downloading file from S3 (Bucket: ${process.env.S3_BUCKET} | Key: ${bucketKey} | Destination: ${destinationFilePath})...`);
+    Logger.info('Downloading file from S3', {
+      bucketName,
+      Key: bucketKey,
+    });
+
+    const getObjectParams = {
+      Bucket: bucketName,
+      Key: bucketKey,
+    };
+
+    try {
+      const command = new GetObjectCommand(getObjectParams);
+
+      const { Body } = await this.client.send(command);
+
+      if (!(Body instanceof Readable)) {
+        throw new Error('Expected Body to be a stream!');
+      }
+
+      const fileStream = createWriteStream(destinationFilePath);
+
+      await asyncPipeline(Body, fileStream);
+
+      if (!existsSync(destinationFilePath)) {
+        throw new Error(`Could not find downloaded file at ${destinationFilePath}`);
+      }
+
+      Logger.info('File successfully downloaded', {
+        Path: destinationFilePath,
+      });
+    } catch (error) {
+      Logger.error(error);
+
+      throw error;
+    }
   }
 }

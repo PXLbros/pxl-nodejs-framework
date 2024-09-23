@@ -154,7 +154,7 @@ export default abstract class EntityController extends BaseController {
       // Filtering and sorting
       const filters = request.query.filters ? JSON.parse(request.query.filters) : {};
       const sortOrder = request.query['sort-order'] || 'ASC';
-      const orderBy = request.query.sort ? JSON.parse(request.query.sort) : { id: sortOrder };
+      const orderBy = request.query.sort ? { [request.query.sort]: sortOrder} : { id: sortOrder };
 
       const normalizedQuery: { [key: string]: any } = {};
 
@@ -166,6 +166,9 @@ export default abstract class EntityController extends BaseController {
           normalizedQuery[key] = request.query[key];
         }
       }
+
+      console.log('orderBy', orderBy);
+
 
       // Build query options
       const options = {
@@ -208,6 +211,8 @@ export default abstract class EntityController extends BaseController {
           options.filters[key] = queryValue;
         }
       }
+
+      console.log('sort', options.orderBy);
 
       const populate = request.query.populate ? request.query.populate.split(',') : [];
 

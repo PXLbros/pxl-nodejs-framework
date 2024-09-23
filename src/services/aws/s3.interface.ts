@@ -10,4 +10,5 @@ export interface AwsS3ConstructorOptions {
     accessKeyId?: string;
     secretAccessKey?: string;
   };
+  endpoint?: string;
 }
