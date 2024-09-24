@@ -10,7 +10,6 @@ import { QueueManager } from '../../queue/index.js';
 import { DynamicEntity } from '../../database/dynamic-entity.js';
 import { ApplicationConfig } from '../../application/base-application.interface.js';
 import { generateFormFields } from '../../database/dynamic-entity-form-decorators.js';
-import { Logger } from '../../logger/index.js';
 import { Helper } from '../../util/index.js';
 
 export default abstract class EntityController extends BaseController {
@@ -86,7 +85,7 @@ export default abstract class EntityController extends BaseController {
       const formFields = generateFormFields({ model: EntityClass });
 
       this.sendSuccessResponse(reply, {
-        form_fields: formFields,
+        formFields,
       });
     } catch (error) {
       this.sendErrorResponse(reply, error);
@@ -167,9 +166,6 @@ export default abstract class EntityController extends BaseController {
         }
       }
 
-      console.log('orderBy', orderBy);
-
-
       // Build query options
       const options = {
         limit,
@@ -211,8 +207,6 @@ export default abstract class EntityController extends BaseController {
           options.filters[key] = queryValue;
         }
       }
-
-      console.log('sort', options.orderBy);
 
       const populate = request.query.populate ? request.query.populate.split(',') : [];
 
