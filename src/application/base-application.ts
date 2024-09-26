@@ -17,7 +17,7 @@ import RedisInstance from '../redis/instance.js';
 import { OS, Time } from '../util/index.js';
 import CacheManager from '../cache/manager.js';
 import os from 'os';
-import { EventManager } from '../event/manager.js';
+import EventManager from '../event/manager.js';
 
 export default abstract class BaseApplication {
   /** Unique instance ID */
@@ -259,6 +259,21 @@ export default abstract class BaseApplication {
       ? await this.databaseManager.connect()
       : null;
 
+    let eventManager: EventManager | undefined;
+
+    if (this.config.event?.enabled) {
+      eventManager = new EventManager({
+        applicationConfig: this.config,
+        options: this.config.event,
+        events: this.config.event.events || [],
+        redisInstance,
+        databaseInstance,
+        // queueManager,
+      });
+
+      eventManager.load();
+    }
+
     // Initialize queue
     const queueManager = new QueueManager({
       applicationConfig: this.config,
@@ -269,28 +284,13 @@ export default abstract class BaseApplication {
       queues: this.config.queue.queues,
       redisInstance,
       databaseInstance,
+      eventManager,
     });
 
     // Register queues
     await queueManager.registerQueues({
       queues: this.config.queue.queues,
     });
-
-    // Initialize EventManager
-    let eventManager: EventManager | undefined;
-
-    if (this.config.event?.enabled) {
-      eventManager = new EventManager({
-        applicationConfig: this.config,
-        options: this.config.event,
-        events: this.config.event.events || [],
-        redisInstance,
-        databaseInstance,
-        queueManager,
-      });
-
-      eventManager.load();
-    }
 
     return {
       redisInstance,
@@ -380,7 +380,7 @@ export default abstract class BaseApplication {
     redisInstance: RedisInstance;
     databaseInstance?: DatabaseInstance | null;
     queueManager: QueueManager;
-    eventManager?: EventManager;
+    eventManager?: EventManager | null;
   }): Promise<void>;
 
   protected abstract stopCallback(): void;

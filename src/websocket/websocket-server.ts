@@ -317,6 +317,8 @@ export default class WebSocketServer extends WebSocketBase {
         break;
       }
       case WebSocketRedisSubscriberEvent.SendMessageToAll: {
+        console.log('------------------------ BROADCAST MESSAGE TO ALL CLIENTS!');
+
         this.broadcastToAllClients({ data: parsedMessage });
 
         break;

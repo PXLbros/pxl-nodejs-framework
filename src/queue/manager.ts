@@ -11,6 +11,7 @@ import { QueueJob } from './job.interface.js';
 import { QueueItem } from './index.interface.js';
 import { existsSync } from 'fs';
 import { ApplicationConfig } from '../application/base-application.interface.js';
+import EventManager from '../event/manager.js';
 
 export default class QueueManager {
   private logger: typeof Logger = Logger;
@@ -20,13 +21,14 @@ export default class QueueManager {
   private options: QueueManagerOptions;
 
   private redisInstance: RedisInstance;
-  private databaseInstance?: DatabaseInstance;
+  private databaseInstance: DatabaseInstance | null;
+  private eventManager?: EventManager;
 
   private queues: Map<string, Queue> = new Map();
 
   private jobProcessors: Map<string, BaseProcessor> = new Map();
 
-  constructor({ applicationConfig, options, queues, redisInstance, databaseInstance }: QueueManagerConstructorParams) {
+  constructor({ applicationConfig, options, queues, redisInstance, databaseInstance, eventManager }: QueueManagerConstructorParams) {
     // Define default options
     const defaultOptions: Partial<QueueManagerOptions> = {};
 
@@ -37,6 +39,7 @@ export default class QueueManager {
 
     this.redisInstance = redisInstance;
     this.databaseInstance = databaseInstance;
+    this.eventManager = eventManager;
   }
 
   public async registerQueues({ queues }: { queues: QueueItem[] }): Promise<void> {
@@ -139,7 +142,7 @@ export default class QueueManager {
           throw new Error(`Processor class not found (Job ID: ${job.id} | Path: ${jobPath})`);
         }
 
-        const processorInstance = new ProcessorClass(this, this.applicationConfig, this.redisInstance, this.databaseInstance);
+        const processorInstance = new ProcessorClass(this, this.applicationConfig, this.redisInstance, this.databaseInstance, this.eventManager);
 
         this.jobProcessors.set(job.id, processorInstance);
       }

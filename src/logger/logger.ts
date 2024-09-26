@@ -6,7 +6,7 @@ import { LogOptions } from '../websocket/utils.js';
 
 export type LoggerLevels = 'error' | 'warn' | 'info' | 'command' | 'database' | 'redis' | 'webServer' | 'webSocket' | 'queue' | 'queueJob' | 'event' | 'debug';
 
-class Logger {
+export class Logger {
   private static instance: Logger;
   private logger: winston.Logger;
 

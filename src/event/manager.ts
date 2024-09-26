@@ -6,21 +6,21 @@ import {
   EventManagerConstructorParams,
   EventManagerOptions,
   EventDefinition,
-  EventControllerType,
 } from './manager.interface.js';
 import { ApplicationConfig } from '../application/base-application.interface.js';
 import DatabaseInstance from '../database/instance.js';
 import QueueManager from '../queue/manager.js';
 import { RedisInstance } from '../redis/index.js';
+import { EventControllerType } from './controller/base.interface.js';
 
-export class EventManager {
+export default class EventManager {
   private logger: typeof Logger = Logger;
 
   private applicationConfig: ApplicationConfig;
   private options: EventManagerOptions;
   private events: EventDefinition[];
   private redisInstance: RedisInstance;
-  private queueManager: QueueManager;
+  // private queueManager: QueueManager;
   private databaseInstance: DatabaseInstance | null;
 
   private eventHandlers: Map<string, Function>;
@@ -40,7 +40,7 @@ export class EventManager {
     this.applicationConfig = params.applicationConfig;
     this.events = params.events;
     this.redisInstance = params.redisInstance;
-    this.queueManager = params.queueManager;
+    // this.queueManager = params.queueManager;
     this.databaseInstance = params.databaseInstance;
 
     this.eventHandlers = new Map();
@@ -92,7 +92,7 @@ export class EventManager {
       const controllerInstance = new ControllerClass({
         applicationConfig: this.applicationConfig,
         redisInstance: this.redisInstance,
-        queueManager: this.queueManager,
+        // queueManager: this.queueManager,
         databaseInstance: this.databaseInstance,
       });
 

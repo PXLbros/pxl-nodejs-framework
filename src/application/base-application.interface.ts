@@ -155,7 +155,7 @@ export interface ApplicationConfig {
   queue: ApplicationQueueConfig;
 
   /** Event configuration */
-  event: ApplicationEventConfig;
+  event?: ApplicationEventConfig;
 
   /** Log configuration */
   log?: ApplicationLogConfig;

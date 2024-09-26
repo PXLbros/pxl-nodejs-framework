@@ -6,7 +6,7 @@ import { QueueManager } from '../../queue/index.js';
 import { WebServerBaseControllerConstructorParams } from './base.interface.js';
 import { Logger } from '../../logger/index.js';
 import { ApplicationConfig } from '../../application/base-application.interface.js';
-import { EventManager } from '../../event/manager.js';
+import EventManager from '../../event/manager.js';
 // import { env } from '../../env';
 
 export default abstract class {

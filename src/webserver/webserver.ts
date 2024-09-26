@@ -12,7 +12,7 @@ import { QueueManager } from '../queue/index.js';
 import { WebServerHealthController } from '../index.js';
 import { ApplicationConfig } from '../application/base-application.interface.js';
 import { existsSync } from 'fs';
-import { EventManager } from '../event/manager.js';
+import EventManager from '../event/manager.js';
 
 declare module 'fastify' {
   interface FastifyRequest {

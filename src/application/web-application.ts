@@ -9,7 +9,7 @@ import { Helper, Time } from '../util/index.js';
 import { Logger } from '../logger/index.js';
 import WebSocketServer from '../websocket/websocket-server.js';
 import WebSocketClient from '../websocket/websocket-client.js';
-import { EventManager } from '../event/manager.js';
+import EventManager from '../event/manager.js';
 
 /**
  * Application
