@@ -4,6 +4,7 @@ import { QueueManager } from '../queue/index.js';
 import { RedisInstance } from '../redis/index.js';
 import { WebServerBaseControllerType } from './controller/base.interface.js';
 import { ApplicationConfig } from '../application/base-application.interface.js';
+import { EventManager } from '../event/manager.js';
 
 export interface WebServerConstructorParams {
   /** Application configuration */
@@ -20,6 +21,9 @@ export interface WebServerConstructorParams {
 
   /** Queue manager */
   queueManager: QueueManager;
+
+  /** Event manager */
+  eventManager: EventManager;
 
   /** Database instance */
   databaseInstance: DatabaseInstance;

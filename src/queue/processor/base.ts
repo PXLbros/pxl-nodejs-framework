@@ -4,6 +4,7 @@ import { DatabaseInstance } from '../../database/index.js';
 import { ApplicationConfig } from '../../application/base-application.interface.js';
 import { Logger } from '../../logger/index.js';
 import { RedisInstance } from '../../redis/index.js';
+import { EventManager } from '../../event/manager.js';
 
 export default abstract class BaseProcessor {
   private logger: typeof Logger = Logger;
@@ -13,6 +14,7 @@ export default abstract class BaseProcessor {
     protected applicationConfig: ApplicationConfig,
     protected redisInstance: RedisInstance,
     protected databaseInstance: DatabaseInstance,
+    protected eventManager: EventManager,
   ) {}
 
   public abstract process({ job }: { job: Job }): Promise<any>;

@@ -6,6 +6,7 @@ import { QueueManager } from '../../queue/index.js';
 import { WebServerBaseControllerConstructorParams } from './base.interface.js';
 import { Logger } from '../../logger/index.js';
 import { ApplicationConfig } from '../../application/base-application.interface.js';
+import { EventManager } from '../../event/manager.js';
 // import { env } from '../../env';
 
 export default abstract class {
@@ -13,13 +14,15 @@ export default abstract class {
 
   protected redisInstance: RedisInstance;
   protected queueManager: QueueManager;
+  protected eventManager: EventManager;
   protected databaseInstance: DatabaseInstance;
 
-  constructor({ applicationConfig, redisInstance, queueManager, databaseInstance }: WebServerBaseControllerConstructorParams) {
+  constructor({ applicationConfig, redisInstance, queueManager, eventManager, databaseInstance }: WebServerBaseControllerConstructorParams) {
     this.applicationConfig = applicationConfig;
 
     this.redisInstance = redisInstance;
     this.queueManager = queueManager;
+    this.eventManager = eventManager;
     this.databaseInstance = databaseInstance;
   }
 

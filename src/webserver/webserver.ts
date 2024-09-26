@@ -12,6 +12,7 @@ import { QueueManager } from '../queue/index.js';
 import { WebServerHealthController } from '../index.js';
 import { ApplicationConfig } from '../application/base-application.interface.js';
 import { existsSync } from 'fs';
+import { EventManager } from '../event/manager.js';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -29,6 +30,7 @@ class WebServer {
 
   private redisInstance: RedisInstance;
   private queueManager: QueueManager;
+  private eventManager: EventManager;
   private databaseInstance: DatabaseInstance;
 
   public fastifyServer: FastifyInstance;
@@ -59,6 +61,7 @@ class WebServer {
 
     this.redisInstance = params.redisInstance;
     this.queueManager = params.queueManager;
+    this.eventManager = params.eventManager;
     this.databaseInstance = params.databaseInstance;
 
     // Create Fastify server
@@ -256,6 +259,7 @@ class WebServer {
         applicationConfig: this.applicationConfig,
         redisInstance: this.redisInstance,
         queueManager: this.queueManager,
+        eventManager: this.eventManager,
         databaseInstance: this.databaseInstance,
       });
 

@@ -9,6 +9,7 @@ import { Helper, Time } from '../util/index.js';
 import { Logger } from '../logger/index.js';
 import WebSocketServer from '../websocket/websocket-server.js';
 import WebSocketClient from '../websocket/websocket-client.js';
+import { EventManager } from '../event/manager.js';
 
 /**
  * Application
@@ -35,12 +36,25 @@ export default class WebApplication extends BaseApplication {
       },
     };
 
-    const mergedConfig = Helper.defaultsDeep(config, defaultConfig);
+    const mergedConfig = Helper.defaultsDeep(
+      config,
+      defaultConfig,
+    );
 
     this.config = mergedConfig;
   }
 
-  protected async startHandler({ redisInstance, databaseInstance, queueManager }: { redisInstance: RedisInstance; databaseInstance: DatabaseInstance; queueManager: QueueManager }): Promise<void> {
+  protected async startHandler({
+    redisInstance,
+    databaseInstance,
+    queueManager,
+    eventManager,
+  }: {
+    redisInstance: RedisInstance;
+    databaseInstance: DatabaseInstance;
+    queueManager: QueueManager;
+    eventManager: EventManager;
+  }): Promise<void> {
     if (this.config.webServer?.enabled) {
       // Initialize web server
       this.webServer = new WebServer({
@@ -50,7 +64,8 @@ export default class WebApplication extends BaseApplication {
         options: {
           host: this.config.webServer.host,
           port: this.config.webServer.port,
-          controllersDirectory: this.config.webServer.controllersDirectory,
+          controllersDirectory:
+            this.config.webServer.controllersDirectory,
           cors: this.config.webServer.cors,
           log: this.config.webServer.log,
           debug: this.config.webServer.debug,
@@ -61,6 +76,7 @@ export default class WebApplication extends BaseApplication {
         redisInstance,
         databaseInstance,
         queueManager,
+        eventManager,
       });
 
       // Load web server
@@ -73,7 +89,9 @@ export default class WebApplication extends BaseApplication {
 
     if (this.config.webSocket?.enabled) {
       if (!this.webServer) {
-        throw new Error('WebSocket requires web server to be enabled');
+        throw new Error(
+          'WebSocket requires web server to be enabled',
+        );
       }
 
       let webSocketServer: WebSocketServer | undefined;
@@ -97,7 +115,9 @@ export default class WebApplication extends BaseApplication {
           await webSocketServer.load();
 
           // Start WebSocket server
-          await webSocketServer.start({ fastifyServer: this.webServer.fastifyServer });
+          await webSocketServer.start({
+            fastifyServer: this.webServer.fastifyServer,
+          });
 
           break;
         }
@@ -124,7 +144,9 @@ export default class WebApplication extends BaseApplication {
           if (!this.config.webSocket.type) {
             throw new Error('WebSocket type is required');
           } else {
-            throw new Error(`WebSocket type is not supported (Type: ${this.config.webSocket.type})`);
+            throw new Error(
+              `WebSocket type is not supported (Type: ${this.config.webSocket.type})`,
+            );
           }
         }
       }
@@ -152,27 +174,48 @@ export default class WebApplication extends BaseApplication {
   /**
    * Application started event
    */
-  protected async onStarted({ startupTime }: { startupTime: number }): Promise<void> {
+  protected async onStarted({
+    startupTime,
+  }: {
+    startupTime: number;
+  }): Promise<void> {
     if (this.config.log?.startUp) {
       Logger.info('Application started v3', {
         Name: this.config.name,
         'Instance ID': this.config.instanceId,
         'PXL Framework Version': this.applicationVersion,
-        'Startup Time': Time.formatTime({ time: startupTime, format: 's', numDecimals: 2, showUnit: true }),
+        'Startup Time': Time.formatTime({
+          time: startupTime,
+          format: 's',
+          numDecimals: 2,
+          showUnit: true,
+        }),
       });
     }
 
     if (this.config.events?.onStarted) {
-      this.config.events.onStarted({ app: this, startupTime });
+      this.config.events.onStarted({
+        app: this,
+        startupTime,
+      });
     }
   }
 
-  protected async onStopped({ runtime }: { runtime: number }): Promise<void> {
+  protected async onStopped({
+    runtime,
+  }: {
+    runtime: number;
+  }): Promise<void> {
     if (this.config.log?.shutdown) {
       Logger.info('Application stopped', {
         Name: this.config.name,
         'Instance ID': this.config.instanceId,
-        'Runtime': Time.formatTime({ time: runtime, format: 's', numDecimals: 2, showUnit: true }),
+        Runtime: Time.formatTime({
+          time: runtime,
+          format: 's',
+          numDecimals: 2,
+          showUnit: true,
+        }),
       });
     }
 

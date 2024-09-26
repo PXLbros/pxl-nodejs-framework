@@ -1,22 +1,33 @@
 import cluster from 'cluster';
 import { existsSync } from 'fs';
-import { DatabaseInstance, DatabaseManager } from '../database/index.js';
+import {
+  DatabaseInstance,
+  DatabaseManager,
+} from '../database/index.js';
 import QueueManager from '../queue/manager.js';
 import RedisManager from '../redis/manager.js';
-import { ApplicationConfig, ApplicationStartInstanceOptions, ApplicationStopInstanceOptions } from './base-application.interface.js';
+import {
+  ApplicationConfig,
+  ApplicationStartInstanceOptions,
+  ApplicationStopInstanceOptions,
+} from './base-application.interface.js';
 import path from 'path';
 import ClusterManager from '../cluster/cluster-manager.js';
 import RedisInstance from '../redis/instance.js';
 import { OS, Time } from '../util/index.js';
 import CacheManager from '../cache/manager.js';
 import os from 'os';
+import { EventManager } from '../event/manager.js';
 
 export default abstract class BaseApplication {
   /** Unique instance ID */
   public uniqueInstanceId: string;
 
   /** Shutdown signals */
-  protected shutdownSignals: NodeJS.Signals[] = ['SIGTERM', 'SIGINT'];
+  protected shutdownSignals: NodeJS.Signals[] = [
+    'SIGTERM',
+    'SIGINT',
+  ];
 
   /** Application start time */
   protected startTime: [number, number] = [0, 0];
@@ -25,7 +36,10 @@ export default abstract class BaseApplication {
   protected isStopping = false;
 
   /** Cluster worker ID */
-  protected workerId = cluster.isWorker && cluster.worker ? cluster.worker.id : null;
+  protected workerId =
+    cluster.isWorker && cluster.worker
+      ? cluster.worker.id
+      : null;
 
   /** Application config */
   protected config: ApplicationConfig;
@@ -45,7 +59,10 @@ export default abstract class BaseApplication {
   /** Queue manager */
   public queueManager?: QueueManager;
 
-  public get Name () {
+  /** Event manager */
+  public eventManager?: EventManager;
+
+  public get Name() {
     return this.config.name;
   }
 
@@ -98,15 +115,28 @@ export default abstract class BaseApplication {
       redisManager: this.redisManager,
     });
 
-    if (this.config.database && this.config.database.enabled === true) {
-      const defaultEntitiesDirectory = path.join(this.config.rootDirectory, 'src', 'database', 'entities');
+    if (
+      this.config.database &&
+      this.config.database.enabled === true
+    ) {
+      const defaultEntitiesDirectory = path.join(
+        this.config.rootDirectory,
+        'src',
+        'database',
+        'entities',
+      );
 
       if (!this.config.database.entitiesDirectory) {
-        this.config.database.entitiesDirectory = defaultEntitiesDirectory;
+        this.config.database.entitiesDirectory =
+          defaultEntitiesDirectory;
       }
 
-      if (!existsSync(this.config.database.entitiesDirectory)) {
-        throw new Error(`Database entities directory not found (Path: ${this.config.database.entitiesDirectory})`);
+      if (
+        !existsSync(this.config.database.entitiesDirectory)
+      ) {
+        throw new Error(
+          `Database entities directory not found (Path: ${this.config.database.entitiesDirectory})`,
+        );
       }
 
       // Initialize Database manager
@@ -117,7 +147,8 @@ export default abstract class BaseApplication {
         username: this.config.database.username,
         password: this.config.database.password,
         databaseName: this.config.database.databaseName,
-        entitiesDirectory: this.config.database.entitiesDirectory,
+        entitiesDirectory:
+          this.config.database.entitiesDirectory,
       });
     }
   }
@@ -126,8 +157,13 @@ export default abstract class BaseApplication {
    * Get application version
    */
   public async getApplicationVersion() {
-    const packagePath = new URL('../../package.json', import.meta.url).href;
-    const packageJson = await import(packagePath, { assert: { type: 'json' } });
+    const packagePath = new URL(
+      '../../package.json',
+      import.meta.url,
+    ).href;
+    const packageJson = await import(packagePath, {
+      assert: { type: 'json' },
+    });
 
     if (!packageJson?.default?.version) {
       throw new Error('Application version not found');
@@ -144,48 +180,53 @@ export default abstract class BaseApplication {
     this.startTime = process.hrtime();
 
     // Get application version`
-    this.applicationVersion = await this.getApplicationVersion();
+    this.applicationVersion =
+      await this.getApplicationVersion();
 
-    const startInstanceOptions: ApplicationStartInstanceOptions = {
-      // onStarted: ({ startupTime }) => {
-      //   if (this.config.log?.startUp) {
-      //     Logger.info('Application started', {
-      //       Name: this.config.name,
-      //       'PXL Framework Version': this.applicationVersion,
-      //       'Startup Time': Time.formatTime({ time: startupTime, format: 's', numDecimals: 2, showUnit: true }),
-      //     });
-      //   }
+    const startInstanceOptions: ApplicationStartInstanceOptions =
+      {
+        // onStarted: ({ startupTime }) => {
+        //   if (this.config.log?.startUp) {
+        //     Logger.info('Application started', {
+        //       Name: this.config.name,
+        //       'PXL Framework Version': this.applicationVersion,
+        //       'Startup Time': Time.formatTime({ time: startupTime, format: 's', numDecimals: 2, showUnit: true }),
+        //     });
+        //   }
 
-      //   if (this.config.events?.onStarted) {
-      //     this.config.events.onStarted({ app: this, startupTime });
-      //   }
-      // },
-      onStarted: this.onStarted.bind(this),
-    };
+        //   if (this.config.events?.onStarted) {
+        //     this.config.events.onStarted({ app: this, startupTime });
+        //   }
+        // },
+        onStarted: this.onStarted.bind(this),
+      };
 
-    const stopInstanceOptions: ApplicationStopInstanceOptions = {
-      // onStopped: ({ runtime }) => {
-      //   if (this.config.log?.shutdown) {
-      //     Logger.info('Application stopped', {
-      //       Name: this.config.name,
-      //       'Runtime': Time.formatTime({ time: runtime, format: 's', numDecimals: 2, showUnit: true }),
-      //     });
-      //   }
+    const stopInstanceOptions: ApplicationStopInstanceOptions =
+      {
+        // onStopped: ({ runtime }) => {
+        //   if (this.config.log?.shutdown) {
+        //     Logger.info('Application stopped', {
+        //       Name: this.config.name,
+        //       'Runtime': Time.formatTime({ time: runtime, format: 's', numDecimals: 2, showUnit: true }),
+        //     });
+        //   }
 
-      //   if (this.config.events?.onStopped) {
-      //     this.config.events.onStopped({ app: this, runtime });
-      //   }
-      // },
-      onStopped: this.onStopped.bind(this),
-    };
+        //   if (this.config.events?.onStopped) {
+        //     this.config.events.onStopped({ app: this, runtime });
+        //   }
+        // },
+        onStopped: this.onStopped.bind(this),
+      };
 
     if (this.config.cluster?.enabled) {
       // Initialize clustered application
       const clusterManager = new ClusterManager({
         config: this.config.cluster,
 
-        startApplicationCallback: () => this.startInstance(startInstanceOptions),
-        stopApplicationCallback: () => this.stop(stopInstanceOptions),
+        startApplicationCallback: () =>
+          this.startInstance(startInstanceOptions),
+        stopApplicationCallback: () =>
+          this.stop(stopInstanceOptions),
       });
 
       // Start cluster
@@ -195,25 +236,35 @@ export default abstract class BaseApplication {
       await this.startInstance(startInstanceOptions);
 
       // Handle standalone application shutdown
-      this.handleShutdown({ onStopped: stopInstanceOptions.onStopped });
+      this.handleShutdown({
+        onStopped: stopInstanceOptions.onStopped,
+      });
     }
   }
 
   /**
    * Before application start
    */
-  private async onBeforeStart(): Promise<{ redisInstance: RedisInstance; databaseInstance: DatabaseInstance | null; queueManager: QueueManager }> {
+  private async onBeforeStart(): Promise<{
+    redisInstance: RedisInstance;
+    databaseInstance: DatabaseInstance | null;
+    queueManager: QueueManager;
+    eventManager?: EventManager;
+  }> {
     // Connect to Redis
     const redisInstance = await this.redisManager.connect();
 
     // Connect to database
-    const databaseInstance = this.databaseManager ? await this.databaseManager.connect() : null;
+    const databaseInstance = this.databaseManager
+      ? await this.databaseManager.connect()
+      : null;
 
     // Initialize queue
     const queueManager = new QueueManager({
       applicationConfig: this.config,
       options: {
-        processorsDirectory: this.config.queue.processorsDirectory,
+        processorsDirectory:
+          this.config.queue.processorsDirectory,
       },
       queues: this.config.queue.queues,
       redisInstance,
@@ -221,20 +272,51 @@ export default abstract class BaseApplication {
     });
 
     // Register queues
-    await queueManager.registerQueues({ queues: this.config.queue.queues });
+    await queueManager.registerQueues({
+      queues: this.config.queue.queues,
+    });
 
-    return { redisInstance, databaseInstance, queueManager };
+    // Initialize EventManager
+    let eventManager: EventManager | undefined;
+
+    if (this.config.event?.enabled) {
+      eventManager = new EventManager({
+        applicationConfig: this.config,
+        options: this.config.event,
+        events: this.config.event.events || [],
+        redisInstance,
+        databaseInstance,
+        queueManager,
+      });
+
+      eventManager.load();
+    }
+
+    return {
+      redisInstance,
+      databaseInstance,
+      queueManager,
+      eventManager,
+    };
   }
 
   /**
    * Application started event
    */
-  protected onStarted({ startupTime }: { startupTime: number }): void {}
+  protected onStarted({
+    startupTime,
+  }: {
+    startupTime: number;
+  }): void {}
 
   /**
    * Application stopped event
    */
-  protected onStopped({ runtime }: { runtime: number }): void {}
+  protected onStopped({
+    runtime,
+  }: {
+    runtime: number;
+  }): void {}
 
   /**
    * Before application stop event
@@ -252,16 +334,30 @@ export default abstract class BaseApplication {
   /**
    * Start application instance
    */
-  private async startInstance(options: ApplicationStartInstanceOptions): Promise<void> {
+  private async startInstance(
+    options: ApplicationStartInstanceOptions,
+  ): Promise<void> {
     try {
       // Before application start
-      const { redisInstance, databaseInstance, queueManager } = await this.onBeforeStart();
+      const {
+        redisInstance,
+        databaseInstance,
+        queueManager,
+        eventManager,
+      } = await this.onBeforeStart();
 
       // Start application
-      await this.startHandler({ redisInstance, databaseInstance, queueManager });
+      await this.startHandler({
+        redisInstance,
+        databaseInstance,
+        queueManager,
+        eventManager,
+      });
 
       // Calculate application startup time
-      const startupTime = Time.calculateElapsedTime({ startTime: this.startTime });
+      const startupTime = Time.calculateElapsedTime({
+        startTime: this.startTime,
+      });
 
       // On application started
       if (options.onStarted) {
@@ -275,14 +371,28 @@ export default abstract class BaseApplication {
     }
   }
 
-  protected abstract startHandler({ redisInstance, databaseInstance, queueManager }: { redisInstance: RedisInstance; databaseInstance?: DatabaseInstance | null; queueManager: QueueManager }): Promise<void>;
+  protected abstract startHandler({
+    redisInstance,
+    databaseInstance,
+    queueManager,
+    eventManager,
+  }: {
+    redisInstance: RedisInstance;
+    databaseInstance?: DatabaseInstance | null;
+    queueManager: QueueManager;
+    eventManager?: EventManager;
+  }): Promise<void>;
 
   protected abstract stopCallback(): void;
 
   /**
    * Handle shutdown
    */
-  public handleShutdown({ onStopped }: { onStopped?: ({ runtime }: { runtime: number }) => void }): void {
+  public handleShutdown({
+    onStopped,
+  }: {
+    onStopped?: ({ runtime }: { runtime: number }) => void;
+  }): void {
     this.shutdownSignals.forEach((signal) => {
       process.on(signal, async () => {
         // Stop application
@@ -294,7 +404,9 @@ export default abstract class BaseApplication {
   /**
    * Stop application
    */
-  private async stop({ onStopped }: ApplicationStopInstanceOptions = {}): Promise<void> {
+  private async stop({
+    onStopped,
+  }: ApplicationStopInstanceOptions = {}): Promise<void> {
     if (this.isStopping) {
       return;
     }

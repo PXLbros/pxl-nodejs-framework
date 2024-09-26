@@ -4,7 +4,7 @@ import cluster from 'cluster';
 import winston from 'winston';
 import { LogOptions } from '../websocket/utils.js';
 
-export type LoggerLevels = 'error' | 'warn' | 'info' | 'command' | 'database' | 'redis' | 'webServer' | 'webSocket' | 'queue' | 'queueJob' | 'dataSource' | 'debug';
+export type LoggerLevels = 'error' | 'warn' | 'info' | 'command' | 'database' | 'redis' | 'webServer' | 'webSocket' | 'queue' | 'queueJob' | 'event' | 'debug';
 
 class Logger {
   private static instance: Logger;
@@ -30,7 +30,7 @@ class Logger {
       webSocket: 7,
       queue: 8,
       queueJob: 9,
-      dataSource: 10,
+      event: 10,
       debug: 11,
     };
 
@@ -45,7 +45,7 @@ class Logger {
       webSocket: 'brightMagenta',
       queue: 'gray',
       queueJob: 'blue',
-      dataSource: 'brightGreen',
+      event: 'brightGreen',
       debug: 'brightCyan',
     };
 

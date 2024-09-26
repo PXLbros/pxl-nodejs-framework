@@ -1,5 +1,6 @@
 import { ClusterManagerConfig } from '../cluster/cluster-manager.interface.js';
 import DatabaseInstance from '../database/instance.js';
+import { EventDefinition } from '../event/manager.interface.js';
 import { QueueItem } from '../queue/index.interface.js';
 import { WebServerDebugOptions, WebServerLogConfig, WebServerOptions, WebServerRoute } from '../webserver/webserver.interface.js';
 import WebSocketServer from '../websocket/websocket-server.js';
@@ -68,6 +69,17 @@ export interface ApplicationQueueConfig {
     queuesRegistered?: boolean;
     queueWaiting?: boolean;
   };
+}
+
+export interface ApplicationEventConfig {
+  /** Whether to enable event system */
+  enabled: boolean;
+
+  /** Event controllers directory */
+  controllersDirectory: string;
+
+  /** Event definitions */
+  events: EventDefinition[];
 }
 
 export interface ApplicationWebSocketConfig extends WebSocketOptions {
@@ -141,6 +153,9 @@ export interface ApplicationConfig {
 
   /** Queue configuration */
   queue: ApplicationQueueConfig;
+
+  /** Event configuration */
+  event: ApplicationEventConfig;
 
   /** Log configuration */
   log?: ApplicationLogConfig;

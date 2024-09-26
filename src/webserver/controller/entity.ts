@@ -4,31 +4,20 @@ import { EntityManager } from '@mikro-orm/core';
 import { FastifyReply, FastifyRequest } from 'fastify';
 import { StatusCodes } from 'http-status-codes';
 import BaseController from './base.js';
-import { RedisInstance } from '../../redis/index.js';
-import { DatabaseInstance } from '../../database/index.js';
-import { QueueManager } from '../../queue/index.js';
 import { DynamicEntity } from '../../database/dynamic-entity.js';
-import { ApplicationConfig } from '../../application/base-application.interface.js';
 import { generateFormFields } from '../../database/dynamic-entity-form-decorators.js';
 import { Helper } from '../../util/index.js';
+import { WebServerBaseControllerConstructorParams } from './base.interface.js';
 
 export default abstract class EntityController extends BaseController {
   protected abstract entityName: string;
 
   protected entityManager: EntityManager;
 
-  constructor({
-    applicationConfig,
-    redisInstance,
-    queueManager,
-    databaseInstance,
-  }: {
-    applicationConfig: ApplicationConfig;
-    redisInstance: RedisInstance;
-    queueManager: QueueManager;
-    databaseInstance: DatabaseInstance;
-  }) {
-    super({ applicationConfig, redisInstance, queueManager, databaseInstance });
+  constructor(props: WebServerBaseControllerConstructorParams) {
+    super(props);
+
+    const { databaseInstance } = props;
 
     this.entityManager = databaseInstance.getEntityManager();
   }
