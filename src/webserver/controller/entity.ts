@@ -278,20 +278,25 @@ export default abstract class EntityController extends BaseController {
     return { request, reply };
   };
 
+  protected async postCreateOne(_: {
+    entityManager: EntityManager;
+    request: FastifyRequest;
+    reply: FastifyReply;
+    item: any;
+  }): Promise<void> {}
+
   public createOne = async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const EntityClass = await this.getEntity();
 
       if (!EntityClass) {
         this.sendErrorResponse(reply, 'Entity not found');
-
         return;
       }
 
       // Listen for preCreateOne hook
       if (this.preCreateOne) {
         const { request: preCreateOneRequest } = await this.preCreateOne({ request, reply });
-
         if (preCreateOneRequest) {
           request = preCreateOneRequest;
         }
@@ -307,11 +312,21 @@ export default abstract class EntityController extends BaseController {
 
       await this.entityManager.persistAndFlush(item);
 
+      // Call postCreateOne hook
+      await this.postCreateOne({ entityManager: this.entityManager, request, reply, item });
+
       this.sendSuccessResponse(reply, item, StatusCodes.CREATED);
     } catch (error) {
       this.sendErrorResponse(reply, error);
     }
   };
+
+  protected async postUpdateOne(_: {
+    entityManager: EntityManager;
+    request: FastifyRequest;
+    reply: FastifyReply;
+    item: any;
+  }): Promise<void> {}
 
   public updateOne = async (request: FastifyRequest<{ Params: { id: number } }>, reply: FastifyReply) => {
     try {
@@ -319,7 +334,6 @@ export default abstract class EntityController extends BaseController {
 
       if (!EntityClass) {
         this.sendErrorResponse(reply, 'Entity not found');
-
         return;
       }
 
@@ -340,6 +354,9 @@ export default abstract class EntityController extends BaseController {
       this.entityManager.assign(item, value);
 
       await this.entityManager.persistAndFlush(item);
+
+      // Call postUpdateOne hook
+      await this.postUpdateOne({ entityManager: this.entityManager, request, reply, item });
 
       this.sendSuccessResponse(reply, item);
     } catch (error) {

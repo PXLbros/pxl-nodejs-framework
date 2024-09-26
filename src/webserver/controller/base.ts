@@ -7,9 +7,12 @@ import { WebServerBaseControllerConstructorParams } from './base.interface.js';
 import { Logger } from '../../logger/index.js';
 import { ApplicationConfig } from '../../application/base-application.interface.js';
 import EventManager from '../../event/manager.js';
+import cluster from 'cluster';
 // import { env } from '../../env';
 
 export default abstract class {
+  protected workerId: number | undefined;
+
   protected applicationConfig: ApplicationConfig;
 
   protected redisInstance: RedisInstance;
@@ -18,6 +21,8 @@ export default abstract class {
   protected databaseInstance: DatabaseInstance;
 
   constructor({ applicationConfig, redisInstance, queueManager, eventManager, databaseInstance }: WebServerBaseControllerConstructorParams) {
+    this.workerId = cluster.worker?.id;
+
     this.applicationConfig = applicationConfig;
 
     this.redisInstance = redisInstance;
