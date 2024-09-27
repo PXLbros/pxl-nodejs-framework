@@ -136,13 +136,13 @@ export default abstract class EntityController extends BaseController {
 
       // Pagination parameters
       const page = parseInt(request.query.page) || 1;
-      const limit = parseInt(request.query.limit) || 10;
-      const offset = (page - 1) * limit;
+      const limit = parseInt(request.query.limit);
+      const offset = (page - 1) * (limit > 0 ? limit : 0);  // If limit is 0, offset is set to 0, i.e., no pagination.
 
       // Filtering and sorting
       const filters = request.query.filters ? JSON.parse(request.query.filters) : {};
       const sortOrder = request.query['sort-order'] || 'ASC';
-      const orderBy = request.query.sort ? { [request.query.sort]: sortOrder} : { id: sortOrder };
+      const orderBy = request.query.sort ? { [request.query.sort]: sortOrder } : { id: sortOrder };
 
       const normalizedQuery: { [key: string]: any } = {};
 
@@ -156,12 +156,21 @@ export default abstract class EntityController extends BaseController {
       }
 
       // Build query options
-      const options = {
-        limit,
-        offset,
+      const options: {
+        limit?: number;
+        offset?: number;
+        filters: { [key: string]: any };
+        orderBy: { [key: string]: string };
+      } = {
         filters,
+        offset,
         orderBy,
       };
+
+      // If limit > 0, set it in the options
+      if (limit > 0) {
+        options.limit = limit;
+      }
 
       const entityProperties = this.getEntityProperties(EntityClass);
 
@@ -174,7 +183,6 @@ export default abstract class EntityController extends BaseController {
 
         if (!entityProperties.includes(key)) {
           // Key query not found in entity properties so ignore (might be used in other cases)
-
           continue;
         }
 
@@ -204,22 +212,22 @@ export default abstract class EntityController extends BaseController {
         this.entityName,
         options.filters,
         {
-          limit: options.limit,
+          limit: options.limit,  // This will be undefined if limit is 0 (no limit)
           offset: options.offset,
           orderBy: options.orderBy,
           populate,
         }
       );
 
-      // Calculate total pages
-      const totalPages = Math.ceil(total / limit);
+      // Calculate total pages, unless limit is 0 (unlimited)
+      const totalPages = limit > 0 ? Math.ceil(total / limit) : 1;
 
       const data = {
         items,
         total,
         page,
         totalPages,
-        limit,
+        limit: limit > 0 ? limit : total, // If limit is 0, return total items as the limit
       };
 
       // Call postGetMany hook
