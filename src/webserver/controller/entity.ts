@@ -182,7 +182,29 @@ export default abstract class EntityController extends BaseController {
         }
 
         if (!entityProperties.includes(key)) {
-          // Key query not found in entity properties so ignore (might be used in other cases)
+          // Check for nested property filter like 'client.slug'
+          const [relation, subProperty] = key.split('.');
+          if (relation && subProperty) {
+            let queryValue = normalizedQuery[key];
+
+            if (!queryValue) {
+              continue;
+            }
+
+            // if queryValue contains comma, split it
+            if (typeof queryValue === 'string' && queryValue.includes(',')) {
+              queryValue = queryValue.split(',');
+            }
+
+            // Add filter for nested property
+            if (Array.isArray(queryValue)) {
+              options.filters[relation] = { [subProperty]: { $in: queryValue } };
+            } else {
+              options.filters[relation] = { [subProperty]: queryValue };
+            }
+          }
+
+          // Skip if not a direct entity property or a nested relation filter
           continue;
         }
 
