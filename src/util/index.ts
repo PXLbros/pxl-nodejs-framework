@@ -6,3 +6,4 @@ export { default as Loader } from './loader.js';
 export { default as Num } from './num.js';
 export { default as OS } from './os.js';
 export { default as Str } from './str.js';
+export { default as URL } from './url.js';
