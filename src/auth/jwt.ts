@@ -19,8 +19,8 @@ const generateJwtTokens = async ({
   // Import JWT secret key
   const importedJwtSecretKey = await importJwtSecretKey({ jwtSecretKey });
 
-  const jwtAccessTokenLifetimeInHours = 1;
-  const jwtRefreshTokenLifetime = 30 * 24;
+  const jwtAccessTokenLifetimeInHours = 24;
+  const jwtRefreshTokenLifetimeInHours = 30 * 24;
 
   // Generate JWT access token
   const jwtAccessToken = await generateJwtToken({
@@ -33,11 +33,8 @@ const generateJwtTokens = async ({
   const jwtRefreshToken = await generateJwtToken({
     secretKey: importedJwtSecretKey,
     payload,
-    expirationTime: jwtRefreshTokenLifetime,
+    expirationTime: jwtRefreshTokenLifetimeInHours,
   });
-
-  // // Update user's refresh token
-  // user.refreshToken = jwtRefreshToken;
 
   await entityManager.flush();
 
