@@ -22,6 +22,9 @@ export default class SystemController extends WebSocketServerBaseController {
       return {
         success: true,
         data: {
+          userId,
+          userType,
+          username,
           roomName: data.roomName,
         },
       };

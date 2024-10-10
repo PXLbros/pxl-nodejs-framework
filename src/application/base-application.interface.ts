@@ -82,6 +82,14 @@ export interface ApplicationEventConfig {
   events: EventDefinition[];
 }
 
+// this.applicationConfig.webSocket.serverMessageHandler(
+//   {
+//     ws,
+//     clientId,
+//     parsedMessage,
+//   },
+// );
+
 export interface ApplicationWebSocketConfig extends WebSocketOptions {
   /** WebSocket type */
   type: WebSocketType;
@@ -91,6 +99,9 @@ export interface ApplicationWebSocketConfig extends WebSocketOptions {
 
   /** WebSocket routes */
   routes: WebSocketRoute[];
+
+  /** WebSocket server message handler */
+  serverMessageHandler?: (options: { ws: WebSocket; clientId: string; parsedMessage: any }) => void;
 
   /** WebSocket subscriber event handler */
   subscriberEventHandler?: (options: { channel: string; message: any; webSocketServer: WebSocketServer; databaseInstance: DatabaseInstance }) => void;

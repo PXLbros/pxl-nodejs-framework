@@ -113,6 +113,20 @@ export default abstract class WebSocketBase {
 
         log('Route handler not found', { RouteKey: routeKey, Type: type, Action: action });
       }
+
+      // if (
+      //   typeof this.applicationConfig.webSocket
+      //     ?.serverMessageHandler === 'function'
+      // ) {
+      //   // Execute custom application subscriber event handler
+      //   this.applicationConfig.webSocket.serverMessageHandler(
+      //     {
+      //       ws,
+      //       clientId,
+      //       parsedMessage,
+      //     },
+      //   );
+      // }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 

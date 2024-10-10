@@ -47,12 +47,16 @@ export interface WebSocketEventsConfig {
     ws,
     clientId,
     data,
+    redisInstance,
     queueManager,
+    databaseInstance,
   }: {
     ws: WebSocket;
     clientId: string;
     data: any;
+    redisInstance: RedisInstance;
     queueManager: QueueManager;
+    databaseInstance: DatabaseInstance;
   }) => void;
 }
 

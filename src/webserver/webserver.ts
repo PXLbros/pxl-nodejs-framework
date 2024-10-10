@@ -121,6 +121,15 @@ class WebServer {
   }
 
   private async onRequest(request: FastifyRequest): Promise<void> {
+    const simulateDelay = {
+      enabled: true,
+      delay: 350,
+    };
+
+    if (simulateDelay.enabled) {
+      await new Promise((resolve) => setTimeout(resolve, simulateDelay.delay));
+    }
+
     const pathsToIgnore = ['/health'];
 
     if (pathsToIgnore.includes(request.url) || request.method === 'OPTIONS') {

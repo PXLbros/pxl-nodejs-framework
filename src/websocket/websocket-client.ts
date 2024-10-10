@@ -144,7 +144,14 @@ export default class WebSocketClient extends WebSocketBase {
     if (this.options.events?.onMessage) {
       const parsedMessage = parseServerMessage(message);
 
-      this.options.events.onMessage({ ws: this.ws, clientId: this.clientId, data: parsedMessage, queueManager: this.queueManager });
+      this.options.events.onMessage({
+        ws: this.ws,
+        clientId: this.clientId,
+        data: parsedMessage,
+        redisInstance: this.redisInstance,
+        queueManager: this.queueManager,
+        databaseInstance: this.databaseInstance,
+      });
     }
 
     await this.handleServerMessage(this.ws, message, this.clientId);
@@ -162,6 +169,9 @@ export default class WebSocketClient extends WebSocketBase {
     }
 
     const webSocketMessage = JSON.stringify(data);
+
+    console.log('SENDING LCIENT MESSAGE: ', webSocketMessage);
+
 
     this.ws.send(webSocketMessage, { binary });
   };
