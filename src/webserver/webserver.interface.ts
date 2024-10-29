@@ -98,6 +98,10 @@ export interface WebServerLogConfig {
 
 export interface WebServerDebugOptions {
   printRoutes?: boolean;
+  simulateSlowConnection?: {
+    enabled?: boolean;
+    delay?: number;
+  };
 }
 
 export interface WebServerCorsBaseOptions {

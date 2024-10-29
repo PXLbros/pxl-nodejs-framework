@@ -38,4 +38,6 @@ export abstract class DynamicEntity extends BaseEntity {
 
     return this[schemaName].validate(item, { abortEarly: false });
   }
+
+  public static getSearchFields(): string[] { return []; }
 }

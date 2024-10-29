@@ -8,6 +8,7 @@ import {
   PutObjectCommandInput,
   S3ClientConfig,
 } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Helper } from '../../util/index.js';
 import { AwsS3ConstructorOptions } from './s3.interface.js';
 import { createWriteStream } from 'fs';
@@ -220,6 +221,24 @@ export default class AwsS3 {
       Logger.info('File successfully downloaded', {
         Path: destinationFilePath,
       });
+    } catch (error) {
+      Logger.error(error);
+
+      throw error;
+    }
+  }
+
+  public async generateSignedUrl({ bucket, key }: { bucket: string; key: string }): Promise<string> {
+    try {
+      const command = new GetObjectCommand({ Bucket: bucket, Key: key });
+
+      // Set the expiration for the signed URL to 1 hour
+      const signedUrl = await getSignedUrl(this.client, command, { expiresIn: 3600 });
+
+      // Log the signed URL
+      Logger.info('Generated signed URL', { URL: signedUrl });
+
+      return signedUrl;
     } catch (error) {
       Logger.error(error);
 

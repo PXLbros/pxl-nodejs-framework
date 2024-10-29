@@ -45,6 +45,10 @@ class WebServer {
       },
       debug: {
         printRoutes: false,
+        simulateSlowConnection: {
+          enabled: false,
+          delay: 250,
+        },
       },
       log: {
         startUp: true,
@@ -121,13 +125,17 @@ class WebServer {
   }
 
   private async onRequest(request: FastifyRequest): Promise<void> {
-    const simulateDelay = {
-      enabled: true,
-      delay: 350,
-    };
-
-    if (simulateDelay.enabled) {
-      await new Promise((resolve) => setTimeout(resolve, simulateDelay.delay));
+    if (
+      this.options.debug?.simulateSlowConnection?.enabled &&
+      this.options.debug?.simulateSlowConnection?.delay &&
+      this.options.debug?.simulateSlowConnection?.delay > 0
+    ) {
+      await new Promise((resolve) =>
+        setTimeout(
+          resolve,
+          this.options.debug?.simulateSlowConnection?.delay,
+        ),
+      );
     }
 
     const pathsToIgnore = ['/health'];

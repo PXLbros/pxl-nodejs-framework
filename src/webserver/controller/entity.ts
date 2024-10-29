@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import path from 'path';
-import { EntityManager } from '@mikro-orm/core';
+import { EntityManager, FilterQuery } from '@mikro-orm/core';
 import { FastifyReply, FastifyRequest } from 'fastify';
 import { StatusCodes } from 'http-status-codes';
 import BaseController from './base.js';
@@ -118,6 +118,7 @@ export default abstract class EntityController extends BaseController {
         filters: string;
         sort: string;
         'sort-order': string;
+        search: string;
         [key: string]: any;
       };
     }>,
@@ -137,7 +138,7 @@ export default abstract class EntityController extends BaseController {
       // Pagination parameters
       const page = parseInt(request.query.page) || 1;
       const limit = parseInt(request.query.limit);
-      const offset = (page - 1) * (limit > 0 ? limit : 0);  // If limit is 0, offset is set to 0, i.e., no pagination.
+      const offset = (page - 1) * (limit > 0 ? limit : 0);
 
       // Filtering and sorting
       const filters = request.query.filters ? JSON.parse(request.query.filters) : {};
@@ -159,7 +160,7 @@ export default abstract class EntityController extends BaseController {
       const options: {
         limit?: number;
         offset?: number;
-        filters: { [key: string]: any };
+        filters: FilterQuery<any>;
         orderBy: { [key: string]: string };
       } = {
         filters,
@@ -167,14 +168,13 @@ export default abstract class EntityController extends BaseController {
         orderBy,
       };
 
-      // If limit > 0, set it in the options
       if (limit > 0) {
         options.limit = limit;
       }
 
       const entityProperties = this.getEntityProperties(EntityClass);
-
-      const reservedQueryKeys = ['page', 'limit', 'filters', 'sort', 'populate'];
+      const reservedQueryKeys = ['page', 'limit', 'filters', 'sort', 'populate', 'search'];
+      const searchQuery = request.query.search || '';
 
       for (const key in normalizedQuery) {
         if (reservedQueryKeys.includes(key)) {
@@ -182,21 +182,15 @@ export default abstract class EntityController extends BaseController {
         }
 
         if (!entityProperties.includes(key)) {
-          // Check for nested property filter like 'client.slug'
           const [relation, subProperty] = key.split('.');
           if (relation && subProperty) {
             let queryValue = normalizedQuery[key];
+            if (!queryValue) continue;
 
-            if (!queryValue) {
-              continue;
-            }
-
-            // if queryValue contains comma, split it
             if (typeof queryValue === 'string' && queryValue.includes(',')) {
               queryValue = queryValue.split(',');
             }
 
-            // Add filter for nested property
             if (Array.isArray(queryValue)) {
               options.filters[relation] = { [subProperty]: { $in: queryValue } };
             } else {
@@ -204,27 +198,38 @@ export default abstract class EntityController extends BaseController {
             }
           }
 
-          // Skip if not a direct entity property or a nested relation filter
           continue;
         }
 
         let queryValue = normalizedQuery[key];
+        if (!queryValue) continue;
 
-        if (!queryValue) {
-          continue;
-        }
-
-        // if queryValue contains comma, split it
         if (typeof queryValue === 'string' && queryValue.includes(',')) {
           queryValue = queryValue.split(',');
         }
 
-        // Check if the queryValue is an array or a single value
         if (Array.isArray(queryValue)) {
           options.filters[key] = { $in: queryValue };
         } else {
           options.filters[key] = queryValue;
         }
+      }
+
+      // Add search filter if a search query is provided
+      if (searchQuery) {
+        const searchFields = EntityClass.getSearchFields();
+
+        options.filters.$or = searchFields
+          .filter((field) => {
+            const isIntegerField = ['id', 'originId'].includes(field);
+
+            return !isIntegerField;
+          })
+          .map((field) => {
+            return {
+              [field]: { $like: `%${searchQuery}%` },
+            };
+          });
       }
 
       const populate = request.query.populate ? request.query.populate.split(',') : [];
@@ -234,14 +239,13 @@ export default abstract class EntityController extends BaseController {
         this.entityName,
         options.filters,
         {
-          limit: options.limit,  // This will be undefined if limit is 0 (no limit)
+          limit: options.limit,
           offset: options.offset,
           orderBy: options.orderBy,
           populate,
         }
       );
 
-      // Calculate total pages, unless limit is 0 (unlimited)
       const totalPages = limit > 0 ? Math.ceil(total / limit) : 1;
 
       const data = {
@@ -249,7 +253,7 @@ export default abstract class EntityController extends BaseController {
         total,
         page,
         totalPages,
-        limit: limit > 0 ? limit : total, // If limit is 0, return total items as the limit
+        limit: limit > 0 ? limit : total,
       };
 
       // Call postGetMany hook

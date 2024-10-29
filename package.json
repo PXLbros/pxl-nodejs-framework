@@ -49,6 +49,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.496.0",
+    "@aws-sdk/s3-request-presigner": "^3.675.0",
     "@fastify/cors": "^10.0.0",
     "@fastify/multipart": "^9.0.0",
     "@mikro-orm/cli": "^6.0.5",
