@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import path from 'path';
-import { EntityManager, FilterQuery } from '@mikro-orm/core';
+import { EntityManager, FilterQuery, Populate } from '@mikro-orm/core';
 import { FastifyReply, FastifyRequest } from 'fastify';
 import { StatusCodes } from 'http-status-codes';
 import BaseController from './base.js';
@@ -271,13 +271,35 @@ export default abstract class EntityController extends BaseController {
     }
   };
 
+  protected async preGetOne(_: {
+    entityManager: EntityManager;
+    request: FastifyRequest;
+    reply: FastifyReply;
+  }): Promise<void> {
+    // Default implementation: do nothing
+  }
+
+  protected async postGetOne(_: {
+    entityManager: EntityManager;
+    request: FastifyRequest;
+    reply: FastifyReply;
+    item: any;
+  }): Promise<void> {
+    // Default implementation: do nothing
+  }
+
   public getOne = async (
     request: FastifyRequest<{ Params: { id: number }; Querystring: { populate: string } }>,
     reply: FastifyReply,
   ) => {
     try {
+      await this.preGetOne({ entityManager: this.entityManager, request, reply });
+
       const queryPopulate = request.query.populate || null;
       const populateList: string[] = queryPopulate ? queryPopulate.split(',') : [];
+
+      // Ensure populate is typed correctly for MikroORM
+      const populate = populateList.map((field) => `${field}.*`) as unknown as Populate<object, `${string}.*` | `${string}.$infer`>;
 
       const EntityClass = await this.getEntity();
 
@@ -288,13 +310,13 @@ export default abstract class EntityController extends BaseController {
 
       const id = request.params.id;
 
-      // const item = await this.entityManager.findOne(this.entityName, { id });
-      // @ts-ignore
-      const item = await this.entityManager.findOne(this.entityName, { id }, { populate: populateList });
+      const item = await this.entityManager.findOne(this.entityName, { id }, { populate });
 
       if (!item) {
         return this.sendNotFoundResponse(reply, `${EntityClass.singularNameCapitalized} not found`);
       }
+
+      await this.postGetOne({ entityManager: this.entityManager, request, reply, item });
 
       this.sendSuccessResponse(reply, item);
     } catch (error) {
