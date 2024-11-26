@@ -92,7 +92,9 @@ export class Logger {
 
       if (level === 'error') {
         if (this.isSentryInitialized) {
-          Sentry.captureException(new Error(message));
+          const errorMessage = typeof message === 'string' ? message : JSON.stringify(message);
+
+          Sentry.captureException(new Error(errorMessage));
         }
       }
 

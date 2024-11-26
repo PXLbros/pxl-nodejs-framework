@@ -33,25 +33,31 @@ export default class AwsS3 {
 
   constructor(options: Partial<AwsS3ConstructorOptions>) {
     // Define default options
-    const defaultOptions: Partial<AwsS3ConstructorOptions> = {
-      region: 'us-east-1',
-      localstack: {
-        enabled: false,
-        port: 4566,
-      },
-    };
+    const defaultOptions: Partial<AwsS3ConstructorOptions> =
+      {
+        region: 'us-east-1',
+        localstack: {
+          enabled: false,
+          port: 4566,
+        },
+      };
 
-    this.options = Helper.defaultsDeep(options, defaultOptions);
+    this.options = Helper.defaultsDeep(
+      options,
+      defaultOptions,
+    );
 
     const s3ClientConfig: S3ClientConfig = {
-      region: 'us-east-1',
+      region: this.options.region,
     };
 
     if (this.options.localstack.enabled) {
       s3ClientConfig.forcePathStyle = true;
 
       if (!this.options.endpoint) {
-        throw new Error('Endpoint is required when using LocalStack');
+        throw new Error(
+          'Endpoint is required when using LocalStack',
+        );
       }
 
       // s3ClientConfig.endpoint = `http://s3.localhost.localstack.cloud:${this.options.localstack.port}`; // Works when the Node.js API is calling from within the Docker container
@@ -64,10 +70,14 @@ export default class AwsS3 {
         secretAccessKey: 'test',
       };
     } else {
-      if (this.options.credentials?.accessKeyId && this.options.credentials?.secretAccessKey) {
+      if (
+        this.options.credentials?.accessKeyId &&
+        this.options.credentials?.secretAccessKey
+      ) {
         s3ClientConfig.credentials = {
           accessKeyId: this.options.credentials.accessKeyId,
-          secretAccessKey: this.options.credentials.secretAccessKey,
+          secretAccessKey:
+            this.options.credentials.secretAccessKey,
         };
       }
     }
@@ -75,7 +85,13 @@ export default class AwsS3 {
     this.client = new S3Client(s3ClientConfig);
   }
 
-  private getBucketUrl({ bucketName, path }: { bucketName: string; path: string }) {
+  private getBucketUrl({
+    bucketName,
+    path,
+  }: {
+    bucketName: string;
+    path: string;
+  }) {
     let url;
 
     if (this.options.localstack.enabled) {
@@ -93,14 +109,18 @@ export default class AwsS3 {
     body,
     contentType,
     forceDownload,
+    publicRead,
   }: {
     bucketName: string;
     path: string;
     body: Buffer;
     contentType?: string;
     forceDownload?: boolean;
+    publicRead?: boolean;
   }): Promise<string> {
-    let contentDisposition = forceDownload ? 'attachment' : 'inline';
+    let contentDisposition = forceDownload
+      ? 'attachment'
+      : 'inline';
     contentDisposition += `; filename="${path.split('/').pop()}"`;
 
     const putObjectOptions: PutObjectCommandInput = {
@@ -108,6 +128,7 @@ export default class AwsS3 {
       Key: path,
       Body: body,
       ContentDisposition: contentDisposition,
+      ACL: publicRead ? 'public-read' : 'private',
     };
 
     if (contentType) {
@@ -121,10 +142,19 @@ export default class AwsS3 {
     return this.getBucketUrl({ bucketName, path });
   }
 
-  public async startMultipartUpload({ bucketName, path }: { bucketName: string; path: string }) {
+  public async startMultipartUpload({
+    bucketName,
+    path,
+    publicRead,
+  }: {
+    bucketName: string;
+    path: string;
+    publicRead?: boolean;
+  }) {
     const command = new CreateMultipartUploadCommand({
       Bucket: bucketName,
       Key: path,
+      ACL: publicRead ? 'public-read' : 'private',
     });
 
     const response = await this.client.send(command);
@@ -186,7 +216,11 @@ export default class AwsS3 {
     return response.Location;
   }
 
-  async downloadFile({ bucketName, key, destinationFilePath }: DownloadFileOptions): Promise<void> {
+  async downloadFile({
+    bucketName,
+    key,
+    destinationFilePath,
+  }: DownloadFileOptions): Promise<void> {
     const decodedKey = decodeURIComponent(key);
     const bucketKey = decodedKey;
 
@@ -210,12 +244,16 @@ export default class AwsS3 {
         throw new Error('Expected Body to be a stream!');
       }
 
-      const fileStream = createWriteStream(destinationFilePath);
+      const fileStream = createWriteStream(
+        destinationFilePath,
+      );
 
       await asyncPipeline(Body, fileStream);
 
       if (!existsSync(destinationFilePath)) {
-        throw new Error(`Could not find downloaded file at ${destinationFilePath}`);
+        throw new Error(
+          `Could not find downloaded file at ${destinationFilePath}`,
+        );
       }
 
       Logger.info('File successfully downloaded', {
@@ -228,15 +266,30 @@ export default class AwsS3 {
     }
   }
 
-  public async generateSignedUrl({ bucket, key }: { bucket: string; key: string }): Promise<string> {
+  public async generateSignedUrl({
+    bucket,
+    key,
+  }: {
+    bucket: string;
+    key: string;
+  }): Promise<string> {
     try {
-      const command = new GetObjectCommand({ Bucket: bucket, Key: key });
+      const command = new GetObjectCommand({
+        Bucket: bucket,
+        Key: key,
+      });
 
       // Set the expiration for the signed URL to 1 hour
-      const signedUrl = await getSignedUrl(this.client, command, { expiresIn: 3600 });
+      const signedUrl = await getSignedUrl(
+        this.client,
+        command,
+        { expiresIn: 3600 },
+      );
 
       // Log the signed URL
-      Logger.info('Generated signed URL', { URL: signedUrl });
+      Logger.info('Generated signed URL', {
+        URL: signedUrl,
+      });
 
       return signedUrl;
     } catch (error) {

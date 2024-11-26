@@ -82,11 +82,7 @@ export default abstract class EntityController extends BaseController {
   };
 
    // Pre-getMany hook (can be overridden in the child controller)
-   protected async preGetMany({
-    entityManager,
-    request,
-    reply
-  }: {
+   protected async preGetMany(_: {
     entityManager: EntityManager;
     request: FastifyRequest;
     reply: FastifyReply;
@@ -96,12 +92,7 @@ export default abstract class EntityController extends BaseController {
 
   // Post-getMany hook (can be overridden in the child controller)
   // await this.postGetMany({ entityManager: this.entityManager, request, reply, data });
-  protected async postGetMany({
-    entityManager,
-    request,
-    reply,
-    data,
-  }: {
+  protected async postGetMany(_: {
     entityManager: EntityManager;
     request: FastifyRequest;
     reply: FastifyReply;
@@ -132,6 +123,7 @@ export default abstract class EntityController extends BaseController {
 
       if (!EntityClass) {
         this.sendErrorResponse(reply, 'Entity not found');
+
         return;
       }
 
@@ -150,6 +142,7 @@ export default abstract class EntityController extends BaseController {
       for (const key in request.query) {
         if (key.endsWith('[]')) {
           const normalizedKey = key.slice(0, -2);
+
           normalizedQuery[normalizedKey] = request.query[key];
         } else {
           normalizedQuery[key] = request.query[key];
@@ -183,8 +176,10 @@ export default abstract class EntityController extends BaseController {
 
         if (!entityProperties.includes(key)) {
           const [relation, subProperty] = key.split('.');
+
           if (relation && subProperty) {
             let queryValue = normalizedQuery[key];
+
             if (!queryValue) continue;
 
             if (typeof queryValue === 'string' && queryValue.includes(',')) {
@@ -202,7 +197,10 @@ export default abstract class EntityController extends BaseController {
         }
 
         let queryValue = normalizedQuery[key];
-        if (!queryValue) continue;
+
+        if (!queryValue) {
+          continue;
+        }
 
         if (typeof queryValue === 'string' && queryValue.includes(',')) {
           queryValue = queryValue.split(',');

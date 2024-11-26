@@ -242,7 +242,7 @@ export default class WebSocketServer extends WebSocketBase {
     log('Incoming subscriber message', {
       Channel: channel,
       // 'Run Same Worker': parsedMessage.runSameWorker ? 'Yes' : 'No',
-      'Client ID': parsedMessage.clientId,
+      'Client ID': parsedMessage.clientId || '-',
     });
 
     switch (channel) {
@@ -445,7 +445,7 @@ export default class WebSocketServer extends WebSocketBase {
       log(
         'Client not in room when removing client from room',
         {
-          'Client ID': clientId,
+          'Client ID': clientId || '-',
           'Room Name': roomName,
         },
       );
@@ -514,7 +514,7 @@ export default class WebSocketServer extends WebSocketBase {
       log(
         'Client not found when handling server client disconnection',
         {
-          'Client ID': clientId,
+          'Client ID': clientId || '-',
         },
       );
 
@@ -732,14 +732,14 @@ export default class WebSocketServer extends WebSocketBase {
 
     if (!client) {
       log('Client not found when sending message error', {
-        'Client ID': webSocketClientId,
+        'Client ID': webSocketClientId || '-',
         Error: error,
       });
 
       return;
     } else if (!client.ws) {
       log('Client WebSocket not found when sending message error', {
-        'Client ID': webSocketClientId,
+        'Client ID': webSocketClientId || '-',
         Error: error,
       });
 
@@ -781,7 +781,7 @@ export default class WebSocketServer extends WebSocketBase {
 
     if (!client) {
       log('Client not found when joining room', {
-        'Client ID': clientId,
+        'Client ID': clientId || '-',
         'Room Name': roomName,
       });
 
