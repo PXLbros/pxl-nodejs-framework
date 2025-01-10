@@ -114,10 +114,11 @@ export default class EventManager {
     // Log the list of registered events
     const registeredEvents = Array.from(this.eventHandlers.keys());
 
-    this.log('Registered Events:', { events: registeredEvents });
+    this.log('Registered Events:', { Events: registeredEvents.length ? registeredEvents : '-' });
 
     if (this.options.debug?.printEvents) {
       this.log('Registered Events:');
+
       for (const eventName of registeredEvents) {
         console.log(`- ${eventName}`);
       }

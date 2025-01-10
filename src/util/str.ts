@@ -31,8 +31,16 @@ function titleCase({ text }: { text: string }): string {
     .join(' ');
 }
 
+/**
+ * Remove file extension from filename.
+ */
+function removeFileExtension({ filename }: { filename: string }): string {
+  return filename.replace(/\.[^/.]+$/, '');
+}
+
 export default {
   generateUniqueId,
   slugify,
   titleCase,
+  removeFileExtension,
 };

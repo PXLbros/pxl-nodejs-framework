@@ -196,7 +196,7 @@ export default class WebSocketServer extends WebSocketBase {
 
     log('Server started', {
       Host: this.options.host,
-      Port: this.options.port,
+      Port: this.options.port || '-',
     });
 
     if (this.options.events?.onServerStarted) {
