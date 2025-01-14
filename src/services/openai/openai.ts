@@ -21,8 +21,6 @@ export default class {
     const defaultOptions: Partial<OpenAIConstructorOptions> = {};
 
     this.options = Helper.defaultsDeep(options, defaultOptions);
-    // const apiKey = process.env['OPENAI_API_KEY'];
-    // const apiKey = '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';
 
     if (!this.options.apiKey) {
       throw new Error('OpenAI API key not set');
