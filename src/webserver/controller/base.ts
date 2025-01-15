@@ -40,27 +40,29 @@ export default abstract class {
   }
 
   protected sendErrorResponse(reply: FastifyReply, error: unknown, statusCode: StatusCodes = StatusCodes.BAD_REQUEST) {
-    let errorMessage;
+    let publicErrorMessage;
 
     // if (env.isProduction) {
     if (process.env.NODE_ENV === 'production') {
       if (error instanceof Error) {
-        errorMessage = 'Something went wrong';
+        publicErrorMessage = 'Something went wrong';
       } else if (error === typeof 'string') {
-        errorMessage = error;
+        publicErrorMessage = error;
       } else {
-        errorMessage = 'An unknown error occured';
+        publicErrorMessage = 'An unknown error occured';
       }
     } else {
       if (error instanceof Error) {
-        errorMessage = error.stack || error.message;
+        publicErrorMessage = error.stack || error.message;
       } else {
-        errorMessage = error;
+        publicErrorMessage = error;
       }
     }
 
-    Logger.custom('webServer', errorMessage);
+    Logger.custom('webServer', error);
 
-    reply.status(statusCode).send({ error: errorMessage });
+    console.error(error);
+
+    reply.status(statusCode).send({ error: publicErrorMessage });
   }
 }
