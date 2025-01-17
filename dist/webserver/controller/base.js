@@ -5,13 +5,15 @@ import cluster from 'cluster';
 export default class {
     workerId;
     applicationConfig;
+    webServerOptions;
     redisInstance;
     queueManager;
     eventManager;
     databaseInstance;
-    constructor({ applicationConfig, redisInstance, queueManager, eventManager, databaseInstance }) {
+    constructor({ applicationConfig, webServerOptions, redisInstance, queueManager, eventManager, databaseInstance }) {
         this.workerId = cluster.worker?.id;
         this.applicationConfig = applicationConfig;
+        this.webServerOptions = webServerOptions;
         this.redisInstance = redisInstance;
         this.queueManager = queueManager;
         this.eventManager = eventManager;
@@ -25,24 +27,33 @@ export default class {
     }
     sendErrorResponse(reply, error, statusCode = StatusCodes.BAD_REQUEST) {
         let publicErrorMessage;
-        // if (env.isProduction) {
-        if (process.env.NODE_ENV === 'production') {
-            if (error instanceof Error) {
-                publicErrorMessage = 'Something went wrong';
-            }
-            else if (error === typeof 'string') {
-                publicErrorMessage = error;
-            }
-            else {
-                publicErrorMessage = 'An unknown error occured';
-            }
-        }
-        else {
+        if (this.webServerOptions.errors?.verbose === true) {
             if (error instanceof Error) {
                 publicErrorMessage = error.stack || error.message;
             }
             else {
                 publicErrorMessage = error;
+            }
+        }
+        else {
+            if (process.env.NODE_ENV === 'production') {
+                if (error instanceof Error) {
+                    publicErrorMessage = 'Something went wrong';
+                }
+                else if (error === typeof 'string') {
+                    publicErrorMessage = error;
+                }
+                else {
+                    publicErrorMessage = 'An unknown error occured';
+                }
+            }
+            else {
+                if (error instanceof Error) {
+                    publicErrorMessage = error.stack || error.message;
+                }
+                else {
+                    publicErrorMessage = error;
+                }
             }
         }
         Logger.custom('webServer', error);

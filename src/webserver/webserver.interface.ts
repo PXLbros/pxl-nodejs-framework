@@ -123,6 +123,10 @@ export interface WebServerCorsEnabledOptions extends WebServerCorsEnabledOptions
 
 export type WebServerCorsOptions = WebServerCorsDisabledOptionsBase | WebServerCorsEnabledOptions;
 
+export interface WebServerErrorsOptions {
+  verbose: boolean;
+}
+
 export interface WebServerOptions {
   /** Web server host */
   host: string;
@@ -132,6 +136,9 @@ export interface WebServerOptions {
 
   /** Web server CORS options */
   cors?: WebServerCorsOptions;
+
+  /** Web server error options */
+  errors?: WebServerErrorsOptions;
 
   /** Web server controllers directory */
   controllersDirectory: string;

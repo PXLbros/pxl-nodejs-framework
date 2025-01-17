@@ -8,22 +8,25 @@ import { Logger } from '../../logger/index.js';
 import { ApplicationConfig } from '../../application/base-application.interface.js';
 import EventManager from '../../event/manager.js';
 import cluster from 'cluster';
+import { WebServerOptions } from '../webserver.interface.js';
 // import { env } from '../../env';
 
 export default abstract class {
   protected workerId: number | undefined;
 
   protected applicationConfig: ApplicationConfig;
+  protected webServerOptions: WebServerOptions;
 
   protected redisInstance: RedisInstance;
   protected queueManager: QueueManager;
   protected eventManager: EventManager;
   protected databaseInstance: DatabaseInstance;
 
-  constructor({ applicationConfig, redisInstance, queueManager, eventManager, databaseInstance }: WebServerBaseControllerConstructorParams) {
+  constructor({ applicationConfig, webServerOptions, redisInstance, queueManager, eventManager, databaseInstance }: WebServerBaseControllerConstructorParams) {
     this.workerId = cluster.worker?.id;
 
     this.applicationConfig = applicationConfig;
+    this.webServerOptions = webServerOptions;
 
     this.redisInstance = redisInstance;
     this.queueManager = queueManager;
@@ -42,20 +45,27 @@ export default abstract class {
   protected sendErrorResponse(reply: FastifyReply, error: unknown, statusCode: StatusCodes = StatusCodes.BAD_REQUEST) {
     let publicErrorMessage;
 
-    // if (env.isProduction) {
-    if (process.env.NODE_ENV === 'production') {
-      if (error instanceof Error) {
-        publicErrorMessage = 'Something went wrong';
-      } else if (error === typeof 'string') {
-        publicErrorMessage = error;
-      } else {
-        publicErrorMessage = 'An unknown error occured';
-      }
-    } else {
+    if (this.webServerOptions.errors?.verbose === true) {
       if (error instanceof Error) {
         publicErrorMessage = error.stack || error.message;
       } else {
         publicErrorMessage = error;
+      }
+    } else {
+      if (process.env.NODE_ENV === 'production') {
+        if (error instanceof Error) {
+          publicErrorMessage = 'Something went wrong';
+        } else if (error === typeof 'string') {
+          publicErrorMessage = error;
+        } else {
+          publicErrorMessage = 'An unknown error occured';
+        }
+      } else {
+        if (error instanceof Error) {
+          publicErrorMessage = error.stack || error.message;
+        } else {
+          publicErrorMessage = error;
+        }
       }
     }
 

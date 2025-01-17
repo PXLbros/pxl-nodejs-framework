@@ -3,10 +3,12 @@ import { DatabaseInstance } from '../../database/index.js';
 import EventManager from '../../event/manager.js';
 import { QueueManager } from '../../queue/index.js';
 import { RedisInstance } from '../../redis/index.js';
+import { WebServerOptions } from '../webserver.interface.js';
 import WebServerBaseController from './base.js';
 
 export interface WebServerBaseControllerConstructorParams {
   applicationConfig: ApplicationConfig;
+  webServerOptions: WebServerOptions;
 
   redisInstance: RedisInstance;
   queueManager: QueueManager;

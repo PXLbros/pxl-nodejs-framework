@@ -25,6 +25,9 @@ class WebServer {
             cors: {
                 enabled: false,
             },
+            errors: {
+                verbose: false,
+            },
             debug: {
                 printRoutes: false,
                 simulateSlowConnection: {
@@ -209,6 +212,7 @@ class WebServer {
             // Initialize controller instance
             const controllerInstance = new ControllerClass({
                 applicationConfig: this.applicationConfig,
+                webServerOptions: this.options,
                 redisInstance: this.redisInstance,
                 queueManager: this.queueManager,
                 eventManager: this.eventManager,
