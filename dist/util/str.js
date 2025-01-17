@@ -33,10 +33,19 @@ function titleCase({ text }) {
 function removeFileExtension({ filename }) {
     return filename.replace(/\.[^/.]+$/, '');
 }
+/**
+ * Get file extension from filename.
+ * @param filename
+ * @returns File extension
+ */
+function getFileExtension({ filename }) {
+    return filename.split('.').pop() || '';
+}
 export default {
     generateUniqueId,
     slugify,
     titleCase,
     removeFileExtension,
+    getFileExtension,
 };
 //# sourceMappingURL=str.js.map

@@ -38,9 +38,19 @@ function removeFileExtension({ filename }: { filename: string }): string {
   return filename.replace(/\.[^/.]+$/, '');
 }
 
+/**
+ * Get file extension from filename.
+ * @param filename
+ * @returns File extension
+ */
+function getFileExtension({ filename }: { filename: string }): string {
+  return filename.split('.').pop() || '';
+}
+
 export default {
   generateUniqueId,
   slugify,
   titleCase,
   removeFileExtension,
+  getFileExtension,
 };
