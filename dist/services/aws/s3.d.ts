@@ -1,3 +1,4 @@
+import { S3Client } from '@aws-sdk/client-s3';
 import { AwsS3ConstructorOptions } from './s3.interface.js';
 interface DownloadFileOptions {
     bucketName: string;
@@ -5,7 +6,7 @@ interface DownloadFileOptions {
     destinationFilePath: string;
 }
 export default class AwsS3 {
-    private client;
+    client: S3Client;
     private options;
     constructor(options: Partial<AwsS3ConstructorOptions>);
     private getBucketUrl;

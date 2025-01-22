@@ -27,7 +27,7 @@ interface DownloadFileOptions {
 }
 
 export default class AwsS3 {
-  private client: S3Client;
+  public client: S3Client;
 
   private options: AwsS3ConstructorOptions;
 
