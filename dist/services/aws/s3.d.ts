@@ -39,7 +39,12 @@ export default class AwsS3 {
             ETag: string;
         }[];
     }): Promise<string | undefined>;
-    downloadFile({ bucketName, key, destinationFilePath, }: DownloadFileOptions): Promise<void>;
+    downloadFile({ bucketName, key, destinationFilePath, onStart, onProgress, onComplete, onError, }: DownloadFileOptions & {
+        onStart?: () => void;
+        onProgress?: (progress: number) => void;
+        onComplete?: () => void;
+        onError?: (error: Error) => void;
+    }): Promise<void>;
     generateSignedUrl({ bucket, key, }: {
         bucket: string;
         key: string;

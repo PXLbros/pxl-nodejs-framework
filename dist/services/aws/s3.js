@@ -111,10 +111,9 @@ export default class AwsS3 {
         const response = await this.client.send(command);
         return response.Location;
     }
-    async downloadFile({ bucketName, key, destinationFilePath, }) {
+    async downloadFile({ bucketName, key, destinationFilePath, onStart, onProgress, onComplete, onError, }) {
         const decodedKey = decodeURIComponent(key);
         const bucketKey = decodedKey;
-        // console.log(`Downloading file from S3 (Bucket: ${process.env.S3_BUCKET} | Key: ${bucketKey} | Destination: ${destinationFilePath})...`);
         Logger.info('Downloading file from S3', {
             bucketName,
             Key: bucketKey,
@@ -125,21 +124,37 @@ export default class AwsS3 {
         };
         try {
             const command = new GetObjectCommand(getObjectParams);
-            const { Body } = await this.client.send(command);
-            if (!(Body instanceof Readable)) {
-                throw new Error('Expected Body to be a stream!');
+            const response = await this.client.send(command);
+            if (!response.Body || !(response.Body instanceof Readable)) {
+                throw new Error('Expected Body to be a readable stream!');
             }
+            if (onStart)
+                onStart();
             const fileStream = createWriteStream(destinationFilePath);
-            await asyncPipeline(Body, fileStream);
+            const totalSize = parseInt(response.ContentLength?.toString() || '0', 10);
+            let bytesRead = 0;
+            response.Body.on('data', (chunk) => {
+                bytesRead += chunk.length;
+                if (onProgress && totalSize > 0) {
+                    const progress = Math.min((bytesRead / totalSize) * 100, 100);
+                    onProgress(progress);
+                }
+            });
+            await asyncPipeline(response.Body, fileStream);
             if (!existsSync(destinationFilePath)) {
                 throw new Error(`Could not find downloaded file at ${destinationFilePath}`);
             }
             Logger.info('File successfully downloaded', {
                 Path: destinationFilePath,
             });
+            if (onComplete)
+                onComplete();
         }
         catch (error) {
             Logger.error(error);
+            if (onError) {
+                onError(error);
+            }
             throw error;
         }
     }
