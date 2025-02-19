@@ -209,7 +209,7 @@ class WebServer {
         fieldNameSize: 100,
         fieldSize: 1024 * 1024 * 10,
         fields: 10,
-        fileSize: 1024 * 1024 * 100,
+        fileSize: 1024 * 1024 * 1024 * 10, // 10GB file size limit
         files: 1,
         headerPairs: 2000,
       },
