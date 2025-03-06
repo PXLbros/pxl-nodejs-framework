@@ -51,6 +51,10 @@ class WebServer {
         // Create Fastify server
         this.fastifyServer = Fastify({
             logger: false,
+            // body limit = 5gb
+            bodyLimit: 5 * 1024 * 1024 * 1024,
+            // 30 minutes
+            connectionTimeout: 30 * 60 * 1000,
         });
     }
     /**
