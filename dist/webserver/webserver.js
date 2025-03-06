@@ -152,6 +152,7 @@ class WebServer {
     }
     configureMultipartUploads() {
         this.fastifyServer.register(multipart, {
+            // attachFieldsToBody: true,
             limits: {
                 fieldNameSize: 100,
                 fieldSize: 1024 * 1024 * 10,
