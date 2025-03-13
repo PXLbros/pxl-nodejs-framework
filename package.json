@@ -1,6 +1,6 @@
 {
   "name": "@pxl/nodejs-framework",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "PXL Node.js Framework",
   "engines": {
     "node": ">=18.16.0"
@@ -31,6 +31,7 @@
     "@types/fluent-ffmpeg": "^2.1.26",
     "@types/jest": "^29.5.12",
     "@types/node": "^22.3.0",
+    "@types/nodemailer": "^6.4.17",
     "@types/uuid": "^10.0.0",
     "@types/ws": "^8.5.10",
     "@typescript-eslint/eslint-plugin": "^8.1.0",
@@ -57,6 +58,7 @@
     "@mikro-orm/migrations": "^6.0.5",
     "@mikro-orm/postgresql": "^6.0.5",
     "@mikro-orm/seeder": "^6.0.5",
+    "@sendgrid/mail": "^8.1.4",
     "@sentry-internal/tracing": "^7.114.0",
     "@sentry/cli": "^2.27.0",
     "@sentry/node": "^8.13.0",
@@ -72,6 +74,7 @@
     "ioredis": "^5.3.2",
     "joi": "^17.12.1",
     "jose": "^5.2.1",
+    "nodemailer": "^6.10.0",
     "openai": "^4.51.0",
     "redis": "^4.6.14",
     "sharp": "^0.33.4",

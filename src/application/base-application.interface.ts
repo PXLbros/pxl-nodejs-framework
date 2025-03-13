@@ -82,6 +82,9 @@ export interface ApplicationEventConfig {
   events: EventDefinition[];
 }
 
+export interface ApplicationEmailConfig {
+}
+
 // this.applicationConfig.webSocket.serverMessageHandler(
 //   {
 //     ws,
@@ -170,4 +173,7 @@ export interface ApplicationConfig {
 
   /** Log configuration */
   log?: ApplicationLogConfig;
+
+  /** Email configuration */
+  email?: ApplicationEmailConfig;
 }

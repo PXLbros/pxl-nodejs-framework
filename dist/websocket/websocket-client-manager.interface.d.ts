@@ -1,8 +1,0 @@
-import WebSocket from 'ws';
-export interface WebSocketClientData {
-    ws: WebSocket | null;
-    lastActivity: number;
-    roomName?: string;
-    [key: string]: any;
-}
-//# sourceMappingURL=websocket-client-manager.interface.d.ts.map

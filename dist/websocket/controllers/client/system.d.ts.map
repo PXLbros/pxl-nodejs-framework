@@ -1,1 +1,0 @@
-{"version":3,"file":"system.d.ts","sourceRoot":"","sources":["../../../../src/websocket/controllers/client/system.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,SAAS,EAAE,MAAM,IAAI,CAAC;AAE/B,OAAO,EAAE,6BAA6B,EAAE,MAAM,gBAAgB,CAAC;AAE/D,MAAM,CAAC,OAAO,OAAO,gBAAiB,SAAQ,6BAA6B;IAClE,UAAU,GAAI,iBAAiB,SAAS,EAAE,mBAAmB,MAAM,EAAE,MAAM,GAAG,KAAG,GAAG,CAE1F;CACF"}
