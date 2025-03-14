@@ -1,4 +1,4 @@
-import { importJWK, SignJWT } from 'jose';
+import { importJWK, SignJWT, jwtVerify } from 'jose';
 const generateJwtTokens = async ({ entityManager, payload, jwtSecretKey, }) => {
     // Import JWT secret key
     const importedJwtSecretKey = await importJwtSecretKey({ jwtSecretKey });
@@ -34,11 +34,12 @@ const generateJwtToken = async ({ secretKey, payload, expirationTime, }) => {
     return jwtToken;
 };
 const importJwtSecretKey = async ({ jwtSecretKey }) => {
-    return await importJWK({ kty: 'oct', k: jwtSecretKey }, 'HS256');
+    return await importJWK({ kty: 'oct', k: jwtSecretKey });
 };
 export default {
     generateJwtTokens,
     generateJwtToken,
     importJwtSecretKey,
+    jwtVerify,
 };
 //# sourceMappingURL=jwt.js.map

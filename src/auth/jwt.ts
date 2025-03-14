@@ -1,4 +1,4 @@
-import { JWTPayload, importJWK, SignJWT } from 'jose';
+import { JWTPayload, importJWK, SignJWT, jwtVerify } from 'jose';
 
 export interface AuthenticationToken {
   type: string;
@@ -67,11 +67,12 @@ const generateJwtToken = async ({
 };
 
 const importJwtSecretKey = async ({ jwtSecretKey }: { jwtSecretKey: string }): Promise<any> => {
-  return await importJWK({ kty: 'oct', k: jwtSecretKey }, 'HS256');
+  return await importJWK({ kty: 'oct', k: jwtSecretKey });
 };
 
 export default {
   generateJwtTokens,
   generateJwtToken,
   importJwtSecretKey,
+  jwtVerify,
 };

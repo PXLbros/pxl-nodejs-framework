@@ -1,4 +1,4 @@
-import { JWTPayload } from 'jose';
+import { JWTPayload, jwtVerify } from 'jose';
 export interface AuthenticationToken {
     type: string;
     accessToken: string;
@@ -19,6 +19,7 @@ declare const _default: {
     importJwtSecretKey: ({ jwtSecretKey }: {
         jwtSecretKey: string;
     }) => Promise<any>;
+    jwtVerify: typeof jwtVerify;
 };
 export default _default;
 //# sourceMappingURL=jwt.d.ts.map

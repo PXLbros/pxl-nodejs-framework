@@ -1,6 +1,6 @@
 {
   "name": "@pxl/nodejs-framework",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "PXL Node.js Framework",
   "engines": {
     "node": ">=18.16.0"
@@ -73,7 +73,7 @@
     "http-status-codes": "^2.3.0",
     "ioredis": "^5.3.2",
     "joi": "^17.12.1",
-    "jose": "^5.2.1",
+    "jose": "^6.0.10",
     "nodemailer": "^6.10.0",
     "openai": "^4.51.0",
     "redis": "^4.6.14",
