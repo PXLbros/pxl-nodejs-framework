@@ -38,7 +38,7 @@ export default class AwsS3 {
             PartNumber: number;
             ETag: string;
         }[];
-    }): Promise<string | undefined>;
+    }): Promise<string>;
     downloadFile({ bucketName, key, destinationFilePath, onStart, onProgress, onComplete, onError, }: DownloadFileOptions & {
         onStart?: () => void;
         onProgress?: (progress: number) => void;

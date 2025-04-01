@@ -12,11 +12,12 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Helper } from '../../util/index.js';
 import { AwsS3ConstructorOptions } from './s3.interface.js';
 import { createWriteStream } from 'fs';
-import { existsSync } from 'fs';
+import { existsSync, mkdirSync } from 'fs';
 import { pipeline } from 'stream';
 import { promisify } from 'util';
 import { Readable } from 'stream';
 import { Logger } from '../../logger/index.js';
+import { dirname } from 'path';
 
 const asyncPipeline = promisify(pipeline);
 
@@ -213,7 +214,15 @@ export default class AwsS3 {
 
     const response = await this.client.send(command);
 
-    return response.Location;
+    if (!response.Location) {
+      throw new Error('Failed to complete multipart upload');
+    }
+
+    // return response.Location;
+    return this.getBucketUrl({
+      bucketName,
+      path,
+    });
   }
 
   async downloadFile({
@@ -252,7 +261,15 @@ export default class AwsS3 {
         throw new Error('Expected Body to be a readable stream!');
       }
 
-      if (onStart) onStart();
+      if (onStart) {
+        onStart();
+      }
+
+      const directoryPath = dirname(destinationFilePath);
+
+      if (!existsSync(directoryPath)) {
+        mkdirSync(directoryPath, { recursive: true });
+      }
 
       const fileStream = createWriteStream(destinationFilePath);
       const totalSize = parseInt(response.ContentLength?.toString() || '0', 10);
@@ -261,9 +278,12 @@ export default class AwsS3 {
 
       response.Body.on('data', (chunk: Buffer) => {
         bytesRead += chunk.length;
+
         if (onProgress && totalSize > 0) {
           const progress = Math.min((bytesRead / totalSize) * 100, 100);
-          onProgress(progress);
+          const formattedProgress = parseFloat(progress.toFixed(1));
+
+          onProgress(formattedProgress);
         }
       });
 
@@ -279,7 +299,9 @@ export default class AwsS3 {
         Path: destinationFilePath,
       });
 
-      if (onComplete) onComplete();
+      if (onComplete) {
+        onComplete();
+      }
     } catch (error) {
       Logger.error(error);
 

@@ -2,11 +2,12 @@ import { CompleteMultipartUploadCommand, CreateMultipartUploadCommand, S3Client,
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Helper } from '../../util/index.js';
 import { createWriteStream } from 'fs';
-import { existsSync } from 'fs';
+import { existsSync, mkdirSync } from 'fs';
 import { pipeline } from 'stream';
 import { promisify } from 'util';
 import { Readable } from 'stream';
 import { Logger } from '../../logger/index.js';
+import { dirname } from 'path';
 const asyncPipeline = promisify(pipeline);
 export default class AwsS3 {
     client;
@@ -109,7 +110,14 @@ export default class AwsS3 {
             },
         });
         const response = await this.client.send(command);
-        return response.Location;
+        if (!response.Location) {
+            throw new Error('Failed to complete multipart upload');
+        }
+        // return response.Location;
+        return this.getBucketUrl({
+            bucketName,
+            path,
+        });
     }
     async downloadFile({ bucketName, key, destinationFilePath, onStart, onProgress, onComplete, onError, }) {
         const decodedKey = decodeURIComponent(key);
@@ -128,8 +136,13 @@ export default class AwsS3 {
             if (!response.Body || !(response.Body instanceof Readable)) {
                 throw new Error('Expected Body to be a readable stream!');
             }
-            if (onStart)
+            if (onStart) {
                 onStart();
+            }
+            const directoryPath = dirname(destinationFilePath);
+            if (!existsSync(directoryPath)) {
+                mkdirSync(directoryPath, { recursive: true });
+            }
             const fileStream = createWriteStream(destinationFilePath);
             const totalSize = parseInt(response.ContentLength?.toString() || '0', 10);
             let bytesRead = 0;
@@ -137,7 +150,8 @@ export default class AwsS3 {
                 bytesRead += chunk.length;
                 if (onProgress && totalSize > 0) {
                     const progress = Math.min((bytesRead / totalSize) * 100, 100);
-                    onProgress(progress);
+                    const formattedProgress = parseFloat(progress.toFixed(1));
+                    onProgress(formattedProgress);
                 }
             });
             await asyncPipeline(response.Body, fileStream);
@@ -147,8 +161,9 @@ export default class AwsS3 {
             Logger.info('File successfully downloaded', {
                 Path: destinationFilePath,
             });
-            if (onComplete)
+            if (onComplete) {
                 onComplete();
+            }
         }
         catch (error) {
             Logger.error(error);
