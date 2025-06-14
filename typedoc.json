@@ -1,4 +1,36 @@
 {
-    "out": "docs",
-    "entryPoints": ["src/index.ts"]
-  }
+  "name": "PXL Node.js Framework",
+  "out": "docs",
+  "entryPoints": ["src/index.ts"],
+  "entryPointStrategy": "expand",
+  "exclude": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ],
+  "theme": "default",
+  "readme": "README.md",
+  "includeVersion": true,
+  "sort": ["source-order"],
+  "categorizeByGroup": false,
+  "defaultCategory": "Other",
+  "categoryOrder": [
+    "Application",
+    "Auth",
+    "Cache",
+    "Cluster",
+    "Command",
+    "Database",
+    "Email",
+    "Event",
+    "Logger",
+    "Queue",
+    "Redis",
+    "Services",
+    "Util",
+    "WebServer",
+    "WebSocket",
+    "*"
+  ]
+}

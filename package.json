@@ -1,6 +1,6 @@
 {
   "name": "@pxl/nodejs-framework",
-  "version": "1.0.11",
+  "version": "1.0.12",
   "description": "PXL Node.js Framework",
   "engines": {
     "node": ">=22.0.0"
@@ -24,7 +24,7 @@
     "dev:new": "node pxl serve",
     "clean": "del-cli dist",
     "build": "npm run clean && tsc && yalc push",
-    "build:minimal": "tsc"
+    "docs": "typedoc"
   },
   "keywords": [],
   "author": "PXL <devops@pxlagency.com>",
@@ -49,7 +49,8 @@
     "prettier": "^3.1.1",
     "ts-jest": "^29.1.2",
     "ts-node": "^10.9.2",
-    "tsconfig-paths": "^4.2.0"
+    "tsconfig-paths": "^4.2.0",
+    "typedoc": "^0.26.11"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.496.0",
