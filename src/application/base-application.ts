@@ -162,7 +162,7 @@ export default abstract class BaseApplication {
       import.meta.url,
     ).href;
     const packageJson = await import(packagePath, {
-      assert: { type: 'json' },
+      with: { type: 'json' },
     });
 
     if (!packageJson?.default?.version) {

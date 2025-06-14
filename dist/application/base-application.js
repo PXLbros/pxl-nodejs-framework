@@ -109,7 +109,7 @@ export default class BaseApplication {
     async getApplicationVersion() {
         const packagePath = new URL('../../package.json', import.meta.url).href;
         const packageJson = await import(packagePath, {
-            assert: { type: 'json' },
+            with: { type: 'json' },
         });
         if (!packageJson?.default?.version) {
             throw new Error('Application version not found');
