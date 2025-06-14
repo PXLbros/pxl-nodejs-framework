@@ -1,6 +1,6 @@
 {
   "name": "@pxl/nodejs-framework",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "description": "PXL Node.js Framework",
   "engines": {
     "node": ">=22.0.0"
