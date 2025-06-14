@@ -209,6 +209,13 @@ async function main() {
     newVersion = incrementVersion(currentVersion, 'major');
   }
 
+  // Check if version is actually changing
+  if (newVersion === currentVersion) {
+    warning(`Version ${newVersion} is already the current version. No changes needed.`);
+    info('If you want to create a new release, please specify a different version.');
+    process.exit(0);
+  }
+
   success(`New version: ${newVersion}`);
 
   if (isDryRun) {
