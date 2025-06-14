@@ -23,8 +23,10 @@
     "dev": "nodemon",
     "dev:new": "node pxl serve",
     "clean": "del-cli dist",
-    "build": "npm run clean && tsc && yalc push",
-    "docs": "typedoc"
+    "build": "npm run clean && tsc",
+    "build:local": "npm run clean && tsc && yalc push",
+    "docs": "typedoc",
+    "release": "node scripts/release.js"
   },
   "keywords": [],
   "author": "PXL <devops@pxlagency.com>",
@@ -36,6 +38,7 @@
     "@types/nodemailer": "^6.4.17",
     "@types/uuid": "^10.0.0",
     "@types/ws": "^8.5.10",
+    "@types/yargs": "^17.0.33",
     "@typescript-eslint/eslint-plugin": "^8.1.0",
     "@typescript-eslint/parser": "^8.1.0",
     "del-cli": "^6.0.0",

@@ -38,10 +38,90 @@ const app = new Application({
 
 ## Development
 
-Run the following command to automatically publish changes through **Yalc** when files are being changed:
+### Local Development
+
+For local development with automatic publishing through **Yalc**:
 
 ```sh
 npm run dev
+```
+
+For building locally with Yalc publishing:
+
+```sh
+npm run build:local
+```
+
+For building without Yalc (CI/production build):
+
+```sh
+npm run build
+```
+
+## CI/CD Pipeline
+
+This project uses GitHub Actions for continuous integration and deployment:
+
+### Build and Test (CI)
+- Runs on all pull requests
+- Installs dependencies, runs linting, builds the project, and runs tests
+
+### Build and Publish
+- Runs on pushes to `main`/`master` branches and version tags
+- Builds the project and publishes to npm
+- Beta releases are published on pushes to main/master branches
+- Stable releases are published when version tags are created
+
+### Setup for Publishing
+
+To enable automatic publishing, configure the following repository secret:
+- `NPM_TOKEN`: Your npm authentication token
+
+> **Note**: The `dist/` folder is gitignored and automatically generated during the CI/CD process. Do not commit built files to the repository.
+
+## Releasing
+
+Use the built-in release script to create new versions:
+
+### Quick Release Commands
+
+```sh
+# Patch release (1.0.0 → 1.0.1)
+npm run release -- --patch
+
+# Minor release (1.0.0 → 1.1.0)
+npm run release -- --minor
+
+# Major release (1.0.0 → 2.0.0)
+npm run release -- --major
+
+# Specific version
+npm run release -- --version 2.1.3
+```
+
+### Release Process
+
+The release script will:
+1. Check that your working directory is clean
+2. Verify you're on the main/master branch
+3. Update the version in `package.json`
+4. Create a git commit and tag
+5. Push to origin, triggering GitHub Actions
+
+### Dry Run
+
+Preview what the release script will do without making changes:
+
+```sh
+npm run release -- --patch --dry-run
+```
+
+### Help
+
+For more information about the release script:
+
+```sh
+npm run release -- --help
 ```
 
 ## Documentation

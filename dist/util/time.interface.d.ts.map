@@ -1,1 +1,0 @@
-{"version":3,"file":"time.interface.d.ts","sourceRoot":"","sources":["../../src/util/time.interface.ts"],"names":[],"mappings":"AAAA,MAAM,WAAW,iBAAiB;IAChC,IAAI,EAAE,MAAM,CAAC;IACb,MAAM,CAAC,EAAE,IAAI,GAAG,GAAG,GAAG,MAAM,GAAG,UAAU,CAAC;IAC1C,WAAW,CAAC,EAAE,MAAM,CAAC;IACrB,QAAQ,CAAC,EAAE,OAAO,CAAC;CACpB"}

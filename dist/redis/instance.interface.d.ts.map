@@ -1,1 +1,0 @@
-{"version":3,"file":"instance.interface.d.ts","sourceRoot":"","sources":["../../src/redis/instance.interface.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,KAAK,EAAE,MAAM,SAAS,CAAC;AAChC,OAAO,EAAE,YAAY,EAAE,MAAM,YAAY,CAAC;AAE1C,MAAM,WAAW,kBAAkB;IACjC,YAAY,EAAE,YAAY,CAAC;IAC3B,MAAM,EAAE,KAAK,CAAC;IACd,eAAe,EAAE,KAAK,CAAC;IACvB,gBAAgB,EAAE,KAAK,CAAC;CACzB"}

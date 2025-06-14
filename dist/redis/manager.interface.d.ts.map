@@ -1,1 +1,0 @@
-{"version":3,"file":"manager.interface.d.ts","sourceRoot":"","sources":["../../src/redis/manager.interface.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,iBAAiB,EAAE,MAAM,8CAA8C,CAAC;AAEjF,MAAM,WAAW,kBAAkB;IACjC,iBAAiB,EAAE,iBAAiB,CAAC;IACrC,IAAI,EAAE,MAAM,CAAC;IACb,IAAI,EAAE,MAAM,CAAC;IACb,QAAQ,CAAC,EAAE,MAAM,CAAC;CACnB"}

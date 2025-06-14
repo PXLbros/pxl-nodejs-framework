@@ -1,1 +1,0 @@
-{"version":3,"file":"emailer.d.ts","sourceRoot":"","sources":["../../src/email/emailer.ts"],"names":[],"mappings":"AAAA,MAAM,WAAW,YAAY;CAAG;AAEhC,MAAM,CAAC,OAAO,CAAC,QAAQ,OAAO,OAAO;IACvB,SAAS,CAAC,KAAK,EAAE,YAAY;gBAAnB,KAAK,EAAE,YAAY;IAEzC,QAAQ,CAAC,QAAQ,CAAC,WAAW,EAAE,GAAG,GAAG,OAAO,CAAC,IAAI,CAAC;CACnD"}
