@@ -82,7 +82,15 @@ export default abstract class {
     reply.status(statusCode).send({ error: publicErrorMessage });
   }
 
-  protected async authenticateRequest(request: FastifyRequest, reply: FastifyReply, jwtSecretKey: string): Promise<AuthenticatedUser | null> {
+  protected async authenticateRequest(request: FastifyRequest, reply: FastifyReply): Promise<AuthenticatedUser | null> {
+    // Get JWT secret key from application config
+    const jwtSecretKey = this.applicationConfig.auth?.jwtSecretKey;
+
+    if (!jwtSecretKey) {
+      this.sendErrorResponse(reply, 'Authentication not configured.', StatusCodes.INTERNAL_SERVER_ERROR);
+      return null;
+    }
+
     const authHeader = request.headers.authorization;
 
     if (!authHeader) {
@@ -97,10 +105,10 @@ export default abstract class {
 
     try {
       const importedJwtSecretKey = await Jwt.importJwtSecretKey({ jwtSecretKey });
-      
+
       // Remove "Bearer " from token
       const jwtAccessToken = authHeader.substring(7);
-      
+
       const { payload } = await Jwt.jwtVerify(jwtAccessToken, importedJwtSecretKey);
 
       if (!payload.sub) {

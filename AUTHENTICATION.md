@@ -14,9 +14,23 @@ This framework provides simplified authentication for webserver controller actio
 
 This framework provides simplified authentication for webserver controller actions. You no longer need to manually handle JWT token verification in each route.
 
+## Configuration
+
+First, configure your JWT secret key in your application config:
+
+```typescript
+const applicationConfig: ApplicationConfig = {
+  name: 'My App',
+  // ... other config
+  auth: {
+    jwtSecretKey: process.env.JWT_SECRET_KEY || 'your-secret-key'
+  }
+};
+```
+
 ## Features
 
-- Automatic JWT token validation
+- Automatic JWT token validation using application config
 - Multiple authentication approaches (wrapper function, manual, helper method)
 - Type-safe authenticated requests
 - Centralized error handling
@@ -41,7 +55,6 @@ export default class UserController extends WebServerBaseController {
       
       return this.sendSuccessResponse(reply, tickers);
     },
-    process.env.JWT_SECRET_KEY!,
     this.authenticateRequest.bind(this)
   );
 }
@@ -55,7 +68,7 @@ For more control, use the simplified manual authentication:
 export default class UserController extends WebServerBaseController {
   
   public getUserOrders = async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
-    const user = await this.authenticateRequest(request, reply, process.env.JWT_SECRET_KEY!);
+    const user = await this.authenticateRequest(request, reply);
     
     if (!user) {
       // Authentication failed, error response already sent
@@ -88,7 +101,7 @@ export default class UserController extends WebServerBaseController {
     reply: FastifyReply, 
     handler: (user: AuthenticatedUser) => Promise<void>
   ): Promise<void> {
-    const user = await this.authenticateRequest(request, reply, process.env.JWT_SECRET_KEY!);
+    const user = await this.authenticateRequest(request, reply);
     
     if (!user) return;
     
@@ -114,11 +127,11 @@ interface AuthenticatedRequest extends FastifyRequest {
 }
 ```
 
-### `withAuth(handler, jwtSecretKey, authenticateRequest)`
+### `withAuth(handler, authenticateRequest)`
 Higher-order function that wraps a route handler with authentication.
 
-### `authenticateRequest(request, reply, jwtSecretKey)`
-Base method for manual authentication. Returns `AuthenticatedUser | null`.
+### `authenticateRequest(request, reply)`
+Base method for manual authentication. Returns `AuthenticatedUser | null`. JWT secret key is automatically retrieved from application config.
 
 ## Error Handling
 
@@ -169,7 +182,6 @@ public getUserTickers = withAuth(
     
     // Your business logic here...
   },
-  env.JWT_SECRET_KEY,
   this.authenticateRequest.bind(this)
 );
 ```
@@ -177,7 +189,7 @@ public getUserTickers = withAuth(
 **After (using manual authentication):**
 ```typescript
 public getUserTickers = async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
-  const user = await this.authenticateRequest(request, reply, env.JWT_SECRET_KEY);
+  const user = await this.authenticateRequest(request, reply);
   
   if (!user) return;
   
@@ -190,4 +202,14 @@ public getUserTickers = async (request: FastifyRequest, reply: FastifyReply): Pr
 Make sure to set your JWT secret key in your environment:
 ```bash
 JWT_SECRET_KEY=your-secret-key-here
+```
+
+And configure it in your application config:
+```typescript
+const applicationConfig: ApplicationConfig = {
+  // ... other config
+  auth: {
+    jwtSecretKey: process.env.JWT_SECRET_KEY!
+  }
+};
 ```
