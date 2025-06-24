@@ -147,8 +147,19 @@ export class Logger {
     this.log('warn', message, meta, options);
   }
 
-  public error(error: Error | unknown, options?: LogOptions): void {
-    this.log('error', error, undefined, options);
+  public error(error: Error | unknown, message?: string, meta?: Record<string, unknown>, options?: LogOptions): void {
+    if (message) {
+      // New format: log.error(error, 'Error when doing this or that', meta)
+      const errorMeta = { 
+        ...(meta || {}),
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      };
+      this.log('error', message, errorMeta, options);
+    } else {
+      // Legacy format: log.error(error)
+      this.log('error', error, undefined, options);
+    }
   }
 
   public custom(level: LoggerLevels, message: unknown, meta?: Record<string, unknown>, options?: LogOptions): void {
