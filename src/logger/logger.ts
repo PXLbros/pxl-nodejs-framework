@@ -147,8 +147,21 @@ export class Logger {
     this.log('warn', message, meta, options);
   }
 
-  public error(error: Error | unknown, options?: LogOptions): void {
-    this.log('error', error, undefined, options);
+  public error(error: Error | unknown, message?: string, meta?: Record<string, unknown>, options?: LogOptions): void {
+    if (message) {
+      // If a message is provided, combine it with the error for better context
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const combinedMessage = `${message}: ${errorMessage}`;
+      this.log('error', combinedMessage, meta, options);
+      
+      // Also capture the original error for Sentry if it's an Error object
+      if (error instanceof Error && this.isSentryInitialized) {
+        Sentry.captureException(error);
+      }
+    } else {
+      // Original behavior when no message is provided
+      this.log('error', error, meta, options);
+    }
   }
 
   public custom(level: LoggerLevels, message: unknown, meta?: Record<string, unknown>, options?: LogOptions): void {

@@ -1,4 +1,4 @@
-import { FormatTimeOptions } from './time.interface.js';
+import { FormatTimeOptions, FormatRelativeTimeOptions } from './time.interface.js';
 
 /**
  * Calculate elapsed time in milliseconds.
@@ -55,8 +55,65 @@ const sleep = ({ seconds }: { seconds: number }): Promise<void> => {
   });
 };
 
+/**
+ * Format a date as relative time (e.g., "in 3 minutes", "2 hours ago").
+ */
+const formatRelativeTime = ({
+  date,
+  baseDate = new Date(),
+  includeSeconds = false,
+}: FormatRelativeTimeOptions): string => {
+  const diffInMs = date.getTime() - baseDate.getTime();
+  const diffInSeconds = Math.abs(Math.floor(diffInMs / 1000));
+  const isFuture = diffInMs > 0;
+
+  // Time units in seconds
+  const minute = 60;
+  const hour = minute * 60;
+  const day = hour * 24;
+  const week = day * 7;
+  const month = day * 30; // Approximate
+  const year = day * 365; // Approximate
+
+  let value: number;
+  let unit: string;
+
+  if (diffInSeconds < minute) {
+    if (!includeSeconds && diffInSeconds < 60) {
+      return 'just now';
+    }
+    value = diffInSeconds;
+    unit = value === 1 ? 'second' : 'seconds';
+  } else if (diffInSeconds < hour) {
+    value = Math.floor(diffInSeconds / minute);
+    unit = value === 1 ? 'minute' : 'minutes';
+  } else if (diffInSeconds < day) {
+    value = Math.floor(diffInSeconds / hour);
+    unit = value === 1 ? 'hour' : 'hours';
+  } else if (diffInSeconds < week) {
+    value = Math.floor(diffInSeconds / day);
+    unit = value === 1 ? 'day' : 'days';
+  } else if (diffInSeconds < month) {
+    value = Math.floor(diffInSeconds / week);
+    unit = value === 1 ? 'week' : 'weeks';
+  } else if (diffInSeconds < year) {
+    value = Math.floor(diffInSeconds / month);
+    unit = value === 1 ? 'month' : 'months';
+  } else {
+    value = Math.floor(diffInSeconds / year);
+    unit = value === 1 ? 'year' : 'years';
+  }
+
+  if (isFuture) {
+    return `in ${value} ${unit}`;
+  } else {
+    return `${value} ${unit} ago`;
+  }
+};
+
 export default {
   calculateElapsedTime,
   formatTime,
+  formatRelativeTime,
   sleep,
 };

@@ -4,3 +4,9 @@ export interface FormatTimeOptions {
   numDecimals?: number;
   showUnit?: boolean;
 }
+
+export interface FormatRelativeTimeOptions {
+  date: Date;
+  baseDate?: Date;
+  includeSeconds?: boolean;
+}
