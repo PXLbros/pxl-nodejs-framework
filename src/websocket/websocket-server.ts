@@ -48,6 +48,10 @@ export default class WebSocketServer extends WebSocketBase {
   private roomManager = new WebSocketRoomManager({
     clientManager: this.clientManager,
   });
+
+  public get rooms() {
+    return this.roomManager.rooms;
+  }
   private redisInstance: RedisInstance;
   private queueManager: QueueManager;
   private databaseInstance: DatabaseInstance;

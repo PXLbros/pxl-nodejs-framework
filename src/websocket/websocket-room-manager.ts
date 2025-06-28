@@ -5,7 +5,7 @@ import WebSocketClientManager from './websocket-client-manager.js';
 export default class WebSocketRoomManager {
   private clientManager: WebSocketClientManager;
 
-  private rooms: Map<string, Set<string>> = new Map();
+  public rooms: Map<string, Set<string>> = new Map();
 
   constructor({ clientManager }: { clientManager: WebSocketClientManager }) {
     this.clientManager = clientManager;
