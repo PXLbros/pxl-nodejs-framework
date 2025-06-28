@@ -85,6 +85,11 @@ export interface ApplicationEventConfig {
 export interface ApplicationEmailConfig {
 }
 
+export interface ApplicationAuthConfig {
+  /** JWT secret key for token verification */
+  jwtSecretKey: string;
+}
+
 // this.applicationConfig.webSocket.serverMessageHandler(
 //   {
 //     ws,
@@ -176,4 +181,7 @@ export interface ApplicationConfig {
 
   /** Email configuration */
   email?: ApplicationEmailConfig;
+
+  /** Authentication configuration */
+  auth?: ApplicationAuthConfig;
 }

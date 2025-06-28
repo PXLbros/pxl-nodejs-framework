@@ -108,7 +108,7 @@ export default class EventManager {
       }
 
       // Store the handler
-      this.eventHandlers.set(event.name, handler.bind(controllerInstance));
+      this.eventHandlers.set(event.name, (handler as Function).bind(controllerInstance));
     }
 
     // Log the list of registered events

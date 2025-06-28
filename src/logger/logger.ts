@@ -153,7 +153,7 @@ export class Logger {
       const errorMessage = error instanceof Error ? error.message : String(error);
       const combinedMessage = `${message}: ${errorMessage}`;
       this.log('error', combinedMessage, meta, options);
-      
+
       // Also capture the original error for Sentry if it's an Error object
       if (error instanceof Error && this.isSentryInitialized) {
         Sentry.captureException(error);
