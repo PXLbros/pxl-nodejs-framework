@@ -198,12 +198,18 @@ class WebServer {
       return;
     }
 
+    // Handle wildcard origin for development
+    const origin = this.options.cors.urls.includes('*')
+      ? true
+      : this.options.cors.urls;
+
     this.fastifyServer.register(cors, {
-      origin: this.options.cors.urls,
+      origin,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization'],
       preflightContinue: false,
       optionsSuccessStatus: 204,
+      // credentials: true,
     });
   }
 
