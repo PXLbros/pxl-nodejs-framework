@@ -39,6 +39,9 @@ export default abstract class BaseApplication {
   /** Shutdown timeout (30 seconds) */
   protected shutdownTimeout = 30000;
 
+  /** Cache for application version to avoid repeated imports */
+  private static applicationVersionCache: string | undefined;
+
   /** Cluster worker ID */
   protected workerId =
     cluster.isWorker && cluster.worker
@@ -163,7 +166,12 @@ export default abstract class BaseApplication {
   /**
    * Get application version
    */
-  public async getApplicationVersion() {
+  public async getApplicationVersion(): Promise<string> {
+    // Return cached version if available
+    if (BaseApplication.applicationVersionCache !== undefined) {
+      return BaseApplication.applicationVersionCache;
+    }
+
     const packagePath = new URL(
       '../../package.json',
       import.meta.url,
@@ -175,6 +183,9 @@ export default abstract class BaseApplication {
     if (!packageJson?.default?.version) {
       throw new Error('Application version not found');
     }
+
+    // Cache the version for future use
+    BaseApplication.applicationVersionCache = packageJson.default.version;
 
     return packageJson.default.version;
   }

@@ -10,6 +10,7 @@ This report details critical bugs, security vulnerabilities, type safety issues,
 - ✅ **WebSocket Memory Leaks**: Fixed event listener cleanup in WebSocket server, client, and managers
 - ✅ **Enhanced WebSocket Cleanup**: Added proper disconnection handling and resource cleanup methods
 - ✅ **Synchronous File Operations**: Optimized loader.ts to use readdir with withFileTypes option instead of separate stat calls
+- ✅ **Inefficient Module Loading**: Fixed dynamic imports in hot paths and implemented comprehensive caching
 
 ## 🚨 Critical Bugs (Fix Immediately)
 
@@ -334,9 +335,19 @@ for (const dirent of dirents) {
 
 ### 3. Inefficient Module Loading
 **Files:** Multiple  
+**Status:** ✅ **FIXED**  
 **Issue:** Dynamic imports in hot paths
 
-**Recommendation:** Pre-load modules during initialization rather than on-demand.
+**Fixes implemented:**
+- ✅ **Entity Controller Caching**: Added static cache for entity imports to avoid repeated loading during HTTP requests
+- ✅ **Loader Utility Caching**: Implemented comprehensive caching mechanism in Loader utility for both directory modules and entity modules
+- ✅ **Application Version Caching**: Added static cache for application version to avoid repeated package.json imports
+- ✅ **Cache Management**: Added cache clearing and stats functions for development/testing
+
+**Performance Impact:** 
+- HTTP requests no longer trigger dynamic imports for entity modules
+- Directory module loading is cached, eliminating repeated filesystem operations
+- Application version loading is now a simple memory lookup after first access
 
 ## 🔧 Recommended Improvements
 
@@ -447,7 +458,7 @@ export class ContextualLogger {
 1. Add input validation throughout
 2. Implement configuration schema validation
 3. Add comprehensive error messages
-4. Fix memory leaks in WebSocket handling
+4. ✅ Fix memory leaks in WebSocket handling
 
 ### Phase 3 (Medium Priority - Within 1 month)
 1. Replace `any` types with proper interfaces
@@ -456,7 +467,7 @@ export class ContextualLogger {
 4. Add health check endpoints
 
 ### Phase 4 (Nice to Have - Ongoing)
-1. Performance optimizations
+1. ✅ Performance optimizations (Module loading caching implemented)
 2. Configuration builder pattern
 3. Enhanced logging context
 4. Graceful degradation features

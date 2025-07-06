@@ -2,6 +2,10 @@ import fs from 'fs';
 import path from 'path';
 import { Helper } from './index.js';
 
+// Cache for loaded modules to avoid repeated imports
+const moduleCache = new Map<string, { [key: string]: any }>();
+const entityCache = new Map<string, any>();
+
 const loadModulesInDirectory = async ({
   directory,
   extensions,
@@ -9,6 +13,14 @@ const loadModulesInDirectory = async ({
   directory: string;
   extensions?: string[];
 }): Promise<{ [key: string]: any }> => {
+  // Create cache key based on directory and extensions
+  const cacheKey = `${directory}:${extensions?.join(',') || 'all'}`;
+  
+  // Check cache first
+  if (moduleCache.has(cacheKey)) {
+    return moduleCache.get(cacheKey)!;
+  }
+
   const loadedModules: { [key: string]: any } = {};
 
   // Use readdir with withFileTypes option to avoid separate stat calls
@@ -41,10 +53,21 @@ const loadModulesInDirectory = async ({
     }
   }
 
+  // Cache the results for future use
+  moduleCache.set(cacheKey, loadedModules);
+
   return loadedModules;
 };
 
 const loadEntityModule = async ({ entitiesDirectory, entityName }: { entitiesDirectory: string; entityName: string }): Promise<any> => {
+  // Create cache key based on directory and entity name
+  const cacheKey = `${entitiesDirectory}:${entityName}`;
+  
+  // Check cache first
+  if (entityCache.has(cacheKey)) {
+    return entityCache.get(cacheKey);
+  }
+
   // Define entity module path
   const entityModulePath = path.join(entitiesDirectory, `${entityName}.${Helper.getScriptFileExtension()}`);
 
@@ -58,10 +81,28 @@ const loadEntityModule = async ({ entitiesDirectory, entityName }: { entitiesDir
   // Get entity class
   const EntityClass = entityModule[entityName];
 
+  // Cache the entity for future use
+  entityCache.set(cacheKey, EntityClass);
+
   return EntityClass;
+};
+
+// Cache management functions for development/testing
+const clearModuleCache = (): void => {
+  moduleCache.clear();
+  entityCache.clear();
+};
+
+const getCacheStats = (): { modulesCached: number; entitiesCached: number } => {
+  return {
+    modulesCached: moduleCache.size,
+    entitiesCached: entityCache.size,
+  };
 };
 
 export default {
   loadModulesInDirectory,
   loadEntityModule,
+  clearModuleCache,
+  getCacheStats,
 };

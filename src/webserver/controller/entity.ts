@@ -14,6 +14,9 @@ export default abstract class EntityController extends BaseController {
 
   protected entityManager: EntityManager;
 
+  // Cache for entity modules to avoid repeated dynamic imports
+  private static entityCache = new Map<string, typeof DynamicEntity>();
+
   constructor(props: WebServerBaseControllerConstructorParams) {
     super(props);
 
@@ -25,6 +28,12 @@ export default abstract class EntityController extends BaseController {
   protected getEntity = async (): Promise<typeof DynamicEntity | undefined> => {
     if (!this.applicationConfig.database || this.applicationConfig.database.enabled !== true) {
       throw new Error(`Database not enabled (Entity: ${this.entityName})`);
+    }
+
+    // Check cache first
+    const cacheKey = `${this.applicationConfig.database.entitiesDirectory}:${this.entityName}`;
+    if (EntityController.entityCache.has(cacheKey)) {
+      return EntityController.entityCache.get(cacheKey);
     }
 
     // Define entity module path
@@ -39,6 +48,9 @@ export default abstract class EntityController extends BaseController {
 
     // Get entity class
     const EntityClass = entityModule[this.entityName];
+
+    // Cache the entity for future use
+    EntityController.entityCache.set(cacheKey, EntityClass);
 
     return EntityClass;
   };
