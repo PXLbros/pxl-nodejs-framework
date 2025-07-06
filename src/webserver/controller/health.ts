@@ -1,7 +1,7 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
 import BaseController from './base.js';
 
-export default class extends BaseController {
+export default class HealthController extends BaseController {
   public health = async (_: FastifyRequest, reply: FastifyReply): Promise<void> => {
     try {
       const healthCheckPromises = [this.checkDatabaseConnection(), this.checkRedisConnection()];

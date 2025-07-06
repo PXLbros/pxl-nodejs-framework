@@ -7,7 +7,8 @@ import { Logger } from '../logger/index.js';
 import QueueWorker from './worker.js';
 import BaseProcessor from './processor/base.js';
 import { Helper, Loader } from '../util/index.js';
-import { QueueJob } from './job.interface.js';
+import { QueueJob, QueueJobData } from './job.interface.js';
+import { ProcessorConstructor } from './processor/processor.interface.js';
 import { QueueItem } from './index.interface.js';
 import { existsSync } from 'fs';
 import { ApplicationConfig } from '../application/base-application.interface.js';
@@ -125,7 +126,7 @@ export default class QueueManager {
     this.registerJobProcessors({ queue, jobs: queue.jobs, jobProcessorClasses });
   }
 
-  private registerJobProcessors({ queue, jobs, jobProcessorClasses }: { queue: QueueItem; jobs: QueueJob[]; jobProcessorClasses: any }): void {
+  private registerJobProcessors({ queue, jobs, jobProcessorClasses }: { queue: QueueItem; jobs: QueueJob[]; jobProcessorClasses: Record<string, ProcessorConstructor> }): void {
     if (!jobs) {
       return;
     }
@@ -176,7 +177,7 @@ export default class QueueManager {
     this.log('Removed queue', { Queue: job.queueName, Job: job.id });
   };
 
-  public addJobToQueue = async ({ queueId, jobId, data }: { queueId: string; jobId: string; data: any }) => {
+  public addJobToQueue = async ({ queueId, jobId, data }: { queueId: string; jobId: string; data: QueueJobData }) => {
     const queue = this.queues.get(queueId);
 
     if (!queue) {

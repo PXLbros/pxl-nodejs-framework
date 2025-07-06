@@ -18,6 +18,7 @@ import { OS, Time } from '../util/index.js';
 import CacheManager from '../cache/manager.js';
 import os from 'os';
 import EventManager from '../event/manager.js';
+import Logger from '../logger/logger.js';
 
 export default abstract class BaseApplication {
   /** Unique instance ID */
@@ -34,6 +35,9 @@ export default abstract class BaseApplication {
 
   /** Whether application is stopping */
   protected isStopping = false;
+
+  /** Shutdown timeout (30 seconds) */
+  protected shutdownTimeout = 30000;
 
   /** Cluster worker ID */
   protected workerId =
@@ -114,6 +118,9 @@ export default abstract class BaseApplication {
       applicationConfig: this.config,
       redisManager: this.redisManager,
     });
+
+    // Set up global error handlers
+    this.setupGlobalErrorHandlers();
 
     if (
       this.config.database &&
@@ -386,6 +393,38 @@ export default abstract class BaseApplication {
   protected abstract stopCallback(): void;
 
   /**
+   * Set up global error handlers
+   */
+  private setupGlobalErrorHandlers(): void {
+    // Handle uncaught exceptions
+    process.on('uncaughtException', (error) => {
+      Logger.error(error, 'Uncaught Exception');
+      this.initiateGracefulShutdown();
+    });
+
+    // Handle unhandled promise rejections
+    process.on('unhandledRejection', (reason, promise) => {
+      Logger.error(reason instanceof Error ? reason : new Error(String(reason)), 'Unhandled Rejection', { promise });
+      this.initiateGracefulShutdown();
+    });
+  }
+
+  /**
+   * Initiate graceful shutdown
+   */
+  private initiateGracefulShutdown(): void {
+    if (this.isStopping) {
+      return;
+    }
+
+    Logger.info('Initiating graceful shutdown due to error');
+    this.stop().catch((error) => {
+      Logger.error(error instanceof Error ? error : new Error(String(error)), 'Error during graceful shutdown');
+      process.exit(1);
+    });
+  }
+
+  /**
    * Handle shutdown
    */
   public handleShutdown({
@@ -413,20 +452,33 @@ export default abstract class BaseApplication {
 
     this.isStopping = true;
 
-    // Stop callback
-    await this.stopCallback();
+    // Set timeout for forced termination
+    const forceExitTimeout = setTimeout(() => {
+      Logger.warn('Forced shutdown due to timeout');
+      process.exit(1);
+    }, this.shutdownTimeout);
 
-    // Disconnect
-    await this.onBeforeStop();
+    try {
+      // Stop callback
+      await this.stopCallback();
 
-    if (onStopped) {
-      // Calculate runtime
-      const runtime = process.uptime() * 1000;
+      // Disconnect
+      await this.onBeforeStop();
 
-      // Emit stopped event
-      await onStopped({ runtime });
+      if (onStopped) {
+        // Calculate runtime
+        const runtime = process.uptime() * 1000;
+
+        // Emit stopped event
+        await onStopped({ runtime });
+      }
+
+      clearTimeout(forceExitTimeout);
+      process.exit(0);
+    } catch (error) {
+      Logger.error(error instanceof Error ? error : new Error(String(error)), 'Error during shutdown');
+      clearTimeout(forceExitTimeout);
+      process.exit(1);
     }
-
-    process.exit(0);
   }
 }

@@ -6,6 +6,7 @@ import {
   EventManagerConstructorParams,
   EventManagerOptions,
   EventDefinition,
+  ApplicationEvents,
 } from './manager.interface.js';
 import { ApplicationConfig } from '../application/base-application.interface.js';
 import DatabaseInstance from '../database/instance.js';

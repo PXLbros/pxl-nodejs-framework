@@ -17,7 +17,7 @@ export interface AuthenticatedUser {
   payload: any;
 }
 
-export default abstract class {
+export default abstract class BaseController {
   protected workerId: number | undefined;
 
   protected applicationConfig: ApplicationConfig;
@@ -61,7 +61,7 @@ export default abstract class {
       if (process.env.NODE_ENV === 'production') {
         if (error instanceof Error) {
           publicErrorMessage = 'Something went wrong';
-        } else if (error === typeof 'string') {
+        } else if (typeof error === 'string') {
           publicErrorMessage = error;
         } else {
           publicErrorMessage = 'An unknown error occured';

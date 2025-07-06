@@ -5,7 +5,7 @@ import { EventControllerConstructorParams } from './base.interface.js';
 import { Logger } from '../../logger/index.js';
 import { ApplicationConfig } from '../../application/base-application.interface.js';
 
-export default abstract class {
+export default abstract class BaseEventController {
   protected logger: typeof Logger = Logger;
 
   protected workerId: number | undefined;

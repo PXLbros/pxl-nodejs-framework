@@ -109,7 +109,8 @@ export default class CommandApplication extends BaseApplication {
   }
 
   private stopCommand(): void {
-    process.kill(process.pid, 'SIGINT');
+    // Use existing graceful shutdown mechanism instead of self-termination
+    this.handleShutdown({ onStopped: this.onStopped.bind(this) });
   }
 
   protected stopCallback(): void {

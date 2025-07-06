@@ -4,7 +4,7 @@ import { RedisInstance } from '../../../redis/index.js';
 import webSocketClient from '../../websocket-client.js';
 import { WebSocketClientBaseControllerConstructorParams } from './base.interface.js';
 
-export default abstract class WebSocketServerBaseController {
+export default abstract class WebSocketClientBaseController {
   protected sendMessage: (data: unknown) => void;
 
   protected redisInstance: RedisInstance;
