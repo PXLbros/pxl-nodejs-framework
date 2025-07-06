@@ -144,10 +144,38 @@ export default class WebSocketServer extends WebSocketBase {
   public async stop(): Promise<void> {
     if (this.checkConnectedClientsInterval) {
       clearInterval(this.checkConnectedClientsInterval);
+      this.checkConnectedClientsInterval = undefined;
     }
 
-    this.server?.close();
+    // Clean up Redis subscriber listeners
+    this.redisInstance.subscriberClient?.removeListener('message', this.handleSubscriberMessage);
+    
+    // Unsubscribe from all Redis events
+    this.redisSubscriberEvents.forEach((subscriberEventName) => {
+      this.redisInstance.subscriberClient?.unsubscribe(subscriberEventName);
+    });
 
+    // Close all client connections and clean up
+    if (this.server) {
+      this.server.clients.forEach((client) => {
+        client.removeAllListeners();
+        client.close();
+      });
+      
+      this.server.removeAllListeners();
+      this.server.close();
+    }
+
+    // Clean up client manager and room manager
+    this.clientManager.cleanup();
+    this.roomManager.cleanup();
+    
+    // Reset managers
+    this.clientManager = new WebSocketClientManager();
+    this.roomManager = new WebSocketRoomManager({
+      clientManager: this.clientManager,
+    });
+    
     log('Server stopped');
   }
 
@@ -397,8 +425,10 @@ export default class WebSocketServer extends WebSocketBase {
 
     ws.on('close', () => {
       this.handleServerClientDisconnection(clientId);
-
       this.clientManager.removeClient(clientId);
+      
+      // Clean up event listeners to prevent memory leaks
+      ws.removeAllListeners();
     });
 
     try {

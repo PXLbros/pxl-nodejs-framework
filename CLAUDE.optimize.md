@@ -4,6 +4,13 @@
 
 This report details critical bugs, security vulnerabilities, type safety issues, and developer experience improvements identified in the PXL Node.js Framework. The analysis covers 80+ source files and identifies **23 critical issues** requiring immediate attention and **40+ enhancement opportunities**.
 
+## 🔄 Progress Update
+
+### Recently Fixed Issues:
+- ✅ **WebSocket Memory Leaks**: Fixed event listener cleanup in WebSocket server, client, and managers
+- ✅ **Enhanced WebSocket Cleanup**: Added proper disconnection handling and resource cleanup methods
+- ✅ **Synchronous File Operations**: Optimized loader.ts to use readdir with withFileTypes option instead of separate stat calls
+
 ## 🚨 Critical Bugs (Fix Immediately)
 
 ### 1. Type Comparison Bug in Error Handler
@@ -275,6 +282,7 @@ public async healthCheck(): Promise<{
 
 ### 1. Memory Leaks in WebSocket Handling
 **File:** `src/websocket/websocket-server.ts`  
+**Status:** ✅ **FIXED**  
 **Issue:** Event listeners not properly cleaned up
 
 ```typescript
@@ -283,24 +291,46 @@ client.on('close', () => {
   // Remove from client manager but listeners remain
 });
 
-// ✅ Proper cleanup:
+// ✅ Proper cleanup (IMPLEMENTED):
 client.on('close', () => {
   this.clientManager.removeClient(clientId);
   client.removeAllListeners(); // Clean up event listeners
 });
 ```
 
+**Additional fixes implemented:**
+- Added proper cleanup in `WebSocketServer.stop()` method
+- Added cleanup methods to `WebSocketClientManager` and `WebSocketRoomManager`
+- Fixed client connection cleanup in `WebSocketClient`
+- Added connection state tracking and proper disconnection handling
+- Enhanced error handling in broadcast methods
+
 ### 2. Synchronous File Operations
 **File:** `src/util/loader.ts`  
+**Status:** ✅ **FIXED**  
 **Issue:** Blocking operations on event loop
 
 ```typescript
-// ❌ Blocking:
-const stats = await fs.promises.stat(filePath);
+// ❌ Previous (inefficient):
+const files = await fs.promises.readdir(directory);
+for (const file of files) {
+  const filePath = path.join(directory, file);
+  const stats = await fs.promises.stat(filePath); // Separate stat call for each file
+  if (stats.isDirectory()) {
+    continue;
+  }
+}
 
-// ✅ Consider caching for frequently accessed paths:
-const statCache = new Map<string, fs.Stats>();
+// ✅ Optimized (IMPLEMENTED):
+const dirents = await fs.promises.readdir(directory, { withFileTypes: true });
+for (const dirent of dirents) {
+  if (dirent.isDirectory()) {
+    continue; // No stat call needed
+  }
+}
 ```
+
+**Performance Impact:** Eliminates one filesystem call per file, significantly improving performance when loading many modules.
 
 ### 3. Inefficient Module Loading
 **Files:** Multiple  

@@ -151,4 +151,10 @@ export default class WebSocketRoomManager {
 
     log(logOutput);
   }
+
+  public cleanup(): void {
+    // Clear all rooms
+    this.rooms.clear();
+    log('WebSocket room manager cleaned up');
+  }
 }

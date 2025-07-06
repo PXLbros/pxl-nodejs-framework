@@ -26,6 +26,7 @@ export default class WebSocketClient extends WebSocketBase {
   private databaseInstance: DatabaseInstance;
   private ws?: WebSocket;
   private clientId?: string;
+  private isConnected: boolean = false;
 
   constructor(props: WebSocketClientProps) {
     super();
@@ -60,6 +61,7 @@ export default class WebSocketClient extends WebSocketBase {
 
       ws.on('open', () => {
         this.clientId = generateClientId();
+        this.isConnected = true;
 
         log('Connected to server', { ID: this.clientId });
 
@@ -98,11 +100,17 @@ export default class WebSocketClient extends WebSocketBase {
       ws.on('message', this.handleIncomingMessage);
 
       ws.on('close', () => {
+        this.isConnected = false;
         log('Connection to server closed');
 
         if (this.options.events?.onDisconnected) {
           this.options.events.onDisconnected({ clientId: this.clientId });
         }
+        
+        // Clean up event listeners to prevent memory leaks
+        ws.removeAllListeners();
+        this.ws = undefined;
+        this.clientId = undefined;
       });
 
       ws.on('error', (error) => {
@@ -179,4 +187,19 @@ export default class WebSocketClient extends WebSocketBase {
   public sendMessage = (data: unknown): void => {
     this.sendClientMessage(data);
   };
+
+  public disconnect(): void {
+    if (this.ws && this.isConnected) {
+      this.ws.removeAllListeners();
+      this.ws.close();
+      this.ws = undefined;
+      this.clientId = undefined;
+      this.isConnected = false;
+      log('WebSocket client disconnected');
+    }
+  }
+
+  public isClientConnected(): boolean {
+    return this.isConnected && this.ws?.readyState === WebSocket.OPEN;
+  }
 }

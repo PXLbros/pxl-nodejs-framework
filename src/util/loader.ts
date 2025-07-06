@@ -11,16 +11,16 @@ const loadModulesInDirectory = async ({
 }): Promise<{ [key: string]: any }> => {
   const loadedModules: { [key: string]: any } = {};
 
-  const files = await fs.promises.readdir(directory);
+  // Use readdir with withFileTypes option to avoid separate stat calls
+  const dirents = await fs.promises.readdir(directory, { withFileTypes: true });
 
-  for (const file of files) {
-    const filePath = path.join(directory, file);
-    const stats = await fs.promises.stat(filePath);
-
-    if (stats.isDirectory()) {
+  for (const dirent of dirents) {
+    // Skip directories without needing stat call
+    if (dirent.isDirectory()) {
       continue;
     }
 
+    const file = dirent.name;
     const ext = path.extname(file);
     const isDeclarationFile = file.endsWith('.d.ts');
 
@@ -30,6 +30,7 @@ const loadModulesInDirectory = async ({
     }
 
     const moduleName = path.basename(file, ext);
+    const filePath = path.join(directory, file);
 
     try {
       const importedModule = await import(filePath);

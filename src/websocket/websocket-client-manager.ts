@@ -83,10 +83,22 @@ export default class WebSocketClientManager {
   }
 
   public removeClient(clientId: string) {
+    const client = this.clients.get(clientId);
+    
+    // Clean up WebSocket connection if it exists
+    if (client?.ws) {
+      try {
+        client.ws.removeAllListeners();
+        if (client.ws.readyState === WebSocket.OPEN) {
+          client.ws.close();
+        }
+      } catch (error) {
+        log('Error cleaning up WebSocket connection', { error: error instanceof Error ? error.message : String(error) });
+      }
+    }
+    
     this.clients.delete(clientId);
-
     this.broadcastClientList('removeClient');
-
     this.printClients();
   }
 
@@ -216,18 +228,46 @@ export default class WebSocketClientManager {
     const clientList = this.getClientList();
 
     this.clients.forEach(({ ws }) => {
-      if (!ws) {
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
         return;
       }
 
-      ws.send(
-        JSON.stringify({
-          type: 'system',
-          action: 'clientList',
-          clientListType: type,
-          data: clientList,
-        }),
-      );
+      try {
+        ws.send(
+          JSON.stringify({
+            type: 'system',
+            action: 'clientList',
+            clientListType: type,
+            data: clientList,
+          }),
+        );
+      } catch (error) {
+        // Handle send errors (e.g., connection closed)
+        log('Error broadcasting client list', { error: error instanceof Error ? error.message : String(error) });
+      }
     });
+  }
+
+  public cleanup(): void {
+    // Clean up all client connections
+    this.clients.forEach((client, clientId) => {
+      if (client.ws) {
+        try {
+          client.ws.removeAllListeners();
+          if (client.ws.readyState === WebSocket.OPEN) {
+            client.ws.close();
+          }
+        } catch (error) {
+          log('Error cleaning up client connection', { 
+            clientId, 
+            error: error instanceof Error ? error.message : String(error) 
+          });
+        }
+      }
+    });
+    
+    // Clear all clients
+    this.clients.clear();
+    log('WebSocket client manager cleaned up');
   }
 }
