@@ -15,7 +15,7 @@ const loadModulesInDirectory = async ({
 }): Promise<{ [key: string]: any }> => {
   // Create cache key based on directory and extensions
   const cacheKey = `${directory}:${extensions?.join(',') || 'all'}`;
-  
+
   // Check cache first
   if (moduleCache.has(cacheKey)) {
     return moduleCache.get(cacheKey)!;
@@ -37,7 +37,10 @@ const loadModulesInDirectory = async ({
     const isDeclarationFile = file.endsWith('.d.ts');
 
     // Skip files that are not in the specified extensions or are .d.ts files
-    if ((extensions && extensions.length > 0 && !extensions.includes(ext)) || isDeclarationFile) {
+    if (
+      (extensions && extensions.length > 0 && !extensions.includes(ext)) ||
+      isDeclarationFile
+    ) {
       continue;
     }
 
@@ -59,17 +62,26 @@ const loadModulesInDirectory = async ({
   return loadedModules;
 };
 
-const loadEntityModule = async ({ entitiesDirectory, entityName }: { entitiesDirectory: string; entityName: string }): Promise<any> => {
+const loadEntityModule = async ({
+  entitiesDirectory,
+  entityName,
+}: {
+  entitiesDirectory: string;
+  entityName: string;
+}): Promise<any> => {
   // Create cache key based on directory and entity name
   const cacheKey = `${entitiesDirectory}:${entityName}`;
-  
+
   // Check cache first
   if (entityCache.has(cacheKey)) {
     return entityCache.get(cacheKey);
   }
 
   // Define entity module path
-  const entityModulePath = path.join(entitiesDirectory, `${entityName}.${Helper.getScriptFileExtension()}`);
+  const entityModulePath = path.join(
+    entitiesDirectory,
+    `${entityName}.${Helper.getScriptFileExtension()}`,
+  );
 
   // Import entity module
   const entityModule = await import(entityModulePath);

@@ -22,13 +22,18 @@ export default class GmailEmailer extends Emailer {
     });
   }
 
-  async sendMail(mailOptions: { from: string; to: string; subject: string; text: string }) {
+  async sendMail(mailOptions: {
+    from: string;
+    to: string;
+    subject: string;
+    text: string;
+  }) {
     // Send the email
     this.transporter.sendMail(mailOptions, (error: any, info: any) => {
       if (error) {
-        console.log("Error:", error);
+        console.log('Error:', error);
       } else {
-        console.log("Email sent: " + info.response);
+        console.log(`Email sent: ${info.response}`);
       }
     });
   }

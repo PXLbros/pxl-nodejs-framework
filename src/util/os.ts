@@ -24,11 +24,14 @@ function getUniqueComputerId(): string {
     }
   }
 
-  const uniqueComputerId = crypto.createHash('sha256').update(macAddress).digest('hex');
+  const uniqueComputerId = crypto
+    .createHash('sha256')
+    .update(macAddress)
+    .digest('hex');
 
   return uniqueComputerId;
 }
 
 export default {
   getUniqueComputerId,
-}
+};

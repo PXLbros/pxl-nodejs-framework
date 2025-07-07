@@ -37,11 +37,7 @@ export interface WebSocketEventsConfig {
       roomName: string;
     }): void;
   }) => void;
-  onDisconnected?: ({
-    clientId,
-  }: {
-    clientId?: string;
-  }) => void;
+  onDisconnected?: ({ clientId }: { clientId?: string }) => void;
   onError?: ({ error }: { error: Error }) => void;
   onMessage?: ({
     ws,
@@ -94,7 +90,7 @@ export interface WebSocketOptions {
   rooms?: {
     enabled?: boolean;
     clientCanJoinMultipleRooms?: boolean;
-  },
+  };
 
   /** WebSocket debug options */
   debug?: WebSocketDebugOptions;
@@ -111,7 +107,9 @@ export interface WebSocketRoute {
   controllerName: string;
 
   /** WebSocket route controller */
-  controller?: WebSocketServerBaseControllerType | WebSocketClientBaseControllerType;
+  controller?:
+    | WebSocketServerBaseControllerType
+    | WebSocketClientBaseControllerType;
 
   /** WebSocket route action */
   action: string;
@@ -136,7 +134,7 @@ export interface WebSocketConstructorParams {
 
 export interface WebSocketConnectedClientData {
   /** WebSocket client */
-  ws: WebSocket| null;
+  ws: WebSocket | null;
 
   /** Last activity time */
   lastActivity: number;

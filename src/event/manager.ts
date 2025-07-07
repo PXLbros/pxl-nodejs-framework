@@ -49,7 +49,9 @@ export default class EventManager {
 
   public async load(): Promise<void> {
     // Check if controllers directory exists
-    const controllersDirectoryExists = existsSync(this.options.controllersDirectory);
+    const controllersDirectoryExists = existsSync(
+      this.options.controllersDirectory,
+    );
 
     if (!controllersDirectoryExists) {
       this.logger.warn('Event controllers directory not found', {
@@ -97,7 +99,10 @@ export default class EventManager {
         databaseInstance: this.databaseInstance,
       });
 
-      const handler = controllerInstance[event.handlerName as keyof typeof controllerInstance];
+      const handler =
+        controllerInstance[
+          event.handlerName as keyof typeof controllerInstance
+        ];
 
       if (!handler || typeof handler !== 'function') {
         this.logger.warn('Event handler not found', {
@@ -109,13 +114,18 @@ export default class EventManager {
       }
 
       // Store the handler
-      this.eventHandlers.set(event.name, (handler as Function).bind(controllerInstance));
+      this.eventHandlers.set(
+        event.name,
+        (handler as Function).bind(controllerInstance),
+      );
     }
 
     // Log the list of registered events
     const registeredEvents = Array.from(this.eventHandlers.keys());
 
-    this.log('Registered Events:', { Events: registeredEvents.length ? registeredEvents : '-' });
+    this.log('Registered Events:', {
+      Events: registeredEvents.length ? registeredEvents : '-',
+    });
 
     if (this.options.debug?.printEvents) {
       this.log('Registered Events:');
@@ -131,7 +141,9 @@ export default class EventManager {
       const handler = this.eventHandlers.get(name);
 
       if (!handler) {
-        const availableEvents = Array.from(this.eventHandlers.keys()).join(', ');
+        const availableEvents = Array.from(this.eventHandlers.keys()).join(
+          ', ',
+        );
 
         this.logger.warn('Event handler not found for event', {
           Event: name,
@@ -139,7 +151,7 @@ export default class EventManager {
         });
 
         throw new Error(
-          `Event handler not found for event '${name}'. Available events are: ${availableEvents}`
+          `Event handler not found for event '${name}'. Available events are: ${availableEvents}`,
         );
       }
 

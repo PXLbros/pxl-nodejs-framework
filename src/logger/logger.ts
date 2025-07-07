@@ -4,7 +4,19 @@ import cluster from 'cluster';
 import winston from 'winston';
 import { LogOptions } from '../websocket/utils.js';
 
-export type LoggerLevels = 'error' | 'warn' | 'info' | 'command' | 'database' | 'redis' | 'webServer' | 'webSocket' | 'queue' | 'queueJob' | 'event' | 'debug';
+export type LoggerLevels =
+  | 'error'
+  | 'warn'
+  | 'info'
+  | 'command'
+  | 'database'
+  | 'redis'
+  | 'webServer'
+  | 'webSocket'
+  | 'queue'
+  | 'queueJob'
+  | 'event'
+  | 'debug';
 
 export class Logger {
   private static instance: Logger;
@@ -64,7 +76,10 @@ export class Logger {
       ),
       transports: [
         new winston.transports.Console({
-          format: winston.format.combine(winston.format.colorize(), customFormat),
+          format: winston.format.combine(
+            winston.format.colorize(),
+            customFormat,
+          ),
         }),
       ],
     });
@@ -92,7 +107,8 @@ export class Logger {
 
       if (level === 'error') {
         if (this.isSentryInitialized) {
-          const errorMessage = typeof message === 'string' ? message : JSON.stringify(message);
+          const errorMessage =
+            typeof message === 'string' ? message : JSON.stringify(message);
 
           Sentry.captureException(new Error(errorMessage));
         }
@@ -102,7 +118,13 @@ export class Logger {
     });
   }
 
-  public initSentry({ sentryDsn, environment }: { sentryDsn: string; environment: string }): void {
+  public initSentry({
+    sentryDsn,
+    environment,
+  }: {
+    sentryDsn: string;
+    environment: string;
+  }): void {
     if (!sentryDsn) {
       this.logger.warn('Missing Sentry DSN when initializing Sentry');
 
@@ -111,9 +133,7 @@ export class Logger {
 
     Sentry.init({
       dsn: sentryDsn,
-      integrations: [
-        nodeProfilingIntegration(),
-      ],
+      integrations: [nodeProfilingIntegration()],
       tracesSampleRate: 1.0,
       environment,
     });
@@ -121,7 +141,12 @@ export class Logger {
     this.isSentryInitialized = true;
   }
 
-  public log(level: LoggerLevels, message: unknown, meta?: Record<string, unknown>, options?: LogOptions): void {
+  public log(
+    level: LoggerLevels,
+    message: unknown,
+    meta?: Record<string, unknown>,
+    options?: LogOptions,
+  ): void {
     // if (options?.muteWorker) {
     // }
 
@@ -135,22 +160,40 @@ export class Logger {
     }
   }
 
-  public debug(message: unknown, meta?: Record<string, unknown>, options?: LogOptions): void {
+  public debug(
+    message: unknown,
+    meta?: Record<string, unknown>,
+    options?: LogOptions,
+  ): void {
     this.log('debug', message, meta, options);
   }
 
-  public info(message: unknown, meta?: Record<string, unknown>, options?: LogOptions): void {
+  public info(
+    message: unknown,
+    meta?: Record<string, unknown>,
+    options?: LogOptions,
+  ): void {
     this.log('info', message, meta, options);
   }
 
-  public warn(message: unknown, meta?: Record<string, unknown>, options?: LogOptions): void {
+  public warn(
+    message: unknown,
+    meta?: Record<string, unknown>,
+    options?: LogOptions,
+  ): void {
     this.log('warn', message, meta, options);
   }
 
-  public error(error: Error | unknown, message?: string, meta?: Record<string, unknown>, options?: LogOptions): void {
+  public error(
+    error: Error | unknown,
+    message?: string,
+    meta?: Record<string, unknown>,
+    options?: LogOptions,
+  ): void {
     if (message) {
       // If a message is provided, combine it with the error for better context
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       const combinedMessage = `${message}: ${errorMessage}`;
       this.log('error', combinedMessage, meta, options);
 
@@ -164,7 +207,12 @@ export class Logger {
     }
   }
 
-  public custom(level: LoggerLevels, message: unknown, meta?: Record<string, unknown>, options?: LogOptions): void {
+  public custom(
+    level: LoggerLevels,
+    message: unknown,
+    meta?: Record<string, unknown>,
+    options?: LogOptions,
+  ): void {
     this.log(level, message, meta, options);
   }
 }

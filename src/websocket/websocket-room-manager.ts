@@ -11,7 +11,17 @@ export default class WebSocketRoomManager {
     this.clientManager = clientManager;
   }
 
-  public addClientToRoom({ clientId, user, roomName, broadcast }: { clientId: string; user: any; roomName: string; broadcast?: boolean }) {
+  public addClientToRoom({
+    clientId,
+    user,
+    roomName,
+    broadcast,
+  }: {
+    clientId: string;
+    user: any;
+    roomName: string;
+    broadcast?: boolean;
+  }) {
     // Check if room exists
     if (!this.rooms.has(roomName)) {
       // Create room
@@ -43,10 +53,23 @@ export default class WebSocketRoomManager {
 
     this.printRooms();
 
-    log('Client joined room', { 'User Type': user?.userType || '-', Room: roomName, ID: clientId, Email: user.email || '-' });
+    log('Client joined room', {
+      'User Type': user?.userType || '-',
+      Room: roomName,
+      ID: clientId,
+      Email: user.email || '-',
+    });
   }
 
-  public removeClientFromRoom({ roomName, clientId, broadcast }: { roomName: string; clientId: string; broadcast?: boolean }) {
+  public removeClientFromRoom({
+    roomName,
+    clientId,
+    broadcast,
+  }: {
+    roomName: string;
+    clientId: string;
+    broadcast?: boolean;
+  }) {
     // Get room from room name
     const room = this.rooms.get(roomName);
 
@@ -102,8 +125,13 @@ export default class WebSocketRoomManager {
     this.printRooms();
   }
 
-
-  public isClientInRoom({ clientId, roomName }: { clientId: string; roomName: string }) {
+  public isClientInRoom({
+    clientId,
+    roomName,
+  }: {
+    clientId: string;
+    roomName: string;
+  }) {
     // Get clients in room
     const clientsInRoom = this.rooms.get(roomName);
 
@@ -118,12 +146,14 @@ export default class WebSocketRoomManager {
   public printRooms() {
     const numRooms = this.rooms.size;
 
-    let logOutput = '\n-------------------------------------------------------\n';
+    let logOutput =
+      '\n-------------------------------------------------------\n';
     logOutput += `Rooms (Count: ${numRooms}):\n`;
     logOutput += '-------------------------------------------------------\n';
 
     if (numRooms > 0) {
-      const workerId = cluster.isWorker && cluster.worker ? cluster.worker.id : null;
+      const workerId =
+        cluster.isWorker && cluster.worker ? cluster.worker.id : null;
 
       // Loop through all rooms
       let roomNumber = 1;
@@ -135,7 +165,7 @@ export default class WebSocketRoomManager {
         logOutput += '  Clients:\n';
 
         // Loop through all clients in room
-        clientsInRoom.forEach((clientId) => {
+        clientsInRoom.forEach(clientId => {
           const client = this.clientManager.getClient({ clientId });
 
           logOutput += `    Client (ID: ${clientId} | Username: ${client?.user?.username || '-'} | User Type: ${client?.user?.userType || '-'} | Email: ${client?.user?.email ? client.user.email : '-'})\n`;

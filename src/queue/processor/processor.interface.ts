@@ -18,5 +18,5 @@ export type ProcessorConstructor = new (
   applicationConfig: ApplicationConfig,
   redisInstance: RedisInstance,
   databaseInstance: DatabaseInstance | null,
-  eventManager?: EventManager
+  eventManager?: EventManager,
 ) => BaseProcessor;

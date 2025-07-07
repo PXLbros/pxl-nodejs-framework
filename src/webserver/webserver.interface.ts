@@ -117,11 +117,14 @@ export interface WebServerCorsEnabledOptionsBase {
   enabled: true;
 }
 
-export interface WebServerCorsEnabledOptions extends WebServerCorsEnabledOptionsBase {
+export interface WebServerCorsEnabledOptions
+  extends WebServerCorsEnabledOptionsBase {
   urls: string[];
 }
 
-export type WebServerCorsOptions = WebServerCorsDisabledOptionsBase | WebServerCorsEnabledOptions;
+export type WebServerCorsOptions =
+  | WebServerCorsDisabledOptionsBase
+  | WebServerCorsEnabledOptions;
 
 export interface WebServerErrorsOptions {
   verbose: boolean;

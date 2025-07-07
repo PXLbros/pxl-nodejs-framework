@@ -20,4 +20,6 @@ export interface WebSocketServerBaseControllerConstructorParams {
   databaseInstance: DatabaseInstance;
 }
 
-export type WebSocketServerBaseControllerType = new (params: WebSocketServerBaseControllerConstructorParams) => WebSocketBaseController;
+export type WebSocketServerBaseControllerType = new (
+  params: WebSocketServerBaseControllerConstructorParams,
+) => WebSocketBaseController;

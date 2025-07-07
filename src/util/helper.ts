@@ -6,26 +6,26 @@ function defaultsDeep(target: any, ...sources: any[]): any {
   const source = sources.shift();
 
   if (isObject(target) && isObject(source)) {
-      for (const key in source) {
-          if (isObject(source[key])) {
-              if (!target[key]) Object.assign(target, { [key]: {} });
-              defaultsDeep(target[key], source[key]);
-          } else if (Array.isArray(source[key]) && Array.isArray(target[key])) {
-              for (let i = 0; i < source[key].length; i++) {
-                  if (source[key][i] === undefined && target[key][i] !== undefined) {
-                      continue;
-                  }
-                  if (isObject(source[key][i])) {
-                      if (typeof target[key][i] !== 'object') target[key][i] = {};
-                      defaultsDeep(target[key][i], source[key][i]);
-                  } else {
-                      target[key][i] = source[key][i];
-                  }
-              }
-          } else if (!target.hasOwnProperty(key)) {
-              Object.assign(target, { [key]: source[key] });
+    for (const key in source) {
+      if (isObject(source[key])) {
+        if (!target[key]) Object.assign(target, { [key]: {} });
+        defaultsDeep(target[key], source[key]);
+      } else if (Array.isArray(source[key]) && Array.isArray(target[key])) {
+        for (let i = 0; i < source[key].length; i++) {
+          if (source[key][i] === undefined && target[key][i] !== undefined) {
+            continue;
           }
+          if (isObject(source[key][i])) {
+            if (typeof target[key][i] !== 'object') target[key][i] = {};
+            defaultsDeep(target[key][i], source[key][i]);
+          } else {
+            target[key][i] = source[key][i];
+          }
+        }
+      } else if (!target.hasOwnProperty(key)) {
+        Object.assign(target, { [key]: source[key] });
       }
+    }
   }
 
   return defaultsDeep(target, ...sources);
@@ -35,7 +35,7 @@ function defaultsDeep(target: any, ...sources: any[]): any {
  * Check if a value is an object.
  */
 function isObject(item: any): boolean {
-  return (item && typeof item === 'object' && !Array.isArray(item));
+  return item && typeof item === 'object' && !Array.isArray(item);
 }
 
 type AnyObject = { [key: string]: any };
@@ -48,7 +48,7 @@ type AnyObject = { [key: string]: any };
  * @returns The value at the specified key path or undefined if not found.
  */
 function getValueFromObject(obj: AnyObject, path: string): any {
-    return path.split('.').reduce((acc, part) => acc && acc[part], obj);
+  return path.split('.').reduce((acc, part) => acc && acc[part], obj);
 }
 
 /**
@@ -59,7 +59,7 @@ function getValueFromObject(obj: AnyObject, path: string): any {
  * @returns An array of values at the specified key path from each object.
  */
 function getValueFromArray(arr: AnyObject[], path: string): any[] {
-    return arr.map(obj => getValueFromObject(obj, path));
+  return arr.map(obj => getValueFromObject(obj, path));
 }
 
 function getScriptFileExtension(): string {
@@ -72,4 +72,4 @@ export default {
   getValueFromArray,
   getValueFromObject,
   getScriptFileExtension,
-}
+};

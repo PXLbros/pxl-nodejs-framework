@@ -1,10 +1,21 @@
 import WebSocket, { RawData } from 'ws';
-import { WebSocketOptions, WebSocketRoute, WebSocketMessageHandler, WebSocketRedisSubscriberEvent, WebSocketType } from './websocket.interface.js';
+import {
+  WebSocketOptions,
+  WebSocketRoute,
+  WebSocketMessageHandler,
+  WebSocketRedisSubscriberEvent,
+  WebSocketType,
+} from './websocket.interface.js';
 import RedisInstance from '../redis/instance.js';
 import QueueManager from '../queue/manager.js';
 import DatabaseInstance from '../database/instance.js';
 import { WebSocketClientProps } from './websocket-client.interface.js';
-import { generateClientId, log, parseServerMessage, getRouteKey } from './utils.js';
+import {
+  generateClientId,
+  log,
+  parseServerMessage,
+  getRouteKey,
+} from './utils.js';
 import WebSocketBase from './websocket-base.js';
 import { ApplicationConfig } from '../application/base-application.interface.js';
 import path from 'path';
@@ -44,7 +55,12 @@ export default class WebSocketClient extends WebSocketBase {
   }
 
   public async load(): Promise<void> {
-    const libraryControllersDirectory = path.join(baseDir, 'websocket', 'controllers', 'client');
+    const libraryControllersDirectory = path.join(
+      baseDir,
+      'websocket',
+      'controllers',
+      'client',
+    );
 
     await this.configureRoutes(this.defaultRoutes, libraryControllersDirectory);
 
@@ -56,7 +72,7 @@ export default class WebSocketClient extends WebSocketBase {
     // const host = this.options.host;
     // const port = this.options.port;
 
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       const ws = new WebSocket(url);
 
       ws.on('open', () => {
@@ -106,18 +122,18 @@ export default class WebSocketClient extends WebSocketBase {
         if (this.options.events?.onDisconnected) {
           this.options.events.onDisconnected({ clientId: this.clientId });
         }
-        
+
         // Clean up event listeners to prevent memory leaks
         ws.removeAllListeners();
         this.ws = undefined;
         this.clientId = undefined;
       });
 
-      ws.on('error', (error) => {
+      ws.on('error', error => {
         log('WebSocket error', { error: error.message });
 
         if (this.options.events?.onError) {
-          this.options.events.onError({ error: error });
+          this.options.events.onError({ error });
         }
       });
 
@@ -179,7 +195,6 @@ export default class WebSocketClient extends WebSocketBase {
     const webSocketMessage = JSON.stringify(data);
 
     console.log('SENDING LCIENT MESSAGE: ', webSocketMessage);
-
 
     this.ws.send(webSocketMessage, { binary });
   };

@@ -20,7 +20,12 @@ export default abstract class Command {
 
   protected logger: typeof Logger;
 
-  constructor({ applicationConfig, redisInstance, queueManager, databaseInstance }: CommandConstructorParams) {
+  constructor({
+    applicationConfig,
+    redisInstance,
+    queueManager,
+    databaseInstance,
+  }: CommandConstructorParams) {
     this.applicationConfig = applicationConfig;
 
     this.redisInstance = redisInstance;
@@ -41,7 +46,7 @@ export default abstract class Command {
   public log(message: string, meta?: Record<string, unknown>): void {
     this.logger.custom('command', message, {
       Command: this.name,
-      ...meta
+      ...meta,
     });
   }
 }

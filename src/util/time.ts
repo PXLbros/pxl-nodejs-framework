@@ -1,9 +1,16 @@
-import { FormatTimeOptions, FormatRelativeTimeOptions } from './time.interface.js';
+import {
+  FormatTimeOptions,
+  FormatRelativeTimeOptions,
+} from './time.interface.js';
 
 /**
  * Calculate elapsed time in milliseconds.
  */
-const calculateElapsedTime = ({ startTime }: { startTime: [number, number] }): number => {
+const calculateElapsedTime = ({
+  startTime,
+}: {
+  startTime: [number, number];
+}): number => {
   const endTime = process.hrtime(startTime);
   const elapsedTime = (endTime[0] * 1e9 + endTime[1]) / 1e6;
 
@@ -50,7 +57,7 @@ const formatTime = ({
  * Sleep for a specified number of seconds.
  */
 const sleep = ({ seconds }: { seconds: number }): Promise<void> => {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     setTimeout(resolve, seconds * 1000);
   });
 };

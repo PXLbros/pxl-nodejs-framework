@@ -30,7 +30,7 @@ export interface ApplicationEvents {
     timestamp: Date;
     exitCode?: number;
   };
-  
+
   // Database events
   'database:connected': {
     instanceId: string;
@@ -51,7 +51,7 @@ export interface ApplicationEvents {
     timestamp: Date;
     error: Error;
   };
-  
+
   // Redis events
   'redis:connected': {
     instanceId: string;
@@ -71,7 +71,7 @@ export interface ApplicationEvents {
     timestamp: Date;
     error: Error;
   };
-  
+
   // Queue events
   'queue:job:added': {
     instanceId: string;
@@ -97,7 +97,7 @@ export interface ApplicationEvents {
     attemptsMade: number;
     attemptsRemaining: number;
   };
-  
+
   // WebSocket events
   'websocket:client:connected': {
     instanceId: string;
@@ -127,7 +127,7 @@ export interface ApplicationEvents {
     action: string;
     data?: Record<string, unknown>;
   };
-  
+
   // Custom events (extensible)
   [key: string]: Record<string, unknown>;
 }

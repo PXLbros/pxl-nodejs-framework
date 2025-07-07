@@ -16,7 +16,11 @@ export default abstract class BaseEventController {
   // protected queueManager: QueueManager;
   protected databaseInstance: DatabaseInstance | null;
 
-  constructor({ applicationConfig, redisInstance, databaseInstance }: EventControllerConstructorParams) {
+  constructor({
+    applicationConfig,
+    redisInstance,
+    databaseInstance,
+  }: EventControllerConstructorParams) {
     this.workerId = cluster.worker?.id;
 
     this.applicationConfig = applicationConfig;
@@ -30,29 +34,33 @@ export default abstract class BaseEventController {
    * Enhanced logger with structured methods
    */
   public log = {
-    error: (error: Error | unknown, message?: string, meta?: Record<string, unknown>): void => {
+    error: (
+      error: Error | unknown,
+      message?: string,
+      meta?: Record<string, unknown>,
+    ): void => {
       if (message) {
-        const errorMeta = { 
+        const errorMeta = {
           ...(meta || {}),
           error: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined
+          stack: error instanceof Error ? error.stack : undefined,
         };
         this.logger.custom('event', message, errorMeta);
       } else {
         this.logger.custom('event', error);
       }
     },
-    
+
     info: (message: string, meta?: Record<string, unknown>): void => {
       this.logger.custom('event', message, meta);
     },
-    
+
     warn: (message: string, meta?: Record<string, unknown>): void => {
       this.logger.custom('event', message, meta);
     },
-    
+
     debug: (message: string, meta?: Record<string, unknown>): void => {
       this.logger.custom('event', message, meta);
-    }
+    },
   };
 }

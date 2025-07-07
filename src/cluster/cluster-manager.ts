@@ -16,7 +16,11 @@ export default class ClusterManager {
   private shutdownSignals: NodeJS.Signals[] = ['SIGTERM', 'SIGINT'];
   private isShuttingDown = false;
 
-  constructor({ config, startApplicationCallback, stopApplicationCallback }: ClusterManagerProps) {
+  constructor({
+    config,
+    startApplicationCallback,
+    stopApplicationCallback,
+  }: ClusterManagerProps) {
     this.config = config;
 
     this.startApplicationCallback = startApplicationCallback;
@@ -37,13 +41,15 @@ export default class ClusterManager {
     const numCPUs: number = cpus().length;
 
     const numClusterWorkers =
-      this.config.workerMode === 'auto' ? numCPUs : (this.config as ClusterManagerWorkerModeManualConfig).workerCount;
+      this.config.workerMode === 'auto'
+        ? numCPUs
+        : (this.config as ClusterManagerWorkerModeManualConfig).workerCount;
 
     for (let workerIndex = 0; workerIndex < numClusterWorkers; workerIndex++) {
       cluster.fork();
     }
 
-    cluster.on('online', (worker) => {
+    cluster.on('online', worker => {
       Logger.debug('Started cluster worker', {
         ID: worker.id,
         PID: worker.process.pid,
@@ -67,7 +73,7 @@ export default class ClusterManager {
   private async setupWorker(): Promise<void> {
     await this.startApplicationCallback();
 
-    process.on('message', async (message) => {
+    process.on('message', async message => {
       if (message === 'shutdown') {
         Logger.debug('Worker received shutdown message, stopping...', {
           PID: process.pid,
@@ -80,7 +86,7 @@ export default class ClusterManager {
   }
 
   private handleShutdown(): void {
-    this.shutdownSignals.forEach((signal) => {
+    this.shutdownSignals.forEach(signal => {
       process.on(signal, async () => await this.initiateShutdown());
     });
   }

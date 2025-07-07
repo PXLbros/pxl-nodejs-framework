@@ -20,7 +20,15 @@ export default class DatabaseInstance {
    * Database Instance constructor
    * @param orm MikroORM instance
    */
-  constructor({ databaseManager, applicationConfig, orm }: { databaseManager: DatabaseManager; applicationConfig: ApplicationConfig; orm: MikroORM }) {
+  constructor({
+    databaseManager,
+    applicationConfig,
+    orm,
+  }: {
+    databaseManager: DatabaseManager;
+    applicationConfig: ApplicationConfig;
+    orm: MikroORM;
+  }) {
     this.databaseManager = databaseManager;
     this.applicationConfig = applicationConfig;
     this.orm = orm;

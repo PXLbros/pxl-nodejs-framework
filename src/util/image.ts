@@ -6,9 +6,13 @@ function extractMimeType({ base64 }: { base64: string }): string | undefined {
   } else {
     return undefined;
   }
-};
+}
 
-function mimeTypeToExtension({ mimeType }: { mimeType: string }): string | undefined {
+function mimeTypeToExtension({
+  mimeType,
+}: {
+  mimeType: string;
+}): string | undefined {
   switch (mimeType) {
     case 'image/jpeg': {
       return 'jpg';
@@ -23,9 +27,9 @@ function mimeTypeToExtension({ mimeType }: { mimeType: string }): string | undef
       return undefined;
     }
   }
-};
+}
 
 export default {
   extractMimeType,
   mimeTypeToExtension,
-}
+};

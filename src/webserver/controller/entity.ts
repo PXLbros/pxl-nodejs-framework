@@ -26,7 +26,10 @@ export default abstract class EntityController extends BaseController {
   }
 
   protected getEntity = async (): Promise<typeof DynamicEntity | undefined> => {
-    if (!this.applicationConfig.database || this.applicationConfig.database.enabled !== true) {
+    if (
+      !this.applicationConfig.database ||
+      this.applicationConfig.database.enabled !== true
+    ) {
       throw new Error(`Database not enabled (Entity: ${this.entityName})`);
     }
 
@@ -37,7 +40,10 @@ export default abstract class EntityController extends BaseController {
     }
 
     // Define entity module path
-    const entityModulePath = path.join(this.applicationConfig.database.entitiesDirectory, `${this.entityName}.${Helper.getScriptFileExtension()}`);
+    const entityModulePath = path.join(
+      this.applicationConfig.database.entitiesDirectory,
+      `${this.entityName}.${Helper.getScriptFileExtension()}`,
+    );
 
     // Import entity module
     const entityModule = await import(entityModulePath);
@@ -60,7 +66,9 @@ export default abstract class EntityController extends BaseController {
 
     const reservedPropertyKeys = ['constructor', 'toJSON'];
 
-    for (const propertyKey of Object.getOwnPropertyNames(entityClass.prototype)) {
+    for (const propertyKey of Object.getOwnPropertyNames(
+      entityClass.prototype,
+    )) {
       if (propertyKey.startsWith('__')) {
         continue;
       } else if (reservedPropertyKeys.includes(propertyKey)) {
@@ -93,8 +101,8 @@ export default abstract class EntityController extends BaseController {
     }
   };
 
-   // Pre-getMany hook (can be overridden in the child controller)
-   protected async preGetMany(_: {
+  // Pre-getMany hook (can be overridden in the child controller)
+  protected async preGetMany(_: {
     entityManager: EntityManager;
     request: FastifyRequest;
     reply: FastifyReply;
@@ -108,7 +116,13 @@ export default abstract class EntityController extends BaseController {
     entityManager: EntityManager;
     request: FastifyRequest;
     reply: FastifyReply;
-    data: { items: any[]; total: number; page: number; totalPages: number; limit: number };
+    data: {
+      items: any[];
+      total: number;
+      page: number;
+      totalPages: number;
+      limit: number;
+    };
   }): Promise<void> {
     // Default implementation: do nothing
   }
@@ -125,11 +139,15 @@ export default abstract class EntityController extends BaseController {
         [key: string]: any;
       };
     }>,
-    reply: FastifyReply
+    reply: FastifyReply,
   ) => {
     try {
       // Call preGetMany hook
-      await this.preGetMany({ entityManager: this.entityManager, request, reply });
+      await this.preGetMany({
+        entityManager: this.entityManager,
+        request,
+        reply,
+      });
 
       const EntityClass = await this.getEntity();
 
@@ -145,9 +163,13 @@ export default abstract class EntityController extends BaseController {
       const offset = (page - 1) * (limit > 0 ? limit : 0);
 
       // Filtering and sorting
-      const filters = request.query.filters ? JSON.parse(request.query.filters) : {};
+      const filters = request.query.filters
+        ? JSON.parse(request.query.filters)
+        : {};
       const sortOrder = request.query['sort-order'] || 'ASC';
-      const orderBy = request.query.sort ? { [request.query.sort]: sortOrder } : { id: sortOrder };
+      const orderBy = request.query.sort
+        ? { [request.query.sort]: sortOrder }
+        : { id: sortOrder };
 
       const normalizedQuery: { [key: string]: any } = {};
 
@@ -178,7 +200,14 @@ export default abstract class EntityController extends BaseController {
       }
 
       const entityProperties = this.getEntityProperties(EntityClass);
-      const reservedQueryKeys = ['page', 'limit', 'filters', 'sort', 'populate', 'search'];
+      const reservedQueryKeys = [
+        'page',
+        'limit',
+        'filters',
+        'sort',
+        'populate',
+        'search',
+      ];
       const searchQuery = request.query.search || '';
 
       for (const key in normalizedQuery) {
@@ -199,7 +228,9 @@ export default abstract class EntityController extends BaseController {
             }
 
             if (Array.isArray(queryValue)) {
-              options.filters[relation] = { [subProperty]: { $in: queryValue } };
+              options.filters[relation] = {
+                [subProperty]: { $in: queryValue },
+              };
             } else {
               options.filters[relation] = { [subProperty]: queryValue };
             }
@@ -230,19 +261,21 @@ export default abstract class EntityController extends BaseController {
         const searchFields = EntityClass.getSearchFields();
 
         options.filters.$or = searchFields
-          .filter((field) => {
+          .filter(field => {
             const isIntegerField = ['id', 'originId'].includes(field);
 
             return !isIntegerField;
           })
-          .map((field) => {
+          .map(field => {
             return {
               [field]: { $like: `%${searchQuery}%` },
             };
           });
       }
 
-      const populate = request.query.populate ? request.query.populate.split(',') : [];
+      const populate = request.query.populate
+        ? request.query.populate.split(',')
+        : [];
 
       // Fetch items from the database
       const [items, total] = await this.entityManager.findAndCount(
@@ -253,7 +286,7 @@ export default abstract class EntityController extends BaseController {
           offset: options.offset,
           orderBy: options.orderBy,
           populate,
-        }
+        },
       );
 
       const totalPages = limit > 0 ? Math.ceil(total / limit) : 1;
@@ -267,7 +300,12 @@ export default abstract class EntityController extends BaseController {
       };
 
       // Call postGetMany hook
-      await this.postGetMany({ entityManager: this.entityManager, request, reply, data });
+      await this.postGetMany({
+        entityManager: this.entityManager,
+        request,
+        reply,
+        data,
+      });
 
       reply.send({
         data: data.items,
@@ -299,17 +337,28 @@ export default abstract class EntityController extends BaseController {
   }
 
   public getOne = async (
-    request: FastifyRequest<{ Params: { id: number }; Querystring: { populate: string } }>,
+    request: FastifyRequest<{
+      Params: { id: number };
+      Querystring: { populate: string };
+    }>,
     reply: FastifyReply,
   ) => {
     try {
-      await this.preGetOne({ entityManager: this.entityManager, request, reply });
+      await this.preGetOne({
+        entityManager: this.entityManager,
+        request,
+        reply,
+      });
 
       const queryPopulate = request.query.populate || null;
-      const populateList: string[] = queryPopulate ? queryPopulate.split(',') : [];
+      const populateList: string[] = queryPopulate
+        ? queryPopulate.split(',')
+        : [];
 
       // Ensure populate is typed correctly for MikroORM
-      const populate = populateList.map((field) => `${field}.*`) as unknown as Populate<object, `${string}.*` | `${string}.$infer`>;
+      const populate = populateList.map(
+        field => `${field}.*`,
+      ) as unknown as Populate<object, `${string}.*` | `${string}.$infer`>;
 
       const EntityClass = await this.getEntity();
 
@@ -320,13 +369,25 @@ export default abstract class EntityController extends BaseController {
 
       const id = request.params.id;
 
-      const item = await this.entityManager.findOne(this.entityName, { id }, { populate });
+      const item = await this.entityManager.findOne(
+        this.entityName,
+        { id },
+        { populate },
+      );
 
       if (!item) {
-        return this.sendNotFoundResponse(reply, `${EntityClass.singularNameCapitalized} not found`);
+        return this.sendNotFoundResponse(
+          reply,
+          `${EntityClass.singularNameCapitalized} not found`,
+        );
       }
 
-      await this.postGetOne({ entityManager: this.entityManager, request, reply, item });
+      await this.postGetOne({
+        entityManager: this.entityManager,
+        request,
+        reply,
+        item,
+      });
 
       this.sendSuccessResponse(reply, item);
     } catch (error) {
@@ -362,7 +423,10 @@ export default abstract class EntityController extends BaseController {
 
       // Listen for preCreateOne hook
       if (this.preCreateOne) {
-        const { request: preCreateOneRequest } = await this.preCreateOne({ request, reply });
+        const { request: preCreateOneRequest } = await this.preCreateOne({
+          request,
+          reply,
+        });
         if (preCreateOneRequest) {
           request = preCreateOneRequest;
         }
@@ -379,7 +443,12 @@ export default abstract class EntityController extends BaseController {
       await this.entityManager.persistAndFlush(item);
 
       // Call postCreateOne hook
-      await this.postCreateOne({ entityManager: this.entityManager, request, reply, item });
+      await this.postCreateOne({
+        entityManager: this.entityManager,
+        request,
+        reply,
+        item,
+      });
 
       this.sendSuccessResponse(reply, item, StatusCodes.CREATED);
     } catch (error) {
@@ -394,7 +463,10 @@ export default abstract class EntityController extends BaseController {
     item: any;
   }): Promise<void> {}
 
-  public updateOne = async (request: FastifyRequest<{ Params: { id: number } }>, reply: FastifyReply) => {
+  public updateOne = async (
+    request: FastifyRequest<{ Params: { id: number } }>,
+    reply: FastifyReply,
+  ) => {
     try {
       const EntityClass = await this.getEntity();
 
@@ -414,7 +486,10 @@ export default abstract class EntityController extends BaseController {
       const item = await this.entityManager.findOne(this.entityName, { id });
 
       if (!item) {
-        return this.sendNotFoundResponse(reply, `${EntityClass.singularNameCapitalized} not found`);
+        return this.sendNotFoundResponse(
+          reply,
+          `${EntityClass.singularNameCapitalized} not found`,
+        );
       }
 
       this.entityManager.assign(item, value);
@@ -422,7 +497,12 @@ export default abstract class EntityController extends BaseController {
       await this.entityManager.persistAndFlush(item);
 
       // Call postUpdateOne hook
-      await this.postUpdateOne({ entityManager: this.entityManager, request, reply, item });
+      await this.postUpdateOne({
+        entityManager: this.entityManager,
+        request,
+        reply,
+        item,
+      });
 
       this.sendSuccessResponse(reply, item);
     } catch (error) {
@@ -430,7 +510,10 @@ export default abstract class EntityController extends BaseController {
     }
   };
 
-  public deleteOne = async (request: FastifyRequest<{ Params: { id: number } }>, reply: FastifyReply) => {
+  public deleteOne = async (
+    request: FastifyRequest<{ Params: { id: number } }>,
+    reply: FastifyReply,
+  ) => {
     try {
       const EntityClass = await this.getEntity();
 
@@ -445,7 +528,10 @@ export default abstract class EntityController extends BaseController {
       const item = await this.entityManager.findOne(this.entityName, { id });
 
       if (!item) {
-        return this.sendNotFoundResponse(reply, `${EntityClass.singularNameCapitalized} not found`);
+        return this.sendNotFoundResponse(
+          reply,
+          `${EntityClass.singularNameCapitalized} not found`,
+        );
       }
 
       await this.entityManager.removeAndFlush(item);

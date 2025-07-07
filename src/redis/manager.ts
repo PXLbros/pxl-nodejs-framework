@@ -59,7 +59,7 @@ export default class RedisManager {
   }
 
   public async disconnect(): Promise<void> {
-    await Promise.all(this.instances.map((instance) => instance.disconnect()));
+    await Promise.all(this.instances.map(instance => instance.disconnect()));
   }
 
   /**

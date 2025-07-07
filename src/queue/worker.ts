@@ -12,7 +12,14 @@ export default class QueueWorker extends Worker {
   private queueManager: QueueManager;
   private redisInstance: RedisInstance;
 
-  constructor({ applicationConfig, queueManager, name, processor, options, redisInstance }: QueueWorkerConstructorParams) {
+  constructor({
+    applicationConfig,
+    queueManager,
+    name,
+    processor,
+    options,
+    redisInstance,
+  }: QueueWorkerConstructorParams) {
     super(name, processor, options);
 
     this.applicationConfig = applicationConfig;
@@ -39,7 +46,10 @@ export default class QueueWorker extends Worker {
     Logger.error(error);
   };
 
-  private onWorkerFailed = (job: Job<any, Processor<any, any, string>, string> | undefined, error: Error): void => {
+  private onWorkerFailed = (
+    job: Job<any, Processor<any, any, string>, string> | undefined,
+    error: Error,
+  ): void => {
     // // Send job failed message to client
     // if (job && job.data.webSocketClientId) {
     //   const errorMessage = {
@@ -64,7 +74,10 @@ export default class QueueWorker extends Worker {
 
     if (job.returnvalue && job.returnvalue.webSocketClientId) {
       // Send job completed message to client
-      this.redisInstance.publisherClient.publish(WebSocketRedisSubscriberEvent.QueueJobCompleted, JSON.stringify(job.returnvalue));
+      this.redisInstance.publisherClient.publish(
+        WebSocketRedisSubscriberEvent.QueueJobCompleted,
+        JSON.stringify(job.returnvalue),
+      );
     }
 
     const startTime = jobData.startTime;

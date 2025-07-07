@@ -2,9 +2,18 @@ import { ClusterManagerConfig } from '../cluster/cluster-manager.interface.js';
 import DatabaseInstance from '../database/instance.js';
 import { EventDefinition } from '../event/manager.interface.js';
 import { QueueItem } from '../queue/index.interface.js';
-import { WebServerDebugOptions, WebServerLogConfig, WebServerOptions, WebServerRoute } from '../webserver/webserver.interface.js';
+import {
+  WebServerDebugOptions,
+  WebServerLogConfig,
+  WebServerOptions,
+  WebServerRoute,
+} from '../webserver/webserver.interface.js';
 import WebSocketServer from '../websocket/websocket-server.js';
-import { WebSocketOptions, WebSocketRoute, WebSocketType } from '../websocket/websocket.interface.js';
+import {
+  WebSocketOptions,
+  WebSocketRoute,
+  WebSocketType,
+} from '../websocket/websocket.interface.js';
 
 export type OnStartedEvent = ({ startupTime }: { startupTime: number }) => void;
 export type OnStoppedEvent = ({ runtime }: { runtime: number }) => void;
@@ -82,8 +91,7 @@ export interface ApplicationEventConfig {
   events: EventDefinition[];
 }
 
-export interface ApplicationEmailConfig {
-}
+export interface ApplicationEmailConfig {}
 
 export interface ApplicationAuthConfig {
   /** JWT secret key for token verification */
@@ -109,10 +117,19 @@ export interface ApplicationWebSocketConfig extends WebSocketOptions {
   routes: WebSocketRoute[];
 
   /** WebSocket server message handler */
-  serverMessageHandler?: (options: { ws: WebSocket; clientId: string; parsedMessage: any }) => void;
+  serverMessageHandler?: (options: {
+    ws: WebSocket;
+    clientId: string;
+    parsedMessage: any;
+  }) => void;
 
   /** WebSocket subscriber event handler */
-  subscriberEventHandler?: (options: { channel: string; message: any; webSocketServer: WebSocketServer; databaseInstance: DatabaseInstance }) => void;
+  subscriberEventHandler?: (options: {
+    channel: string;
+    message: any;
+    webSocketServer: WebSocketServer;
+    databaseInstance: DatabaseInstance;
+  }) => void;
 }
 
 export interface ApplicationWebServerConfig extends WebServerOptions {

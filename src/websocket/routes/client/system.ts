@@ -4,6 +4,6 @@ export const webSocketSystemClientRoutes: WebSocketRoute[] = [
   {
     type: 'system',
     action: 'clientList',
-    controllerName: 'system'
+    controllerName: 'system',
   },
 ];
