@@ -20,6 +20,15 @@ This is the PXL Node.js Framework - a comprehensive framework for building Node.
 ### Documentation
 - `npm run docs` - Generate TypeDoc documentation
 
+### Testing
+- `npm run test` - Run tests with Vitest
+- `npm run test:watch` - Run tests in watch mode
+- `npm run test:ui` - Run tests with Vitest UI
+- `npm run test:coverage` - Run tests with coverage report
+- `npm run test:unit` - Run unit tests only
+- `npm run test:integration` - Run integration tests only
+- `npm run test:e2e` - Run end-to-end tests only
+
 ### Local Development with Yalc
 - `yalc publish` - Publish library locally
 - `yalc add @pxl/nodejs-framework` - Add to consuming project
@@ -100,7 +109,11 @@ Applications are configured through an `ApplicationConfig` object that includes:
 ## Development Notes
 
 ### Testing
-- No specific test framework configured - check README or existing test files for approach
+- **Vitest** - Modern testing framework with TypeScript support
+- **Coverage**: V8 coverage provider with 80% thresholds
+- **Test structure**: Unit tests in `test/unit/`, integration tests in `test/integration/`, E2E tests in `test/e2e/`
+- **Mocks**: Database, Redis, and Queue mocks available in `test/utils/mocks/`
+- **Helpers**: Test utilities in `test/utils/helpers/`
 - Use `npm run build` to verify TypeScript compilation
 
 ### TypeScript Configuration
