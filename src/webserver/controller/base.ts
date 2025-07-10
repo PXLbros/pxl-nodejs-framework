@@ -3,7 +3,11 @@ import { StatusCodes } from 'http-status-codes';
 import { DatabaseInstance } from '../../database/index.js';
 import { RedisInstance } from '../../redis/index.js';
 import { QueueManager } from '../../queue/index.js';
-import { WebServerBaseControllerConstructorParams } from './base.interface.js';
+import {
+  WebServerBaseControllerConstructorParams,
+  ApiResponse,
+  ApiError,
+} from './base.interface.js';
 import { Logger } from '../../logger/index.js';
 import { ApplicationConfig } from '../../application/base-application.interface.js';
 import EventManager from '../../event/manager.js';
@@ -47,30 +51,52 @@ export default abstract class BaseController {
     this.databaseInstance = databaseInstance;
   }
 
-  protected sendSuccessResponse(
+  protected sendSuccessResponse<T = any>(
     reply: FastifyReply,
-    data: any,
+    data: T,
     statusCode: StatusCodes = StatusCodes.OK,
+    meta?: ApiResponse<T>['meta'],
   ) {
-    reply.status(statusCode).send({ data });
+    const response: ApiResponse<T> = {
+      data,
+      meta: {
+        timestamp: new Date().toISOString(),
+        requestId: reply.request.id || 'unknown',
+        ...meta,
+      },
+    };
+    reply.status(statusCode).send(response);
   }
 
-  protected sendNotFoundResponse(reply: FastifyReply, data?: any) {
-    reply.status(StatusCodes.NOT_FOUND).send(data ? { data } : undefined);
+  protected sendNotFoundResponse(
+    reply: FastifyReply,
+    message: string = 'Resource not found',
+  ) {
+    const error: ApiError = {
+      message,
+      type: 'not_found',
+      timestamp: new Date().toISOString(),
+      requestId: reply.request.id || 'unknown',
+    };
+    const response: ApiResponse = { error };
+    reply.status(StatusCodes.NOT_FOUND).send(response);
   }
 
   protected sendErrorResponse(
     reply: FastifyReply,
     error: unknown,
     statusCode: StatusCodes = StatusCodes.BAD_REQUEST,
+    errorType?: ApiError['type'],
   ) {
-    let publicErrorMessage;
+    let publicErrorMessage: string;
+    let errorDetails: any = undefined;
 
     if (this.webServerOptions.errors?.verbose === true) {
       if (error instanceof Error) {
         publicErrorMessage = error.stack || error.message;
+        errorDetails = { stack: error.stack, name: error.name };
       } else {
-        publicErrorMessage = error;
+        publicErrorMessage = String(error);
       }
     } else {
       if (process.env.NODE_ENV === 'production') {
@@ -79,22 +105,51 @@ export default abstract class BaseController {
         } else if (typeof error === 'string') {
           publicErrorMessage = error;
         } else {
-          publicErrorMessage = 'An unknown error occured';
+          publicErrorMessage = 'An unknown error occurred';
         }
       } else {
         if (error instanceof Error) {
           publicErrorMessage = error.stack || error.message;
+          errorDetails = { stack: error.stack, name: error.name };
         } else {
-          publicErrorMessage = error;
+          publicErrorMessage = String(error);
         }
       }
     }
 
     Logger.custom('webServer', error);
-
     console.error(error);
 
-    reply.status(statusCode).send({ error: publicErrorMessage });
+    const apiError: ApiError = {
+      message: publicErrorMessage,
+      type: errorType || this.getErrorType(statusCode),
+      timestamp: new Date().toISOString(),
+      requestId: reply.request.id || 'unknown',
+      ...(errorDetails && { details: errorDetails }),
+    };
+
+    const response: ApiResponse = { error: apiError };
+    reply.status(statusCode).send(response);
+  }
+
+  private getErrorType(statusCode: StatusCodes): ApiError['type'] {
+    switch (statusCode) {
+      case StatusCodes.UNAUTHORIZED:
+        return 'authentication';
+      case StatusCodes.FORBIDDEN:
+        return 'authorization';
+      case StatusCodes.NOT_FOUND:
+        return 'not_found';
+      case StatusCodes.BAD_REQUEST:
+      case StatusCodes.UNPROCESSABLE_ENTITY:
+        return 'validation';
+      case StatusCodes.INTERNAL_SERVER_ERROR:
+      case StatusCodes.BAD_GATEWAY:
+      case StatusCodes.SERVICE_UNAVAILABLE:
+        return 'server_error';
+      default:
+        return 'client_error';
+    }
   }
 
   protected async authenticateRequest(
@@ -109,6 +164,7 @@ export default abstract class BaseController {
         reply,
         'Authentication not configured.',
         StatusCodes.INTERNAL_SERVER_ERROR,
+        'server_error',
       );
       return null;
     }
@@ -120,12 +176,18 @@ export default abstract class BaseController {
         reply,
         'No token provided.',
         StatusCodes.UNAUTHORIZED,
+        'authentication',
       );
       return null;
     }
 
     if (!authHeader.startsWith('Bearer ')) {
-      this.sendErrorResponse(reply, 'Invalid token.', StatusCodes.UNAUTHORIZED);
+      this.sendErrorResponse(
+        reply,
+        'Invalid token.',
+        StatusCodes.UNAUTHORIZED,
+        'authentication',
+      );
       return null;
     }
 
@@ -147,6 +209,7 @@ export default abstract class BaseController {
           reply,
           'Invalid token payload.',
           StatusCodes.UNAUTHORIZED,
+          'authentication',
         );
         return null;
       }
@@ -162,6 +225,7 @@ export default abstract class BaseController {
         reply,
         'Invalid or expired token.',
         StatusCodes.UNAUTHORIZED,
+        'authentication',
       );
       return null;
     }

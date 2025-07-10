@@ -19,3 +19,40 @@ export interface WebServerBaseControllerConstructorParams {
 export type WebServerBaseControllerType = new (
   params: WebServerBaseControllerConstructorParams,
 ) => WebServerBaseController;
+
+export interface ApiResponse<T = any> {
+  data?: T;
+  meta?: {
+    pagination?: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+    timestamp: string;
+    requestId: string;
+  };
+  error?: ApiError;
+}
+
+export interface ApiError {
+  message: string;
+  code?: string;
+  type:
+    | 'validation'
+    | 'authentication'
+    | 'authorization'
+    | 'not_found'
+    | 'server_error'
+    | 'client_error';
+  details?: any;
+  timestamp: string;
+  requestId: string;
+}
+
+export interface PaginationParams {
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}
