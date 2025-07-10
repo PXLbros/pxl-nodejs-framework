@@ -1,5 +1,7 @@
 import cluster from 'cluster';
-import { existsSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join, resolve } from 'path';
 import { DatabaseInstance, DatabaseManager } from '../database/index.js';
 import QueueManager from '../queue/manager.js';
 import RedisManager from '../redis/manager.js';
@@ -8,7 +10,6 @@ import {
   ApplicationStartInstanceOptions,
   ApplicationStopInstanceOptions,
 } from './base-application.interface.js';
-import path from 'path';
 import ClusterManager from '../cluster/cluster-manager.js';
 import RedisInstance from '../redis/instance.js';
 import { OS, Time } from '../util/index.js';
@@ -121,7 +122,7 @@ export default abstract class BaseApplication {
     this.setupGlobalErrorHandlers();
 
     if (this.config.database && this.config.database.enabled === true) {
-      const defaultEntitiesDirectory = path.join(
+      const defaultEntitiesDirectory = join(
         this.config.rootDirectory,
         'src',
         'database',
@@ -160,23 +161,23 @@ export default abstract class BaseApplication {
       return BaseApplication.applicationVersionCache;
     }
 
-    const packagePath = new URL(
-      '../../package.json',
-      import.meta.url,
-    ).toString();
+    // Resolve the path to package.json
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
+    const packageJsonPath = resolve(__dirname, '../../package.json');
 
-    const packageJson = await import(packagePath, {
-      assert: { type: 'json' },
-    });
+    // Read and parse the file
+    const fileContents = readFileSync(packageJsonPath, 'utf-8');
+    const packageJson = JSON.parse(fileContents);
 
-    if (!packageJson?.default?.version) {
+    if (!packageJson?.version) {
       throw new Error('Application version not found');
     }
 
-    // Cache the version for future use
-    BaseApplication.applicationVersionCache = packageJson.default.version;
+    // Cache and return the version
+    BaseApplication.applicationVersionCache = packageJson.version;
 
-    return packageJson.default.version;
+    return packageJson.version;
   }
 
   /**
