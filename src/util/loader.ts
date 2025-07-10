@@ -50,7 +50,14 @@ const loadModulesInDirectory = async ({
     try {
       const importedModule = await import(filePath);
 
-      loadedModules[moduleName] = importedModule.default;
+      // Use safe property assignment to prevent prototype pollution
+      if (
+        moduleName !== '__proto__' &&
+        moduleName !== 'constructor' &&
+        moduleName !== 'prototype'
+      ) {
+        Reflect.set(loadedModules, moduleName, importedModule.default);
+      }
     } catch (error) {
       console.error(`Failed to import module ${filePath}:`, error);
     }
@@ -86,12 +93,24 @@ const loadEntityModule = async ({
   // Import entity module
   const entityModule = await import(entityModulePath);
 
-  if (!entityModule?.[entityName]) {
+  // Safe property access to prevent prototype pollution
+  if (
+    entityName === '__proto__' ||
+    entityName === 'constructor' ||
+    entityName === 'prototype'
+  ) {
+    throw new Error(`Invalid entity name (Entity: ${entityName})`);
+  }
+
+  if (
+    !entityModule ||
+    !Object.prototype.hasOwnProperty.call(entityModule, entityName)
+  ) {
     throw new Error(`Entity not found (Entity: ${entityName})`);
   }
 
   // Get entity class
-  const EntityClass = entityModule[entityName];
+  const EntityClass = Reflect.get(entityModule, entityName);
 
   // Cache the entity for future use
   entityCache.set(cacheKey, EntityClass);

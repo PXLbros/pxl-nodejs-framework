@@ -1,5 +1,5 @@
 /**
- * Deep merge two objects.
+ * Deep merge two objects safely, preventing prototype pollution.
  */
 function defaultsDeep(target: any, ...sources: any[]): any {
   if (!sources.length) return target;
@@ -7,23 +7,41 @@ function defaultsDeep(target: any, ...sources: any[]): any {
 
   if (isObject(target) && isObject(source)) {
     for (const key in source) {
-      if (isObject(source[key])) {
-        if (!target[key]) Object.assign(target, { [key]: {} });
-        defaultsDeep(target[key], source[key]);
-      } else if (Array.isArray(source[key]) && Array.isArray(target[key])) {
-        for (let i = 0; i < source[key].length; i++) {
-          if (source[key][i] === undefined && target[key][i] !== undefined) {
+      // Skip prototype pollution attempts
+      if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+        continue;
+      }
+
+      // Only process own properties to prevent prototype chain access
+      if (!Object.prototype.hasOwnProperty.call(source, key)) {
+        continue;
+      }
+
+      const sourceValue = Reflect.get(source, key);
+      if (isObject(sourceValue)) {
+        if (!Reflect.get(target, key)) {
+          Reflect.set(target, key, {});
+        }
+        defaultsDeep(Reflect.get(target, key), sourceValue);
+      } else if (
+        Array.isArray(sourceValue) &&
+        Array.isArray(Reflect.get(target, key))
+      ) {
+        const sourceArray = sourceValue;
+        const targetArray = Reflect.get(target, key);
+        for (let i = 0; i < sourceArray.length; i++) {
+          if (sourceArray[i] === undefined && targetArray[i] !== undefined) {
             continue;
           }
-          if (isObject(source[key][i])) {
-            if (typeof target[key][i] !== 'object') target[key][i] = {};
-            defaultsDeep(target[key][i], source[key][i]);
+          if (isObject(sourceArray[i])) {
+            if (typeof targetArray[i] !== 'object') targetArray[i] = {};
+            defaultsDeep(targetArray[i], sourceArray[i]);
           } else {
-            target[key][i] = source[key][i];
+            targetArray[i] = sourceArray[i];
           }
         }
       } else if (!Object.prototype.hasOwnProperty.call(target, key)) {
-        Object.assign(target, { [key]: source[key] });
+        Reflect.set(target, key, sourceValue);
       }
     }
   }
@@ -41,14 +59,27 @@ function isObject(item: any): boolean {
 type AnyObject = { [key: string]: any };
 
 /**
- * Retrieves the value from an object using a dotted key path.
+ * Retrieves the value from an object using a dotted key path safely.
  *
  * @param obj - The object to retrieve the value from.
  * @param path - The dotted key path (e.g., 'user.email').
  * @returns The value at the specified key path or undefined if not found.
  */
 function getValueFromObject(obj: AnyObject, path: string): any {
-  return path.split('.').reduce((acc, part) => acc && acc[part], obj);
+  return path.split('.').reduce((acc, part) => {
+    // Skip prototype pollution attempts
+    if (
+      part === '__proto__' ||
+      part === 'constructor' ||
+      part === 'prototype'
+    ) {
+      return undefined;
+    }
+    // Only access own properties
+    return acc && Object.prototype.hasOwnProperty.call(acc, part)
+      ? Reflect.get(acc, part)
+      : undefined;
+  }, obj);
 }
 
 /**

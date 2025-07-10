@@ -174,12 +174,37 @@ export default abstract class EntityController extends BaseController {
       const normalizedQuery: { [key: string]: any } = {};
 
       for (const key in request.query) {
+        // Skip prototype pollution attempts
+        if (
+          key === '__proto__' ||
+          key === 'constructor' ||
+          key === 'prototype'
+        ) {
+          continue;
+        }
+
+        // Only process own properties
+        if (!Object.prototype.hasOwnProperty.call(request.query, key)) {
+          continue;
+        }
+
         if (key.endsWith('[]')) {
           const normalizedKey = key.slice(0, -2);
 
-          normalizedQuery[normalizedKey] = request.query[key];
+          // Safe property assignment
+          if (
+            normalizedKey !== '__proto__' &&
+            normalizedKey !== 'constructor' &&
+            normalizedKey !== 'prototype'
+          ) {
+            Reflect.set(
+              normalizedQuery,
+              normalizedKey,
+              Reflect.get(request.query, key),
+            );
+          }
         } else {
-          normalizedQuery[key] = request.query[key];
+          Reflect.set(normalizedQuery, key, Reflect.get(request.query, key));
         }
       }
 
@@ -211,6 +236,20 @@ export default abstract class EntityController extends BaseController {
       const searchQuery = request.query.search || '';
 
       for (const key in normalizedQuery) {
+        // Skip prototype pollution attempts
+        if (
+          key === '__proto__' ||
+          key === 'constructor' ||
+          key === 'prototype'
+        ) {
+          continue;
+        }
+
+        // Only process own properties
+        if (!Object.prototype.hasOwnProperty.call(normalizedQuery, key)) {
+          continue;
+        }
+
         if (reservedQueryKeys.includes(key)) {
           continue;
         }
@@ -219,7 +258,19 @@ export default abstract class EntityController extends BaseController {
           const [relation, subProperty] = key.split('.');
 
           if (relation && subProperty) {
-            let queryValue = normalizedQuery[key];
+            // Validate relation and subProperty names
+            if (
+              relation === '__proto__' ||
+              relation === 'constructor' ||
+              relation === 'prototype' ||
+              subProperty === '__proto__' ||
+              subProperty === 'constructor' ||
+              subProperty === 'prototype'
+            ) {
+              continue;
+            }
+
+            let queryValue = Reflect.get(normalizedQuery, key);
 
             if (!queryValue) continue;
 
@@ -228,18 +279,20 @@ export default abstract class EntityController extends BaseController {
             }
 
             if (Array.isArray(queryValue)) {
-              options.filters[relation] = {
+              Reflect.set(options.filters, relation, {
                 [subProperty]: { $in: queryValue },
-              };
+              });
             } else {
-              options.filters[relation] = { [subProperty]: queryValue };
+              Reflect.set(options.filters, relation, {
+                [subProperty]: queryValue,
+              });
             }
           }
 
           continue;
         }
 
-        let queryValue = normalizedQuery[key];
+        let queryValue = Reflect.get(normalizedQuery, key);
 
         if (!queryValue) {
           continue;
@@ -250,9 +303,9 @@ export default abstract class EntityController extends BaseController {
         }
 
         if (Array.isArray(queryValue)) {
-          options.filters[key] = { $in: queryValue };
+          Reflect.set(options.filters, key, { $in: queryValue });
         } else {
-          options.filters[key] = queryValue;
+          Reflect.set(options.filters, key, queryValue);
         }
       }
 

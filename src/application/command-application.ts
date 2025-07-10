@@ -84,8 +84,11 @@ export default class CommandApplication extends BaseApplication {
       extensions: ['.ts', '.js'],
     });
 
-    // Find command by name
-    const CommandClass = commands[inputCommandName];
+    // Find command by name - use safe property access to prevent object injection
+    let CommandClass = null;
+    if (Object.prototype.hasOwnProperty.call(commands, inputCommandName)) {
+      CommandClass = Reflect.get(commands, inputCommandName);
+    }
 
     if (!CommandClass) {
       Logger.warn('Command not found', { Command: inputCommandName });

@@ -67,7 +67,32 @@ export default class WebSocketClientManager {
       return;
     }
 
-    client[key] = data;
+    // Prevent prototype pollution attacks
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+      console.warn(`Blocked attempt to modify dangerous property: ${key}`);
+      return;
+    }
+
+    // Define allowed client properties to prevent unauthorized modifications
+    const allowedClientProperties = [
+      'id',
+      'ws',
+      'room',
+      'userId',
+      'username',
+      'metadata',
+      'connectedAt',
+      'lastActivity',
+      'status',
+      'permissions',
+    ];
+
+    if (!allowedClientProperties.includes(key)) {
+      console.warn(`Blocked attempt to modify unauthorized property: ${key}`);
+      return;
+    }
+
+    Reflect.set(client, key, data);
 
     this.clients.set(clientId, client);
 
