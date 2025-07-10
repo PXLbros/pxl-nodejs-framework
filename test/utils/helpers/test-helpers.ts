@@ -1,31 +1,31 @@
-import { vi } from 'vitest'
+import { vi } from 'vitest';
 
 /**
  * Creates a mock function that resolves to the provided value
  */
 export function createMockResolves<T>(value: T) {
-  return vi.fn().mockResolvedValue(value)
+  return vi.fn().mockResolvedValue(value);
 }
 
 /**
  * Creates a mock function that rejects with the provided error
  */
 export function createMockRejects(error: Error) {
-  return vi.fn().mockRejectedValue(error)
+  return vi.fn().mockRejectedValue(error);
 }
 
 /**
  * Creates a mock function that returns the provided value
  */
 export function createMockReturns<T>(value: T) {
-  return vi.fn().mockReturnValue(value)
+  return vi.fn().mockReturnValue(value);
 }
 
 /**
  * Wait for a specified amount of time
  */
 export function delay(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms))
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 /**
@@ -39,26 +39,26 @@ export function createMockConfig(overrides: Record<string, any> = {}) {
       database: 'test_db',
       username: 'test_user',
       password: 'test_pass',
-      ...overrides.database
+      ...overrides.database,
     },
     redis: {
       host: 'localhost',
       port: 6379,
-      ...overrides.redis
+      ...overrides.redis,
     },
     queue: {
       enabled: false,
-      ...overrides.queue
+      ...overrides.queue,
     },
     cluster: {
       enabled: false,
-      ...overrides.cluster
+      ...overrides.cluster,
     },
     webServer: {
       enabled: false,
       port: 3000,
-      ...overrides.webServer
+      ...overrides.webServer,
     },
-    ...overrides
-  }
+    ...overrides,
+  };
 }

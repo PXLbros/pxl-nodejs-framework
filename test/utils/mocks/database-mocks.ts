@@ -1,4 +1,4 @@
-import { vi } from 'vitest'
+import { vi } from 'vitest';
 
 /**
  * Mock for MikroORM EntityManager
@@ -16,7 +16,7 @@ export const mockEntityManager = {
   rollback: vi.fn(),
   transactional: vi.fn(),
   close: vi.fn(),
-}
+};
 
 /**
  * Mock for DatabaseInstance
@@ -27,7 +27,7 @@ export const mockDatabaseInstance = {
   connect: vi.fn(),
   disconnect: vi.fn(),
   getName: vi.fn(() => 'test_db'),
-}
+};
 
 /**
  * Mock for DatabaseManager
@@ -38,4 +38,4 @@ export const mockDatabaseManager = {
   getAllInstances: vi.fn(() => [mockDatabaseInstance]),
   closeAll: vi.fn(),
   isInitialized: vi.fn(() => true),
-}
+};

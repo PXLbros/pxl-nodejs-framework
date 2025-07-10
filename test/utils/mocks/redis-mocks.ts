@@ -1,4 +1,4 @@
-import { vi } from 'vitest'
+import { vi } from 'vitest';
 
 /**
  * Mock for Redis client
@@ -18,7 +18,7 @@ export const mockRedisClient = {
   on: vi.fn(),
   off: vi.fn(),
   emit: vi.fn(),
-}
+};
 
 /**
  * Mock for RedisInstance
@@ -29,7 +29,7 @@ export const mockRedisInstance = {
   connect: vi.fn(),
   disconnect: vi.fn(),
   getName: vi.fn(() => 'test_redis'),
-}
+};
 
 /**
  * Mock for RedisManager
@@ -40,4 +40,4 @@ export const mockRedisManager = {
   getAllInstances: vi.fn(() => [mockRedisInstance]),
   closeAll: vi.fn(),
   isInitialized: vi.fn(() => true),
-}
+};

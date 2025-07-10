@@ -1,4 +1,4 @@
-import { vi } from 'vitest'
+import { vi } from 'vitest';
 
 /**
  * Mock for BullMQ Queue
@@ -16,7 +16,7 @@ export const mockQueue = {
   pause: vi.fn(),
   resume: vi.fn(),
   isPaused: vi.fn(),
-}
+};
 
 /**
  * Mock for BullMQ Worker
@@ -29,7 +29,7 @@ export const mockWorker = {
   resume: vi.fn(),
   isPaused: vi.fn(),
   isRunning: vi.fn(),
-}
+};
 
 /**
  * Mock for QueueInstance
@@ -41,7 +41,7 @@ export const mockQueueInstance = {
   processJobs: vi.fn(),
   close: vi.fn(),
   getName: vi.fn(() => 'test_queue'),
-}
+};
 
 /**
  * Mock for QueueManager
@@ -52,4 +52,4 @@ export const mockQueueManager = {
   getAllInstances: vi.fn(() => [mockQueueInstance]),
   closeAll: vi.fn(),
   isInitialized: vi.fn(() => true),
-}
+};
