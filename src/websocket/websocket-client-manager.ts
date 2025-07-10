@@ -18,7 +18,7 @@ export default class WebSocketClientManager {
   }) {
     this.clients.set(clientId, {
       ws,
-      lastActivity: lastActivity,
+      lastActivity,
     });
 
     this.broadcastClientList('addClient');
@@ -28,11 +28,7 @@ export default class WebSocketClientManager {
     this.printClients();
   }
 
-  public getClientId({
-    ws,
-  }: {
-    ws: WebSocket;
-  }): string | undefined {
+  public getClientId({ ws }: { ws: WebSocket }): string | undefined {
     return [...this.clients.entries()].find(
       ([_, value]) => value.ws === ws,
     )?.[0];
@@ -83,10 +79,24 @@ export default class WebSocketClientManager {
   }
 
   public removeClient(clientId: string) {
+    const client = this.clients.get(clientId);
+
+    // Clean up WebSocket connection if it exists
+    if (client?.ws) {
+      try {
+        client.ws.removeAllListeners();
+        if (client.ws.readyState === WebSocket.OPEN) {
+          client.ws.close();
+        }
+      } catch (error) {
+        log('Error cleaning up WebSocket connection', {
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
     this.clients.delete(clientId);
-
     this.broadcastClientList('removeClient');
-
     this.printClients();
   }
 
@@ -119,24 +129,24 @@ export default class WebSocketClientManager {
   }) {
     const clients = [...this.clients.entries()];
 
-    const client = clients.find(
-      ([_, clientData]) => {
-        const deepKeyValue = Helper.getValueFromObject(clientData, key);
+    const client = clients.find(([_, clientData]) => {
+      const deepKeyValue = Helper.getValueFromObject(clientData, key);
 
-        const isValueMatching = deepKeyValue === value;
+      const isValueMatching = deepKeyValue === value;
 
-        if (userType && clientData.user?.userType !== userType) {
-          return false;
-        }
-
-        return isValueMatching;
+      if (userType && clientData.user?.userType !== userType) {
+        return false;
       }
-    );
 
-    const formattedClient = client ? {
-      clientId: client[0],
-      ...client[1],
-    } : undefined;
+      return isValueMatching;
+    });
+
+    const formattedClient = client
+      ? {
+          clientId: client[0],
+          ...client[1],
+        }
+      : undefined;
 
     if (requireWs && !formattedClient?.ws) {
       return undefined;
@@ -169,16 +179,13 @@ export default class WebSocketClientManager {
 
       clientInfo.ws.close();
 
-      log(
-        'WebSocket client was disconnected due to inactivity',
-        {
-          ID: clientId,
-          'Time Connected': Time.formatTime({
-            time: connectedTime,
-            format: 's',
-          }),
-        },
-      );
+      log('WebSocket client was disconnected due to inactivity', {
+        ID: clientId,
+        'Time Connected': Time.formatTime({
+          time: connectedTime,
+          format: 's',
+        }),
+      });
     }
 
     this.removeClient(clientId);
@@ -191,9 +198,11 @@ export default class WebSocketClientManager {
   public printClients() {
     const numClients = this.clients.size;
 
-    const workerId = cluster.isWorker && cluster.worker ? cluster.worker.id : null;
+    const workerId =
+      cluster.isWorker && cluster.worker ? cluster.worker.id : null;
 
-    let logOutput = '\n-------------------------------------------------------\n';
+    let logOutput =
+      '\n-------------------------------------------------------\n';
     logOutput += `Connected clients (Count: ${numClients}${workerId ? ` | Worker: ${workerId}` : ''}):\n`;
     logOutput += '-------------------------------------------------------\n';
 
@@ -216,18 +225,48 @@ export default class WebSocketClientManager {
     const clientList = this.getClientList();
 
     this.clients.forEach(({ ws }) => {
-      if (!ws) {
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
         return;
       }
 
-      ws.send(
-        JSON.stringify({
-          type: 'system',
-          action: 'clientList',
-          clientListType: type,
-          data: clientList,
-        }),
-      );
+      try {
+        ws.send(
+          JSON.stringify({
+            type: 'system',
+            action: 'clientList',
+            clientListType: type,
+            data: clientList,
+          }),
+        );
+      } catch (error) {
+        // Handle send errors (e.g., connection closed)
+        log('Error broadcasting client list', {
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
     });
+  }
+
+  public cleanup(): void {
+    // Clean up all client connections
+    this.clients.forEach((client, clientId) => {
+      if (client.ws) {
+        try {
+          client.ws.removeAllListeners();
+          if (client.ws.readyState === WebSocket.OPEN) {
+            client.ws.close();
+          }
+        } catch (error) {
+          log('Error cleaning up client connection', {
+            clientId,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
+      }
+    });
+
+    // Clear all clients
+    this.clients.clear();
+    log('WebSocket client manager cleaned up');
   }
 }

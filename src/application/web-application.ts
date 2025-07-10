@@ -1,4 +1,3 @@
-import cluster from 'cluster';
 import RedisInstance from '../redis/instance.js';
 import DatabaseInstance from '../database/instance.js';
 import WebServer from '../webserver/webserver.js';
@@ -36,10 +35,7 @@ export default class WebApplication extends BaseApplication {
       },
     };
 
-    const mergedConfig = Helper.defaultsDeep(
-      config,
-      defaultConfig,
-    );
+    const mergedConfig = Helper.defaultsDeep(config, defaultConfig);
 
     this.config = mergedConfig;
   }
@@ -55,6 +51,8 @@ export default class WebApplication extends BaseApplication {
     queueManager: QueueManager;
     eventManager: EventManager;
   }): Promise<void> {
+    console.log('HELLO THERE');
+
     if (this.config.webServer?.enabled) {
       // Initialize web server
       this.webServer = new WebServer({
@@ -64,8 +62,7 @@ export default class WebApplication extends BaseApplication {
         options: {
           host: this.config.webServer.host,
           port: this.config.webServer.port,
-          controllersDirectory:
-            this.config.webServer.controllersDirectory,
+          controllersDirectory: this.config.webServer.controllersDirectory,
           cors: this.config.webServer.cors,
           log: this.config.webServer.log,
           debug: this.config.webServer.debug,
@@ -89,9 +86,7 @@ export default class WebApplication extends BaseApplication {
 
     if (this.config.webSocket?.enabled) {
       if (!this.webServer) {
-        throw new Error(
-          'WebSocket requires web server to be enabled',
-        );
+        throw new Error('WebSocket requires web server to be enabled');
       }
 
       let webSocketServer: WebSocketServer | undefined;
@@ -201,11 +196,7 @@ export default class WebApplication extends BaseApplication {
     }
   }
 
-  protected async onStopped({
-    runtime,
-  }: {
-    runtime: number;
-  }): Promise<void> {
+  protected async onStopped({ runtime }: { runtime: number }): Promise<void> {
     if (this.config.log?.shutdown) {
       Logger.info('Application stopped', {
         Name: this.config.name,

@@ -63,10 +63,12 @@ npm run build
 This project uses GitHub Actions for continuous integration and deployment:
 
 ### Build and Test (CI)
+
 - Runs on all pull requests
 - Installs dependencies, runs linting, builds the project, and runs tests
 
 ### Build and Publish
+
 - Runs on pushes to `main`/`master` branches and version tags
 - Builds the project and publishes to npm
 - Beta releases are published on pushes to main/master branches
@@ -75,6 +77,7 @@ This project uses GitHub Actions for continuous integration and deployment:
 ### Setup for Publishing
 
 To enable automatic publishing, configure the following repository secret:
+
 - `NPM_TOKEN`: Your npm authentication token
 
 > **Note**: The `dist/` folder is gitignored and automatically generated during the CI/CD process. Do not commit built files to the repository.
@@ -102,6 +105,7 @@ npm run release -- --version 2.1.3
 ### Release Process
 
 The release script will:
+
 1. Check that your working directory is clean
 2. Verify you're on the main/master branch
 3. Update the version in `package.json`
@@ -141,6 +145,7 @@ This will generate the documentation in the `docs/` folder. You can then open `d
 ### Automated Documentation Deployment
 
 Documentation is automatically built and deployed to GitHub Pages when:
+
 - Code is pushed to the `main` or `master` branch
 - Pull requests are opened against `main` or `master` branch
 - Manual workflow dispatch is triggered

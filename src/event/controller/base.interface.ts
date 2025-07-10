@@ -12,4 +12,6 @@ export interface EventControllerConstructorParams {
   databaseInstance: DatabaseInstance | null;
 }
 
-export type EventControllerType = new (params: EventControllerConstructorParams) => EventBaseController;
+export type EventControllerType = new (
+  params: EventControllerConstructorParams,
+) => EventBaseController;

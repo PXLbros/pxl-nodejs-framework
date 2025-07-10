@@ -1,5 +1,9 @@
 import { existsSync } from 'fs';
-import { WebSocketRoute, WebSocketMessageHandler, WebSocketType } from './websocket.interface.js';
+import {
+  WebSocketRoute,
+  WebSocketMessageHandler,
+  WebSocketType,
+} from './websocket.interface.js';
 import { log, getRouteKey, parseServerMessage } from './utils.js';
 import { WebSocketServerBaseControllerType } from './controller/server/base.interface.js';
 import { WebSocketClientBaseControllerType } from './controller/client/base.interface.js';
@@ -18,13 +22,18 @@ export default abstract class WebSocketBase {
   protected abstract shouldPrintRoutes(): boolean;
   protected abstract handleMessageError(clientId: string, error: string): void;
 
-  protected async configureRoutes(routes: WebSocketRoute[], controllersDirectory: string): Promise<void> {
+  protected async configureRoutes(
+    routes: WebSocketRoute[],
+    controllersDirectory: string,
+  ): Promise<void> {
     // log ('Configuring routes', { Type: this.type, 'Controllers Directory': controllersDirectory });
 
     const controllersDirectoryExists = await existsSync(controllersDirectory);
 
     if (!controllersDirectoryExists) {
-      log('Controllers directory not found', { Directory: controllersDirectory });
+      log('Controllers directory not found', {
+        Directory: controllersDirectory,
+      });
 
       return;
     }
@@ -42,7 +51,9 @@ export default abstract class WebSocketBase {
     });
 
     for (const route of routes) {
-      let ControllerClass: WebSocketServerBaseControllerType | WebSocketClientBaseControllerType;
+      let ControllerClass:
+        | WebSocketServerBaseControllerType
+        | WebSocketClientBaseControllerType;
 
       // log('Registering route', {
       //   Type: route.type,
@@ -71,7 +82,9 @@ export default abstract class WebSocketBase {
 
       const controllerInstance = new ControllerClass(controllerDependencies);
 
-      const controllerHandler = controllerInstance[route.action as keyof typeof controllerInstance] as WebSocketMessageHandler;
+      const controllerHandler = controllerInstance[
+        route.action as keyof typeof controllerInstance
+      ] as WebSocketMessageHandler;
       const routeKey = getRouteKey(route.type, route.action);
 
       this.routeHandlers.set(routeKey, controllerHandler);
@@ -84,7 +97,11 @@ export default abstract class WebSocketBase {
     }
   }
 
-  protected async handleServerMessage(ws: WebSocket, message: WebSocket.Data, clientId: string): Promise<void | any> {
+  protected async handleServerMessage(
+    ws: WebSocket,
+    message: WebSocket.Data,
+    clientId: string,
+  ): Promise<void | any> {
     try {
       const parsedMessage = parseServerMessage(message);
       const type = parsedMessage.type;
@@ -96,12 +113,19 @@ export default abstract class WebSocketBase {
         Action: action ?? '-',
       });
 
-      const routeKey = getRouteKey(parsedMessage.type as string, parsedMessage.action as string);
+      const routeKey = getRouteKey(
+        parsedMessage.type as string,
+        parsedMessage.action as string,
+      );
 
       const messageHandler = this.routeHandlers.get(routeKey);
 
       if (messageHandler) {
-        const messageResponse = await messageHandler(ws, clientId, parsedMessage.data);
+        const messageResponse = await messageHandler(
+          ws,
+          clientId,
+          parsedMessage.data,
+        );
 
         return {
           type,
@@ -111,7 +135,11 @@ export default abstract class WebSocketBase {
       } else {
         // throw new Error(`Route handler not found (Route Key: ${routeKey} | Type: ${type} | Action: ${action})`);
 
-        log('Route handler not found', { RouteKey: routeKey, Type: type, Action: action });
+        log('Route handler not found', {
+          RouteKey: routeKey,
+          Type: type,
+          Action: action,
+        });
       }
 
       // if (
@@ -128,7 +156,8 @@ export default abstract class WebSocketBase {
       //   );
       // }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
 
       log(errorMessage);
 

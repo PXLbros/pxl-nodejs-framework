@@ -10,7 +10,12 @@ export default class RedisInstance {
   public publisherClient: Redis;
   public subscriberClient: Redis;
 
-  constructor({ redisManager, client, publisherClient, subscriberClient }: RedisInstanceProps) {
+  constructor({
+    redisManager,
+    client,
+    publisherClient,
+    subscriberClient,
+  }: RedisInstanceProps) {
     this.redisManager = redisManager;
 
     this.client = client;
@@ -20,9 +25,19 @@ export default class RedisInstance {
 
   public async disconnect(): Promise<void> {
     const disconnectPromises = [
-      this.subscriberClient.quit().catch(() => Logger.error('Could not disconnect Redis subscriber client')),
-      this.publisherClient.quit().catch(() => Logger.error('Could not disconnect Redis publisherClient')),
-      this.client.quit().catch(() => Logger.error('Could not disconnect Redis client')),
+      this.subscriberClient
+        .quit()
+        .catch(() =>
+          Logger.error('Could not disconnect Redis subscriber client'),
+        ),
+      this.publisherClient
+        .quit()
+        .catch(() =>
+          Logger.error('Could not disconnect Redis publisherClient'),
+        ),
+      this.client
+        .quit()
+        .catch(() => Logger.error('Could not disconnect Redis client')),
     ];
 
     await Promise.all(disconnectPromises);
@@ -33,7 +48,7 @@ export default class RedisInstance {
   public isConnected(): Promise<boolean> {
     return new Promise((resolve, reject) => {
       if (this.client) {
-        this.client.ping((error) => {
+        this.client.ping(error => {
           if (error) {
             reject(error);
           } else {
@@ -55,7 +70,15 @@ export default class RedisInstance {
    * @throws Error if the value type is not supported.
    * @returns A Promise that resolves when the value is set in the cache.
    */
-  public async setCache({ key, value, expiration }: { key: string; value: unknown; expiration?: number }): Promise<void> {
+  public async setCache({
+    key,
+    value,
+    expiration,
+  }: {
+    key: string;
+    value: unknown;
+    expiration?: number;
+  }): Promise<void> {
     let formattedValue: string | number | Buffer;
 
     if (typeof value === 'object') {
@@ -81,8 +104,7 @@ export default class RedisInstance {
     return cacheValue;
   }
 
-  public async deleteCache({ key }: { key: string
-  }): Promise<void> {
+  public async deleteCache({ key }: { key: string }): Promise<void> {
     await this.client.del(key);
   }
 }

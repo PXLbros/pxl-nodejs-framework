@@ -16,4 +16,6 @@ export interface WebServerBaseControllerConstructorParams {
   databaseInstance: DatabaseInstance;
 }
 
-export type WebServerBaseControllerType = new (params: WebServerBaseControllerConstructorParams) => WebServerBaseController;
+export type WebServerBaseControllerType = new (
+  params: WebServerBaseControllerConstructorParams,
+) => WebServerBaseController;

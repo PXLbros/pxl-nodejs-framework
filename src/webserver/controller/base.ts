@@ -17,7 +17,7 @@ export interface AuthenticatedUser {
   payload: any;
 }
 
-export default abstract class {
+export default abstract class BaseController {
   protected workerId: number | undefined;
 
   protected applicationConfig: ApplicationConfig;
@@ -28,7 +28,14 @@ export default abstract class {
   protected eventManager: EventManager;
   protected databaseInstance: DatabaseInstance;
 
-  constructor({ applicationConfig, webServerOptions, redisInstance, queueManager, eventManager, databaseInstance }: WebServerBaseControllerConstructorParams) {
+  constructor({
+    applicationConfig,
+    webServerOptions,
+    redisInstance,
+    queueManager,
+    eventManager,
+    databaseInstance,
+  }: WebServerBaseControllerConstructorParams) {
     this.workerId = cluster.worker?.id;
 
     this.applicationConfig = applicationConfig;
@@ -40,7 +47,11 @@ export default abstract class {
     this.databaseInstance = databaseInstance;
   }
 
-  protected sendSuccessResponse(reply: FastifyReply, data: any, statusCode: StatusCodes = StatusCodes.OK) {
+  protected sendSuccessResponse(
+    reply: FastifyReply,
+    data: any,
+    statusCode: StatusCodes = StatusCodes.OK,
+  ) {
     reply.status(statusCode).send({ data });
   }
 
@@ -48,7 +59,11 @@ export default abstract class {
     reply.status(StatusCodes.NOT_FOUND).send(data ? { data } : undefined);
   }
 
-  protected sendErrorResponse(reply: FastifyReply, error: unknown, statusCode: StatusCodes = StatusCodes.BAD_REQUEST) {
+  protected sendErrorResponse(
+    reply: FastifyReply,
+    error: unknown,
+    statusCode: StatusCodes = StatusCodes.BAD_REQUEST,
+  ) {
     let publicErrorMessage;
 
     if (this.webServerOptions.errors?.verbose === true) {
@@ -61,7 +76,7 @@ export default abstract class {
       if (process.env.NODE_ENV === 'production') {
         if (error instanceof Error) {
           publicErrorMessage = 'Something went wrong';
-        } else if (error === typeof 'string') {
+        } else if (typeof error === 'string') {
           publicErrorMessage = error;
         } else {
           publicErrorMessage = 'An unknown error occured';
@@ -82,19 +97,30 @@ export default abstract class {
     reply.status(statusCode).send({ error: publicErrorMessage });
   }
 
-  protected async authenticateRequest(request: FastifyRequest, reply: FastifyReply): Promise<AuthenticatedUser | null> {
+  protected async authenticateRequest(
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<AuthenticatedUser | null> {
     // Get JWT secret key from application config
     const jwtSecretKey = this.applicationConfig.auth?.jwtSecretKey;
 
     if (!jwtSecretKey) {
-      this.sendErrorResponse(reply, 'Authentication not configured.', StatusCodes.INTERNAL_SERVER_ERROR);
+      this.sendErrorResponse(
+        reply,
+        'Authentication not configured.',
+        StatusCodes.INTERNAL_SERVER_ERROR,
+      );
       return null;
     }
 
     const authHeader = request.headers.authorization;
 
     if (!authHeader) {
-      this.sendErrorResponse(reply, 'No token provided.', StatusCodes.UNAUTHORIZED);
+      this.sendErrorResponse(
+        reply,
+        'No token provided.',
+        StatusCodes.UNAUTHORIZED,
+      );
       return null;
     }
 
@@ -104,15 +130,24 @@ export default abstract class {
     }
 
     try {
-      const importedJwtSecretKey = await Jwt.importJwtSecretKey({ jwtSecretKey });
+      const importedJwtSecretKey = await Jwt.importJwtSecretKey({
+        jwtSecretKey,
+      });
 
       // Remove "Bearer " from token
       const jwtAccessToken = authHeader.substring(7);
 
-      const { payload } = await Jwt.jwtVerify(jwtAccessToken, importedJwtSecretKey);
+      const { payload } = await Jwt.jwtVerify(
+        jwtAccessToken,
+        importedJwtSecretKey,
+      );
 
       if (!payload.sub) {
-        this.sendErrorResponse(reply, 'Invalid token payload.', StatusCodes.UNAUTHORIZED);
+        this.sendErrorResponse(
+          reply,
+          'Invalid token payload.',
+          StatusCodes.UNAUTHORIZED,
+        );
         return null;
       }
 
@@ -120,10 +155,14 @@ export default abstract class {
 
       return {
         userId,
-        payload
+        payload,
       };
-    } catch (error) {
-      this.sendErrorResponse(reply, 'Invalid or expired token.', StatusCodes.UNAUTHORIZED);
+    } catch {
+      this.sendErrorResponse(
+        reply,
+        'Invalid or expired token.',
+        StatusCodes.UNAUTHORIZED,
+      );
       return null;
     }
   }

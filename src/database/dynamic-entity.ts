@@ -22,15 +22,21 @@ export abstract class DynamicEntity extends BaseEntity {
   }
 
   public static get singularNameCapitalized(): string {
-    return this.singularName.charAt(0).toUpperCase() + this.singularName.slice(1).toLowerCase();
+    return (
+      this.singularName.charAt(0).toUpperCase() +
+      this.singularName.slice(1).toLowerCase()
+    );
   }
 
   public static get pluralNameCapitalized(): string {
-    return this.pluralName.charAt(0).toUpperCase() + this.pluralName.slice(1).toLowerCase();
+    return (
+      this.pluralName.charAt(0).toUpperCase() +
+      this.pluralName.slice(1).toLowerCase()
+    );
   }
 
   public static validate<T>(item: T, isCreating: boolean): ValidationResult {
-    const schemaName = isCreating ? 'schema'  : 'schemaUpdate';
+    const schemaName = isCreating ? 'schema' : 'schemaUpdate';
 
     if (!this[schemaName]) {
       throw new Error('Schema not defined in entity.');
@@ -39,5 +45,7 @@ export abstract class DynamicEntity extends BaseEntity {
     return this[schemaName].validate(item, { abortEarly: false });
   }
 
-  public static getSearchFields(): string[] { return []; }
+  public static getSearchFields(): string[] {
+    return [];
+  }
 }

@@ -4,7 +4,11 @@ import logger from '../../../logger/logger.js';
 import { Logger } from '../../../logger/index.js';
 
 export default class SystemController extends WebSocketServerBaseController {
-  public joinRoom = (clientWebSocket: WebSocket, webSocketClientId: string, data: any): any => {
+  public joinRoom = (
+    clientWebSocket: WebSocket,
+    webSocketClientId: string,
+    data: any,
+  ): any => {
     const userId = data.userId || null;
     const userType = data.userType || null;
     const username = data.username || null;
@@ -32,12 +36,16 @@ export default class SystemController extends WebSocketServerBaseController {
       Logger.error(error);
 
       return {
-        error
+        error,
       };
     }
-  }
+  };
 
-  public leaveRoom = (clientWebSocket: WebSocket, webSocketClientId: string, data: any): any => {
+  public leaveRoom = (
+    clientWebSocket: WebSocket,
+    webSocketClientId: string,
+    data: any,
+  ): any => {
     if (!data?.userId) {
       logger.warn('Missing user ID when leaving room');
 
@@ -45,6 +53,9 @@ export default class SystemController extends WebSocketServerBaseController {
     }
 
     // Leave room
-    this.webSocketServer.leaveRoom({ ws: clientWebSocket, roomName: data.roomName });
-  }
+    this.webSocketServer.leaveRoom({
+      ws: clientWebSocket,
+      roomName: data.roomName,
+    });
+  };
 }

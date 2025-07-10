@@ -1,5 +1,5 @@
 import { HTTPMethods } from 'fastify';
-import { DatabaseInstance, DynamicEntity } from '../database/index.js';
+import { DatabaseInstance } from '../database/index.js';
 import { QueueManager } from '../queue/index.js';
 import { RedisInstance } from '../redis/index.js';
 import { WebServerBaseControllerType } from './controller/base.interface.js';
@@ -117,11 +117,14 @@ export interface WebServerCorsEnabledOptionsBase {
   enabled: true;
 }
 
-export interface WebServerCorsEnabledOptions extends WebServerCorsEnabledOptionsBase {
+export interface WebServerCorsEnabledOptions
+  extends WebServerCorsEnabledOptionsBase {
   urls: string[];
 }
 
-export type WebServerCorsOptions = WebServerCorsDisabledOptionsBase | WebServerCorsEnabledOptions;
+export type WebServerCorsOptions =
+  | WebServerCorsDisabledOptionsBase
+  | WebServerCorsEnabledOptions;
 
 export interface WebServerErrorsOptions {
   verbose: boolean;

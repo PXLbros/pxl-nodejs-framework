@@ -11,11 +11,9 @@ import {
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Helper } from '../../util/index.js';
 import { AwsS3ConstructorOptions } from './s3.interface.js';
-import { createWriteStream } from 'fs';
-import { existsSync, mkdirSync } from 'fs';
-import { pipeline } from 'stream';
+import { createWriteStream, existsSync, mkdirSync } from 'fs';
+import { pipeline, Readable } from 'stream';
 import { promisify } from 'util';
-import { Readable } from 'stream';
 import { Logger } from '../../logger/index.js';
 import { dirname } from 'path';
 
@@ -34,19 +32,15 @@ export default class AwsS3 {
 
   constructor(options: Partial<AwsS3ConstructorOptions>) {
     // Define default options
-    const defaultOptions: Partial<AwsS3ConstructorOptions> =
-      {
-        region: 'us-east-1',
-        localstack: {
-          enabled: false,
-          port: 4566,
-        },
-      };
+    const defaultOptions: Partial<AwsS3ConstructorOptions> = {
+      region: 'us-east-1',
+      localstack: {
+        enabled: false,
+        port: 4566,
+      },
+    };
 
-    this.options = Helper.defaultsDeep(
-      options,
-      defaultOptions,
-    );
+    this.options = Helper.defaultsDeep(options, defaultOptions);
 
     const s3ClientConfig: S3ClientConfig = {
       region: this.options.region,
@@ -56,9 +50,7 @@ export default class AwsS3 {
       s3ClientConfig.forcePathStyle = true;
 
       if (!this.options.endpoint) {
-        throw new Error(
-          'Endpoint is required when using LocalStack',
-        );
+        throw new Error('Endpoint is required when using LocalStack');
       }
 
       // s3ClientConfig.endpoint = `http://s3.localhost.localstack.cloud:${this.options.localstack.port}`; // Works when the Node.js API is calling from within the Docker container
@@ -77,8 +69,7 @@ export default class AwsS3 {
       ) {
         s3ClientConfig.credentials = {
           accessKeyId: this.options.credentials.accessKeyId,
-          secretAccessKey:
-            this.options.credentials.secretAccessKey,
+          secretAccessKey: this.options.credentials.secretAccessKey,
         };
       }
     }
@@ -119,9 +110,7 @@ export default class AwsS3 {
     forceDownload?: boolean;
     publicRead?: boolean;
   }): Promise<string> {
-    let contentDisposition = forceDownload
-      ? 'attachment'
-      : 'inline';
+    let contentDisposition = forceDownload ? 'attachment' : 'inline';
     contentDisposition += `; filename="${path.split('/').pop()}"`;
 
     const putObjectOptions: PutObjectCommandInput = {
@@ -291,7 +280,7 @@ export default class AwsS3 {
 
       if (!existsSync(destinationFilePath)) {
         throw new Error(
-          `Could not find downloaded file at ${destinationFilePath}`
+          `Could not find downloaded file at ${destinationFilePath}`,
         );
       }
 
@@ -327,11 +316,9 @@ export default class AwsS3 {
       });
 
       // Set the expiration for the signed URL to 1 hour
-      const signedUrl = await getSignedUrl(
-        this.client,
-        command,
-        { expiresIn: 3600 },
-      );
+      const signedUrl = await getSignedUrl(this.client, command, {
+        expiresIn: 3600,
+      });
 
       // Log the signed URL
       Logger.info('Generated signed URL', {

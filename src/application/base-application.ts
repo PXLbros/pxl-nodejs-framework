@@ -1,9 +1,8 @@
 import cluster from 'cluster';
-import { existsSync } from 'fs';
-import {
-  DatabaseInstance,
-  DatabaseManager,
-} from '../database/index.js';
+import { existsSync, readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join, resolve } from 'path';
+import { DatabaseInstance, DatabaseManager } from '../database/index.js';
 import QueueManager from '../queue/manager.js';
 import RedisManager from '../redis/manager.js';
 import {
@@ -11,23 +10,23 @@ import {
   ApplicationStartInstanceOptions,
   ApplicationStopInstanceOptions,
 } from './base-application.interface.js';
-import path from 'path';
 import ClusterManager from '../cluster/cluster-manager.js';
 import RedisInstance from '../redis/instance.js';
 import { OS, Time } from '../util/index.js';
 import CacheManager from '../cache/manager.js';
 import os from 'os';
 import EventManager from '../event/manager.js';
+import Logger from '../logger/logger.js';
+
+// Re-export types for external use
+export type { ApplicationConfig } from './base-application.interface.js';
 
 export default abstract class BaseApplication {
   /** Unique instance ID */
   public uniqueInstanceId: string;
 
   /** Shutdown signals */
-  protected shutdownSignals: NodeJS.Signals[] = [
-    'SIGTERM',
-    'SIGINT',
-  ];
+  protected shutdownSignals: NodeJS.Signals[] = ['SIGTERM', 'SIGINT'];
 
   /** Application start time */
   protected startTime: [number, number] = [0, 0];
@@ -35,11 +34,15 @@ export default abstract class BaseApplication {
   /** Whether application is stopping */
   protected isStopping = false;
 
+  /** Shutdown timeout (30 seconds) */
+  protected shutdownTimeout = 30000;
+
+  /** Cache for application version to avoid repeated imports */
+  private static applicationVersionCache: string | undefined;
+
   /** Cluster worker ID */
   protected workerId =
-    cluster.isWorker && cluster.worker
-      ? cluster.worker.id
-      : null;
+    cluster.isWorker && cluster.worker ? cluster.worker.id : null;
 
   /** Application config */
   protected config: ApplicationConfig;
@@ -115,11 +118,11 @@ export default abstract class BaseApplication {
       redisManager: this.redisManager,
     });
 
-    if (
-      this.config.database &&
-      this.config.database.enabled === true
-    ) {
-      const defaultEntitiesDirectory = path.join(
+    // Set up global error handlers
+    this.setupGlobalErrorHandlers();
+
+    if (this.config.database && this.config.database.enabled === true) {
+      const defaultEntitiesDirectory = join(
         this.config.rootDirectory,
         'src',
         'database',
@@ -127,13 +130,10 @@ export default abstract class BaseApplication {
       );
 
       if (!this.config.database.entitiesDirectory) {
-        this.config.database.entitiesDirectory =
-          defaultEntitiesDirectory;
+        this.config.database.entitiesDirectory = defaultEntitiesDirectory;
       }
 
-      if (
-        !existsSync(this.config.database.entitiesDirectory)
-      ) {
+      if (!existsSync(this.config.database.entitiesDirectory)) {
         throw new Error(
           `Database entities directory not found (Path: ${this.config.database.entitiesDirectory})`,
         );
@@ -147,8 +147,7 @@ export default abstract class BaseApplication {
         username: this.config.database.username,
         password: this.config.database.password,
         databaseName: this.config.database.databaseName,
-        entitiesDirectory:
-          this.config.database.entitiesDirectory,
+        entitiesDirectory: this.config.database.entitiesDirectory,
       });
     }
   }
@@ -156,20 +155,29 @@ export default abstract class BaseApplication {
   /**
    * Get application version
    */
-  public async getApplicationVersion() {
-    const packagePath = new URL(
-      '../../package.json',
-      import.meta.url,
-    ).href;
-    const packageJson = await import(packagePath, {
-      with: { type: 'json' },
-    });
+  public async getApplicationVersion(): Promise<string> {
+    // Return cached version if available
+    if (BaseApplication.applicationVersionCache !== undefined) {
+      return BaseApplication.applicationVersionCache;
+    }
 
-    if (!packageJson?.default?.version) {
+    // Resolve the path to package.json
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
+    const packageJsonPath = resolve(__dirname, '../../package.json');
+
+    // Read and parse the file
+    const fileContents = readFileSync(packageJsonPath, 'utf-8');
+    const packageJson = JSON.parse(fileContents);
+
+    if (!packageJson?.version) {
       throw new Error('Application version not found');
     }
 
-    return packageJson.default.version;
+    // Cache and return the version
+    BaseApplication.applicationVersionCache = packageJson.version;
+
+    return packageJson.version;
   }
 
   /**
@@ -180,43 +188,40 @@ export default abstract class BaseApplication {
     this.startTime = process.hrtime();
 
     // Get application version`
-    this.applicationVersion =
-      await this.getApplicationVersion();
+    this.applicationVersion = await this.getApplicationVersion();
 
-    const startInstanceOptions: ApplicationStartInstanceOptions =
-      {
-        // onStarted: ({ startupTime }) => {
-        //   if (this.config.log?.startUp) {
-        //     Logger.info('Application started', {
-        //       Name: this.config.name,
-        //       'PXL Framework Version': this.applicationVersion,
-        //       'Startup Time': Time.formatTime({ time: startupTime, format: 's', numDecimals: 2, showUnit: true }),
-        //     });
-        //   }
+    const startInstanceOptions: ApplicationStartInstanceOptions = {
+      // onStarted: ({ startupTime }) => {
+      //   if (this.config.log?.startUp) {
+      //     Logger.info('Application started', {
+      //       Name: this.config.name,
+      //       'PXL Framework Version': this.applicationVersion,
+      //       'Startup Time': Time.formatTime({ time: startupTime, format: 's', numDecimals: 2, showUnit: true }),
+      //     });
+      //   }
 
-        //   if (this.config.events?.onStarted) {
-        //     this.config.events.onStarted({ app: this, startupTime });
-        //   }
-        // },
-        onStarted: this.onStarted.bind(this),
-      };
+      //   if (this.config.events?.onStarted) {
+      //     this.config.events.onStarted({ app: this, startupTime });
+      //   }
+      // },
+      onStarted: this.onStarted.bind(this),
+    };
 
-    const stopInstanceOptions: ApplicationStopInstanceOptions =
-      {
-        // onStopped: ({ runtime }) => {
-        //   if (this.config.log?.shutdown) {
-        //     Logger.info('Application stopped', {
-        //       Name: this.config.name,
-        //       'Runtime': Time.formatTime({ time: runtime, format: 's', numDecimals: 2, showUnit: true }),
-        //     });
-        //   }
+    const stopInstanceOptions: ApplicationStopInstanceOptions = {
+      // onStopped: ({ runtime }) => {
+      //   if (this.config.log?.shutdown) {
+      //     Logger.info('Application stopped', {
+      //       Name: this.config.name,
+      //       'Runtime': Time.formatTime({ time: runtime, format: 's', numDecimals: 2, showUnit: true }),
+      //     });
+      //   }
 
-        //   if (this.config.events?.onStopped) {
-        //     this.config.events.onStopped({ app: this, runtime });
-        //   }
-        // },
-        onStopped: this.onStopped.bind(this),
-      };
+      //   if (this.config.events?.onStopped) {
+      //     this.config.events.onStopped({ app: this, runtime });
+      //   }
+      // },
+      onStopped: this.onStopped.bind(this),
+    };
 
     if (this.config.cluster?.enabled) {
       // Initialize clustered application
@@ -225,8 +230,7 @@ export default abstract class BaseApplication {
 
         startApplicationCallback: () =>
           this.startInstance(startInstanceOptions),
-        stopApplicationCallback: () =>
-          this.stop(stopInstanceOptions),
+        stopApplicationCallback: () => this.stop(stopInstanceOptions),
       });
 
       // Start cluster
@@ -278,8 +282,7 @@ export default abstract class BaseApplication {
     const queueManager = new QueueManager({
       applicationConfig: this.config,
       options: {
-        processorsDirectory:
-          this.config.queue.processorsDirectory,
+        processorsDirectory: this.config.queue.processorsDirectory,
       },
       queues: this.config.queue.queues,
       redisInstance,
@@ -304,7 +307,7 @@ export default abstract class BaseApplication {
    * Application started event
    */
   protected onStarted({
-    startupTime,
+    startupTime: _startupTime,
   }: {
     startupTime: number;
   }): void {}
@@ -312,11 +315,7 @@ export default abstract class BaseApplication {
   /**
    * Application stopped event
    */
-  protected onStopped({
-    runtime,
-  }: {
-    runtime: number;
-  }): void {}
+  protected onStopped({ runtime: _runtime }: { runtime: number }): void {}
 
   /**
    * Before application stop event
@@ -339,12 +338,8 @@ export default abstract class BaseApplication {
   ): Promise<void> {
     try {
       // Before application start
-      const {
-        redisInstance,
-        databaseInstance,
-        queueManager,
-        eventManager,
-      } = await this.onBeforeStart();
+      const { redisInstance, databaseInstance, queueManager, eventManager } =
+        await this.onBeforeStart();
 
       // Start application
       await this.startHandler({
@@ -386,6 +381,45 @@ export default abstract class BaseApplication {
   protected abstract stopCallback(): void;
 
   /**
+   * Set up global error handlers
+   */
+  private setupGlobalErrorHandlers(): void {
+    // Handle uncaught exceptions
+    process.on('uncaughtException', error => {
+      Logger.error(error, 'Uncaught Exception');
+      this.initiateGracefulShutdown();
+    });
+
+    // Handle unhandled promise rejections
+    process.on('unhandledRejection', (reason, promise) => {
+      Logger.error(
+        reason instanceof Error ? reason : new Error(String(reason)),
+        'Unhandled Rejection',
+        { promise },
+      );
+      this.initiateGracefulShutdown();
+    });
+  }
+
+  /**
+   * Initiate graceful shutdown
+   */
+  private initiateGracefulShutdown(): void {
+    if (this.isStopping) {
+      return;
+    }
+
+    Logger.info('Initiating graceful shutdown due to error');
+    this.stop().catch(error => {
+      Logger.error(
+        error instanceof Error ? error : new Error(String(error)),
+        'Error during graceful shutdown',
+      );
+      process.exit(1);
+    });
+  }
+
+  /**
    * Handle shutdown
    */
   public handleShutdown({
@@ -393,7 +427,7 @@ export default abstract class BaseApplication {
   }: {
     onStopped?: ({ runtime }: { runtime: number }) => void;
   }): void {
-    this.shutdownSignals.forEach((signal) => {
+    this.shutdownSignals.forEach(signal => {
       process.on(signal, async () => {
         // Stop application
         await this.stop({ onStopped });
@@ -413,20 +447,36 @@ export default abstract class BaseApplication {
 
     this.isStopping = true;
 
-    // Stop callback
-    await this.stopCallback();
+    // Set timeout for forced termination
+    const forceExitTimeout = setTimeout(() => {
+      Logger.warn('Forced shutdown due to timeout');
+      process.exit(1);
+    }, this.shutdownTimeout);
 
-    // Disconnect
-    await this.onBeforeStop();
+    try {
+      // Stop callback
+      await this.stopCallback();
 
-    if (onStopped) {
-      // Calculate runtime
-      const runtime = process.uptime() * 1000;
+      // Disconnect
+      await this.onBeforeStop();
 
-      // Emit stopped event
-      await onStopped({ runtime });
+      if (onStopped) {
+        // Calculate runtime
+        const runtime = process.uptime() * 1000;
+
+        // Emit stopped event
+        await onStopped({ runtime });
+      }
+
+      clearTimeout(forceExitTimeout);
+      process.exit(0);
+    } catch (error) {
+      Logger.error(
+        error instanceof Error ? error : new Error(String(error)),
+        'Error during shutdown',
+      );
+      clearTimeout(forceExitTimeout);
+      process.exit(1);
     }
-
-    process.exit(0);
   }
 }

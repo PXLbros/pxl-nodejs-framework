@@ -39,7 +39,15 @@ export default class CacheManager {
     return value ? JSON.parse(value) : null;
   }
 
-  public async setItem<T>({ key, value, lifetime }: { key: string; value: T; lifetime?: number }): Promise<void> {
+  public async setItem<T>({
+    key,
+    value,
+    lifetime,
+  }: {
+    key: string;
+    value: T;
+    lifetime?: number;
+  }): Promise<void> {
     const client = await this.getClient();
     const stringValue = JSON.stringify(value);
 

@@ -26,7 +26,11 @@ export default class DatabaseManager {
   public async connect(): Promise<DatabaseInstance> {
     const orm = await MikroORM.init();
 
-    const databaseInstance = new DatabaseInstance({ databaseManager: this, applicationConfig: this.options.applicationConfig, orm });
+    const databaseInstance = new DatabaseInstance({
+      databaseManager: this,
+      applicationConfig: this.options.applicationConfig,
+      orm,
+    });
 
     this.instances.push(databaseInstance);
 
@@ -37,7 +41,7 @@ export default class DatabaseManager {
    * Disconnect from database
    */
   public async disconnect(): Promise<void> {
-    await Promise.all(this.instances.map((instance) => instance.disconnect()));
+    await Promise.all(this.instances.map(instance => instance.disconnect()));
 
     this.instances = [];
   }

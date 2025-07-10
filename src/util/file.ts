@@ -17,11 +17,13 @@ async function convertFile({
   format: string;
 }): Promise<void> {
   return new Promise((resolve, reject) => {
-    console.log(`Starting conversion: ${inputFilePath} -> ${outputFilePath} (format: ${format})`);
+    console.log(
+      `Starting conversion: ${inputFilePath} -> ${outputFilePath} (format: ${format})`,
+    );
 
     const command = ffmpeg(inputFilePath)
       .output(outputFilePath)
-      .outputFormat(format === 'jpg' ? 'mjpeg' : format)  // Using 'mjpeg' for jpg
+      .outputFormat(format === 'jpg' ? 'mjpeg' : format) // Using 'mjpeg' for jpg
       .on('progress', (progress: any) => {
         console.log(`Processing: ${Math.round(progress.percent)}% done`);
       })
@@ -88,7 +90,7 @@ async function downloadFile({
     const file = fs.createWriteStream(destinationPath);
 
     https
-      .get(url, (response) => {
+      .get(url, response => {
         // Check if response status is OK (200–299)
         if (
           response.statusCode &&
@@ -97,7 +99,7 @@ async function downloadFile({
         ) {
           pipelineAsync(response, file)
             .then(() => resolve())
-            .catch((err) => {
+            .catch(err => {
               fs.unlink(destinationPath, () => reject(err)); // Clean up partially written file on error
             });
         } else {
@@ -110,12 +112,12 @@ async function downloadFile({
           });
         }
       })
-      .on('error', (err) => {
+      .on('error', err => {
         fs.unlink(destinationPath, () => reject(err)); // Handle request errors
       });
 
     // Handle file stream errors
-    file.on('error', (err) => {
+    file.on('error', err => {
       fs.unlink(destinationPath, () => reject(err));
     });
   });
@@ -126,11 +128,7 @@ async function downloadFile({
  *
  * @param bytes The file size in bytes
  */
-function formatFileSize({
-  bytes,
-}: {
-  bytes: number;
-}): string {
+function formatFileSize({ bytes }: { bytes: number }): string {
   const sizes = ['bytes', 'kB', 'MB', 'GB', 'TB'];
   if (bytes === 0) return '0 bytes';
 

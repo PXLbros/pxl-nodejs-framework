@@ -9,16 +9,22 @@ export function generateClientId(): string {
   return Math.random().toString(36).substr(2, 9);
 }
 
-export function log(message: string, meta?: Record<string, unknown>, options?: LogOptions): void {
+export function log(
+  message: string,
+  meta?: Record<string, unknown>,
+  options?: LogOptions,
+): void {
   Logger.custom('webSocket', message, meta, options);
 }
 
-export function parseServerMessage(message: WebSocket.Data): Record<string, unknown> {
+export function parseServerMessage(
+  message: WebSocket.Data,
+): Record<string, unknown> {
   let parsedMessage;
 
   try {
     parsedMessage = JSON.parse(message.toString());
-  } catch (error) {
+  } catch {
     throw new Error('Failed to parse JSON');
   }
 
@@ -26,7 +32,7 @@ export function parseServerMessage(message: WebSocket.Data): Record<string, unkn
     throw new Error('Invalid WebSocket message');
   } else if (!parsedMessage.type) {
     throw new Error('Missing WebSocket message type');
-  } else  if (!parsedMessage.action) {
+  } else if (!parsedMessage.action) {
     throw new Error('Missing WebSocket message action');
   }
 

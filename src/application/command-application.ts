@@ -28,7 +28,10 @@ export default class CommandApplication extends BaseApplication {
       },
     };
 
-    const mergedConfig: CommandApplicationConfig = Helper.defaultsDeep(config, defaultConfig);
+    const mergedConfig: CommandApplicationConfig = Helper.defaultsDeep(
+      config,
+      defaultConfig,
+    );
 
     if (mergedConfig.cluster) {
       mergedConfig.cluster.enabled = false;
@@ -37,7 +40,15 @@ export default class CommandApplication extends BaseApplication {
     this.config = mergedConfig;
   }
 
-  protected async startHandler({ redisInstance, databaseInstance, queueManager }: { redisInstance: RedisInstance; databaseInstance: DatabaseInstance; queueManager: QueueManager; }): Promise<void> {
+  protected async startHandler({
+    redisInstance,
+    databaseInstance,
+    queueManager,
+  }: {
+    redisInstance: RedisInstance;
+    databaseInstance: DatabaseInstance;
+    queueManager: QueueManager;
+  }): Promise<void> {
     const startTime = performance.now();
 
     // get argv (yargs) input args
@@ -55,10 +66,14 @@ export default class CommandApplication extends BaseApplication {
 
     const inputCommandName = parsedArgv._[0];
 
-    const commandsDirectoryExists = await existsSync(this.config.commandsDirectory);
+    const commandsDirectoryExists = await existsSync(
+      this.config.commandsDirectory,
+    );
 
     if (!commandsDirectoryExists) {
-      Logger.warn('Commands directory not found', { Directory: this.config.commandsDirectory });
+      Logger.warn('Commands directory not found', {
+        Directory: this.config.commandsDirectory,
+      });
 
       return;
     }
@@ -81,9 +96,9 @@ export default class CommandApplication extends BaseApplication {
     // Initialize command
     const command = new CommandClass({
       applicationConfig: this.config,
-      redisInstance: redisInstance,
-      queueManager: queueManager,
-      databaseInstance: databaseInstance,
+      redisInstance,
+      queueManager,
+      databaseInstance,
     });
 
     Logger.info('Command started', { Command: inputCommandName });
@@ -99,7 +114,11 @@ export default class CommandApplication extends BaseApplication {
       const endTime = performance.now();
       const executionTime = endTime - startTime;
 
-      commandCompletedLogParams['Execution Time'] = Time.formatTime({ time: executionTime, numDecimals: 2, showUnit: true });
+      commandCompletedLogParams['Execution Time'] = Time.formatTime({
+        time: executionTime,
+        numDecimals: 2,
+        showUnit: true,
+      });
     }
 
     Logger.info('Command completed', commandCompletedLogParams);
@@ -109,7 +128,8 @@ export default class CommandApplication extends BaseApplication {
   }
 
   private stopCommand(): void {
-    process.kill(process.pid, 'SIGINT');
+    // Use existing graceful shutdown mechanism instead of self-termination
+    this.handleShutdown({ onStopped: this.onStopped.bind(this) });
   }
 
   protected stopCallback(): void {

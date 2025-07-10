@@ -1,20 +1,28 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
 import BaseController from './base.js';
 
-export default class extends BaseController {
-  public health = async (_: FastifyRequest, reply: FastifyReply): Promise<void> => {
+export default class HealthController extends BaseController {
+  public health = async (
+    _: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<void> => {
     try {
-      const healthCheckPromises = [this.checkDatabaseConnection(), this.checkRedisConnection()];
+      const healthCheckPromises = [
+        this.checkDatabaseConnection(),
+        this.checkRedisConnection(),
+      ];
 
       const results = await Promise.all(
-        healthCheckPromises.map((healthCheckPromise) => healthCheckPromise.catch((error) => error)),
+        healthCheckPromises.map(healthCheckPromise =>
+          healthCheckPromise.catch(error => error),
+        ),
       );
 
       const isDatabaseHealthy = results[0] === true;
       const isRedisHealthy = results[1] === true;
       // const activeQueueItems = await this.queueManager.listAllJobsWithStatus();
 
-      const isAllHealthy = results.every((result) => result === true);
+      const isAllHealthy = results.every(result => result === true);
 
       reply.send({
         healthy: isAllHealthy,
@@ -35,7 +43,7 @@ export default class extends BaseController {
   private async checkDatabaseConnection(): Promise<boolean> {
     try {
       return await this.databaseInstance.isConnected();
-    } catch (error) {
+    } catch {
       return false;
     }
   }
@@ -43,7 +51,7 @@ export default class extends BaseController {
   private async checkRedisConnection(): Promise<boolean> {
     try {
       return await this.redisInstance.isConnected();
-    } catch (error) {
+    } catch {
       return false;
     }
   }

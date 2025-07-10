@@ -41,10 +41,12 @@ export class WebSocketService {
         JSON.stringify({
           ...message,
           workerId: this.workerId,
-        })
+        }),
       );
     } else {
-      throw new Error('WebSocket service requires either webSocketServer or redisInstance');
+      throw new Error(
+        'WebSocket service requires either webSocketServer or redisInstance',
+      );
     }
   }
 
@@ -52,7 +54,10 @@ export class WebSocketService {
    * Send a message to specific clients by their IDs
    * Note: This requires direct access to WebSocket server and room functionality
    */
-  async sendToClients(clientIds: string[], message: WebSocketMessage): Promise<void> {
+  async sendToClients(
+    clientIds: string[],
+    message: WebSocketMessage,
+  ): Promise<void> {
     // Currently not implemented in the framework
     // For now, we'll broadcast to all clients
     await this.broadcast(message);
@@ -61,13 +66,18 @@ export class WebSocketService {
   /**
    * Send a message to all clients in specific rooms
    */
-  async sendToRooms(roomNames: string[], message: WebSocketMessage): Promise<void> {
+  async sendToRooms(
+    roomNames: string[],
+    message: WebSocketMessage,
+  ): Promise<void> {
     if (!this.webSocketServer) {
-      throw new Error('Sending to specific rooms requires direct access to WebSocket server');
+      throw new Error(
+        'Sending to specific rooms requires direct access to WebSocket server',
+      );
     }
 
     const clientIds: string[] = [];
-    
+
     // Get all client IDs from the specified rooms
     for (const roomName of roomNames) {
       const room = this.webSocketServer.rooms.get(roomName);

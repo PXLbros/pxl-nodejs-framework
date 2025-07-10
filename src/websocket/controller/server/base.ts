@@ -10,7 +10,12 @@ export default abstract class WebSocketServerBaseController {
   protected queueManager: QueueManager;
   protected databaseInstance: DatabaseInstance;
 
-  constructor({ webSocketServer, redisInstance, queueManager, databaseInstance }: WebSocketServerBaseControllerConstructorParams) {
+  constructor({
+    webSocketServer,
+    redisInstance,
+    queueManager,
+    databaseInstance,
+  }: WebSocketServerBaseControllerConstructorParams) {
     this.webSocketServer = webSocketServer;
     this.redisInstance = redisInstance;
     this.queueManager = queueManager;
