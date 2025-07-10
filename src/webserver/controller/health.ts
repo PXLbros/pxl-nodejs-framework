@@ -43,7 +43,7 @@ export default class HealthController extends BaseController {
   private async checkDatabaseConnection(): Promise<boolean> {
     try {
       return await this.databaseInstance.isConnected();
-    } catch (error) {
+    } catch {
       return false;
     }
   }
@@ -51,7 +51,7 @@ export default class HealthController extends BaseController {
   private async checkRedisConnection(): Promise<boolean> {
     try {
       return await this.redisInstance.isConnected();
-    } catch (error) {
+    } catch {
       return false;
     }
   }

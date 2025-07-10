@@ -157,7 +157,7 @@ export default abstract class BaseController {
         userId,
         payload,
       };
-    } catch (error) {
+    } catch {
       this.sendErrorResponse(
         reply,
         'Invalid or expired token.',

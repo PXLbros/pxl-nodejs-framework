@@ -2,20 +2,13 @@ import WebSocket, { RawData } from 'ws';
 import {
   WebSocketOptions,
   WebSocketRoute,
-  WebSocketMessageHandler,
-  WebSocketRedisSubscriberEvent,
   WebSocketType,
 } from './websocket.interface.js';
 import RedisInstance from '../redis/instance.js';
 import QueueManager from '../queue/manager.js';
 import DatabaseInstance from '../database/instance.js';
 import { WebSocketClientProps } from './websocket-client.interface.js';
-import {
-  generateClientId,
-  log,
-  parseServerMessage,
-  getRouteKey,
-} from './utils.js';
+import { generateClientId, log, parseServerMessage } from './utils.js';
 import WebSocketBase from './websocket-base.js';
 import { ApplicationConfig } from '../application/base-application.interface.js';
 import path from 'path';

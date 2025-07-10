@@ -24,7 +24,7 @@ export function parseServerMessage(
 
   try {
     parsedMessage = JSON.parse(message.toString());
-  } catch (error) {
+  } catch {
     throw new Error('Failed to parse JSON');
   }
 

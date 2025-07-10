@@ -1,5 +1,4 @@
 import { EntityManager, MikroORM } from '@mikro-orm/postgresql';
-import { Logger } from '../logger/index.js';
 import { ApplicationConfig } from '../application/base-application.interface.js';
 import DatabaseManager from './manager.js';
 

@@ -1,5 +1,5 @@
 import { HTTPMethods } from 'fastify';
-import { DatabaseInstance, DynamicEntity } from '../database/index.js';
+import { DatabaseInstance } from '../database/index.js';
 import { QueueManager } from '../queue/index.js';
 import { RedisInstance } from '../redis/index.js';
 import { WebServerBaseControllerType } from './controller/base.interface.js';

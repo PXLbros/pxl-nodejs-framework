@@ -37,6 +37,10 @@ export default [
         clearInterval: 'readonly',
         URL: 'readonly',
         performance: 'readonly',
+        WebSocket: 'readonly',
+        NodeJS: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
       },
     },
     plugins: {

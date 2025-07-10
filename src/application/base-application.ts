@@ -305,12 +305,16 @@ export default abstract class BaseApplication {
   /**
    * Application started event
    */
-  protected onStarted({ startupTime }: { startupTime: number }): void {}
+  protected onStarted({
+    startupTime: _startupTime,
+  }: {
+    startupTime: number;
+  }): void {}
 
   /**
    * Application stopped event
    */
-  protected onStopped({ runtime }: { runtime: number }): void {}
+  protected onStopped({ runtime: _runtime }: { runtime: number }): void {}
 
   /**
    * Before application stop event

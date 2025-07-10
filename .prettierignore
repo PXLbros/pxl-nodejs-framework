@@ -1,0 +1,14 @@
+# Build outputs
+dist/
+node_modules/
+coverage/
+
+# Generated files
+*.d.ts
+package-lock.json
+
+# Binary files
+bin/
+
+# Example files
+EXAMPLE_USAGE.ts

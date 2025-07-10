@@ -1,9 +1,7 @@
 // event-manager.interface.ts
 import { ApplicationConfig } from '../application/base-application.interface.js';
 import { RedisInstance } from '../redis/index.js';
-import { QueueManager } from '../queue/index.js';
 import { DatabaseInstance } from '../database/index.js';
-import { Logger } from '../logger/logger.js';
 import { EventControllerType } from './controller/base.interface.js';
 
 export interface EventDefinition {

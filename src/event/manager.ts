@@ -6,11 +6,9 @@ import {
   EventManagerConstructorParams,
   EventManagerOptions,
   EventDefinition,
-  ApplicationEvents,
 } from './manager.interface.js';
 import { ApplicationConfig } from '../application/base-application.interface.js';
 import DatabaseInstance from '../database/instance.js';
-import QueueManager from '../queue/manager.js';
 import { RedisInstance } from '../redis/index.js';
 import { EventControllerType } from './controller/base.interface.js';
 

@@ -11,11 +11,9 @@ import {
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Helper } from '../../util/index.js';
 import { AwsS3ConstructorOptions } from './s3.interface.js';
-import { createWriteStream } from 'fs';
-import { existsSync, mkdirSync } from 'fs';
-import { pipeline } from 'stream';
+import { createWriteStream, existsSync, mkdirSync } from 'fs';
+import { pipeline, Readable } from 'stream';
 import { promisify } from 'util';
-import { Readable } from 'stream';
 import { Logger } from '../../logger/index.js';
 import { dirname } from 'path';
 

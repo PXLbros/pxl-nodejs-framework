@@ -8,7 +8,6 @@ import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
 import {
   WebServerConstructorParams,
-  WebServerDebugOptions,
   WebServerOptions,
   WebServerRoute,
   WebServerRouteType,

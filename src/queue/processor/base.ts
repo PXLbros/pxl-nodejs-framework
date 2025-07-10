@@ -5,7 +5,6 @@ import { ApplicationConfig } from '../../application/base-application.interface.
 import { Logger } from '../../logger/index.js';
 import { RedisInstance } from '../../redis/index.js';
 import EventManager from '../../event/manager.js';
-import { ProcessorConstructorParams } from './processor.interface.js';
 
 export default abstract class BaseProcessor {
   private logger: typeof Logger = Logger;

@@ -145,7 +145,7 @@ export class Logger {
     level: LoggerLevels,
     message: unknown,
     meta?: Record<string, unknown>,
-    options?: LogOptions,
+    _options?: LogOptions,
   ): void {
     // if (options?.muteWorker) {
     // }

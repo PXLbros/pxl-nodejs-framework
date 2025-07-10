@@ -91,7 +91,7 @@ function checkGitStatus() {
       console.log(status);
       process.exit(1);
     }
-  } catch (err) {
+  } catch {
     error('Failed to check git status');
     process.exit(1);
   }

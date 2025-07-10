@@ -79,7 +79,7 @@ export const generateFormFields = ({
 }): FormFieldOptionsExtended[] => {
   const formFields: FormFieldOptionsExtended[] = [];
 
-  const { prototype, schema } = model;
+  const { prototype } = model;
 
   for (const propertyKey of Object.getOwnPropertyNames(prototype)) {
     const formFieldType = Reflect.getMetadata(

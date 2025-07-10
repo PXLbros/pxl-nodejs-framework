@@ -1,4 +1,6 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
-#npx lint-staged
+# Check linting without fixing
+npm run lint:check
+npm run format:check

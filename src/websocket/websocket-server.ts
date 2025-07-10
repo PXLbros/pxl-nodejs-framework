@@ -593,7 +593,7 @@ export default class WebSocketServer extends WebSocketBase {
   }
 
   private checkInactiveClients(): void {
-    const now = Date.now();
+    // const now = Date.now();
 
     if (
       this.options.disconnectInactiveClients?.enabled &&
@@ -602,7 +602,7 @@ export default class WebSocketServer extends WebSocketBase {
       log('Checking inactive clients...');
     }
 
-    const numInactiveClients = 0;
+    // const numInactiveClients = 0;
 
     // this.connectedClients.forEach(
     //   (clientInfo, clientId) => {

@@ -1,4 +1,3 @@
-import SMTPTransport from 'nodemailer/lib/smtp-transport/index.js';
 import Emailer, { EmailerProps } from '../emailer.js';
 import nodemailer from 'nodemailer';
 

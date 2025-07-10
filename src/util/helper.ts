@@ -22,7 +22,7 @@ function defaultsDeep(target: any, ...sources: any[]): any {
             target[key][i] = source[key][i];
           }
         }
-      } else if (!target.hasOwnProperty(key)) {
+      } else if (!Object.prototype.hasOwnProperty.call(target, key)) {
         Object.assign(target, { [key]: source[key] });
       }
     }

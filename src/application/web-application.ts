@@ -1,4 +1,3 @@
-import cluster from 'cluster';
 import RedisInstance from '../redis/instance.js';
 import DatabaseInstance from '../database/instance.js';
 import WebServer from '../webserver/webserver.js';

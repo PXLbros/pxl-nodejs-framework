@@ -1,11 +1,4 @@
-import {
-  Queue,
-  Worker,
-  WorkerOptions,
-  Job,
-  Processor,
-  QueueOptions,
-} from 'bullmq';
+import { Queue, WorkerOptions, Job, Processor, QueueOptions } from 'bullmq';
 import path from 'path';
 import {
   QueueManagerConstructorParams,
@@ -42,7 +35,7 @@ export default class QueueManager {
   constructor({
     applicationConfig,
     options,
-    queues,
+    queues: _queues,
     redisInstance,
     databaseInstance,
     eventManager,
