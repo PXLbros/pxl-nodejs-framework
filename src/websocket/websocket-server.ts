@@ -18,6 +18,8 @@ import { baseDir, WebApplicationConfig } from '../index.js';
 import WebSocketRoomManager from './websocket-room-manager.js';
 import logger from '../logger/logger.js';
 import { FastifyInstance } from 'fastify';
+import { URL } from 'url';
+import Jwt from '../auth/jwt.js';
 
 export default class WebSocketServer extends WebSocketBase {
   protected defaultRoutes: WebSocketRoute[] = [
@@ -84,6 +86,44 @@ export default class WebSocketServer extends WebSocketBase {
     return 'server';
   }
 
+  private async validateWebSocketAuth(
+    url: string,
+  ): Promise<{ userId: number; payload: any } | null> {
+    try {
+      const parsedUrl = new URL(url, 'ws://localhost');
+      const token = parsedUrl.searchParams.get('token');
+
+      if (!token) {
+        return null; // No token provided, allow unauthenticated connection
+      }
+
+      // Get JWT secret key from application config
+      const jwtSecretKey = this.applicationConfig.auth?.jwtSecretKey;
+
+      if (!jwtSecretKey) {
+        throw new Error('JWT secret key not configured');
+      }
+
+      // Import JWT secret key
+      const importedJwtSecretKey = await Jwt.importJwtSecretKey({
+        jwtSecretKey,
+      });
+
+      // Verify JWT token
+      const { payload } = await Jwt.jwtVerify(token, importedJwtSecretKey);
+
+      const userId = parseInt(payload.sub as string);
+
+      if (isNaN(userId)) {
+        throw new Error('Invalid user ID in token');
+      }
+
+      return { userId, payload };
+    } catch (error: any) {
+      throw new Error(`JWT verification failed: ${error.message}`);
+    }
+  }
+
   public async load(): Promise<void> {
     const libraryControllersDirectory = path.join(
       baseDir,
@@ -114,11 +154,22 @@ export default class WebSocketServer extends WebSocketBase {
       // Ensure this is called after the server has been properly set up
       this.handleServerStart();
 
-      fastifyServer.server.on('upgrade', (request, socket, head) => {
-        if (request.url === '/ws') {
-          server.handleUpgrade(request, socket, head, ws => {
-            server.emit('connection', ws, request);
-          });
+      fastifyServer.server.on('upgrade', async (request, socket, head) => {
+        if (request.url?.startsWith('/ws')) {
+          try {
+            // Validate authentication token if provided
+            const authenticatedUser = await this.validateWebSocketAuth(
+              request.url,
+            );
+
+            server.handleUpgrade(request, socket, head, ws => {
+              server.emit('connection', ws, request, authenticatedUser);
+            });
+          } catch (error: any) {
+            log('WebSocket authentication failed', { error: error.message });
+            socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+            socket.destroy();
+          }
         } else {
           socket.destroy();
         }
@@ -126,7 +177,16 @@ export default class WebSocketServer extends WebSocketBase {
 
       server.on('error', this.handleServerError);
 
-      server.on('connection', this.handleServerClientConnection);
+      server.on(
+        'connection',
+        (
+          ws: WebSocket,
+          request: any,
+          authenticatedUser: { userId: number; payload: any } | null,
+        ) => {
+          this.handleServerClientConnection(ws, authenticatedUser);
+        },
+      );
 
       // Resolve the promise with the server instance
       resolve({ server });
@@ -218,7 +278,7 @@ export default class WebSocketServer extends WebSocketBase {
 
     log('Server started', {
       Host: this.options.host,
-      Port: this.options.port || '-',
+      URL: this.options.url,
     });
 
     if (this.options.events?.onServerStarted) {
@@ -270,6 +330,7 @@ export default class WebSocketServer extends WebSocketBase {
         this.onClientConnect({
           clientId: parsedMessage.clientId,
           lastActivity: parsedMessage.lastActivity,
+          user: parsedMessage.user,
         });
 
         break;
@@ -397,7 +458,10 @@ export default class WebSocketServer extends WebSocketBase {
     Logger.error(error);
   };
 
-  private handleServerClientConnection = (ws: WebSocket): void => {
+  private handleServerClientConnection = (
+    ws: WebSocket,
+    authenticatedUser?: { userId: number; payload: any } | null,
+  ): void => {
     const clientId = generateClientId();
 
     const lastActivity = Date.now();
@@ -419,6 +483,7 @@ export default class WebSocketServer extends WebSocketBase {
         clientId,
         ws,
         lastActivity,
+        user: authenticatedUser,
       });
 
       // Let other workers know that the client has connected
@@ -428,8 +493,21 @@ export default class WebSocketServer extends WebSocketBase {
           clientId,
           lastActivity,
           workerId: this.workerId,
+          user: authenticatedUser,
         }),
       );
+
+      // Send authentication success message if user is authenticated
+      if (authenticatedUser) {
+        this.sendClientMessage(ws, {
+          type: 'auth',
+          action: 'authenticated',
+          data: {
+            userId: authenticatedUser.userId,
+            message: 'Authentication successful',
+          },
+        });
+      }
     } catch (error) {
       logger.error(error);
     }
@@ -492,14 +570,17 @@ export default class WebSocketServer extends WebSocketBase {
   private onClientConnect({
     clientId,
     lastActivity,
+    user,
   }: {
     clientId: string;
     lastActivity: number;
+    user?: { userId: number; payload: any } | null;
   }): void {
     this.clientManager.addClient({
       clientId,
       ws: null,
       lastActivity,
+      user,
     });
   }
 

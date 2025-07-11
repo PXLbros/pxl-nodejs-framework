@@ -63,9 +63,6 @@ export interface WebSocketOptions {
   /** WebSocket host */
   host?: string;
 
-  /** WebSocket port */
-  port?: number;
-
   /** WebSocket URL */
   url: string;
 

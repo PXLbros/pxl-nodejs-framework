@@ -30,7 +30,7 @@
     "prepare": "husky",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "format": "prettier .",
+    "format": "prettier --check .",
     "format:fix": "prettier . --write",
     "typecheck": "tsc --noEmit",
     "test": "vitest",

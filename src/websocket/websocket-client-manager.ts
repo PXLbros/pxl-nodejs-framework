@@ -11,19 +11,25 @@ export default class WebSocketClientManager {
     clientId,
     ws,
     lastActivity,
+    user,
   }: {
     clientId: string;
     ws: WebSocket | null;
     lastActivity: number;
+    user?: { userId: number; payload: any } | null;
   }) {
     this.clients.set(clientId, {
       ws,
       lastActivity,
+      user,
     });
 
     this.broadcastClientList('addClient');
 
-    log('Client connected', { ID: clientId });
+    log('Client connected', {
+      ID: clientId,
+      UserId: user?.userId || 'unauthenticated',
+    });
 
     this.printClients();
   }
