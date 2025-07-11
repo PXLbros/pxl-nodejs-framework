@@ -1,24 +1,24 @@
-import { vi } from 'vitest';
+import { mock } from 'node:test';
 
 /**
  * Creates a mock function that resolves to the provided value
  */
 export function createMockResolves<T>(value: T) {
-  return vi.fn().mockResolvedValue(value);
+  return mock.fn(() => Promise.resolve(value));
 }
 
 /**
  * Creates a mock function that rejects with the provided error
  */
 export function createMockRejects(error: Error) {
-  return vi.fn().mockRejectedValue(error);
+  return mock.fn(() => Promise.reject(error));
 }
 
 /**
  * Creates a mock function that returns the provided value
  */
 export function createMockReturns<T>(value: T) {
-  return vi.fn().mockReturnValue(value);
+  return mock.fn(() => value);
 }
 
 /**

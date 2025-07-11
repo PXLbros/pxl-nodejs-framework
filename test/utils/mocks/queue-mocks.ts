@@ -1,55 +1,55 @@
-import { vi } from 'vitest';
+import { mock } from 'node:test';
 
 /**
  * Mock for BullMQ Queue
  */
 export const mockQueue = {
-  add: vi.fn(),
-  process: vi.fn(),
-  on: vi.fn(),
-  off: vi.fn(),
-  close: vi.fn(),
-  getJobs: vi.fn(),
-  getJob: vi.fn(),
-  removeJobs: vi.fn(),
-  clean: vi.fn(),
-  pause: vi.fn(),
-  resume: vi.fn(),
-  isPaused: vi.fn(),
+  add: mock.fn(),
+  process: mock.fn(),
+  on: mock.fn(),
+  off: mock.fn(),
+  close: mock.fn(),
+  getJobs: mock.fn(),
+  getJob: mock.fn(),
+  removeJobs: mock.fn(),
+  clean: mock.fn(),
+  pause: mock.fn(),
+  resume: mock.fn(),
+  isPaused: mock.fn(),
 };
 
 /**
  * Mock for BullMQ Worker
  */
 export const mockWorker = {
-  on: vi.fn(),
-  off: vi.fn(),
-  close: vi.fn(),
-  pause: vi.fn(),
-  resume: vi.fn(),
-  isPaused: vi.fn(),
-  isRunning: vi.fn(),
+  on: mock.fn(),
+  off: mock.fn(),
+  close: mock.fn(),
+  pause: mock.fn(),
+  resume: mock.fn(),
+  isPaused: mock.fn(),
+  isRunning: mock.fn(),
 };
 
 /**
  * Mock for QueueInstance
  */
 export const mockQueueInstance = {
-  getQueue: vi.fn(() => mockQueue),
-  getWorker: vi.fn(() => mockWorker),
-  addJob: vi.fn(),
-  processJobs: vi.fn(),
-  close: vi.fn(),
-  getName: vi.fn(() => 'test_queue'),
+  getQueue: mock.fn(() => mockQueue),
+  getWorker: mock.fn(() => mockWorker),
+  addJob: mock.fn(),
+  processJobs: mock.fn(),
+  close: mock.fn(),
+  getName: mock.fn(() => 'test_queue'),
 };
 
 /**
  * Mock for QueueManager
  */
 export const mockQueueManager = {
-  initialize: vi.fn(),
-  getInstance: vi.fn(() => mockQueueInstance),
-  getAllInstances: vi.fn(() => [mockQueueInstance]),
-  closeAll: vi.fn(),
-  isInitialized: vi.fn(() => true),
+  initialize: mock.fn(),
+  getInstance: mock.fn(() => mockQueueInstance),
+  getAllInstances: mock.fn(() => [mockQueueInstance]),
+  closeAll: mock.fn(),
+  isInitialized: mock.fn(() => true),
 };

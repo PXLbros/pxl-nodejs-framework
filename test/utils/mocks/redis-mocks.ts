@@ -1,43 +1,43 @@
-import { vi } from 'vitest';
+import { mock } from 'node:test';
 
 /**
  * Mock for Redis client
  */
 export const mockRedisClient = {
-  get: vi.fn(),
-  set: vi.fn(),
-  del: vi.fn(),
-  exists: vi.fn(),
-  expire: vi.fn(),
-  ttl: vi.fn(),
-  keys: vi.fn(),
-  flushall: vi.fn(),
-  connect: vi.fn(),
-  disconnect: vi.fn(),
-  ping: vi.fn(() => 'PONG'),
-  on: vi.fn(),
-  off: vi.fn(),
-  emit: vi.fn(),
+  get: mock.fn(),
+  set: mock.fn(),
+  del: mock.fn(),
+  exists: mock.fn(),
+  expire: mock.fn(),
+  ttl: mock.fn(),
+  keys: mock.fn(),
+  flushall: mock.fn(),
+  connect: mock.fn(),
+  disconnect: mock.fn(),
+  ping: mock.fn(() => 'PONG'),
+  on: mock.fn(),
+  off: mock.fn(),
+  emit: mock.fn(),
 };
 
 /**
  * Mock for RedisInstance
  */
 export const mockRedisInstance = {
-  getClient: vi.fn(() => mockRedisClient),
-  isConnected: vi.fn(() => true),
-  connect: vi.fn(),
-  disconnect: vi.fn(),
-  getName: vi.fn(() => 'test_redis'),
+  getClient: mock.fn(() => mockRedisClient),
+  isConnected: mock.fn(() => true),
+  connect: mock.fn(),
+  disconnect: mock.fn(),
+  getName: mock.fn(() => 'test_redis'),
 };
 
 /**
  * Mock for RedisManager
  */
 export const mockRedisManager = {
-  initialize: vi.fn(),
-  getInstance: vi.fn(() => mockRedisInstance),
-  getAllInstances: vi.fn(() => [mockRedisInstance]),
-  closeAll: vi.fn(),
-  isInitialized: vi.fn(() => true),
+  initialize: mock.fn(),
+  getInstance: mock.fn(() => mockRedisInstance),
+  getAllInstances: mock.fn(() => [mockRedisInstance]),
+  closeAll: mock.fn(),
+  isInitialized: mock.fn(() => true),
 };
