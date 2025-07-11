@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/node';
 import { nodeProfilingIntegration } from '@sentry/profiling-node';
-import cluster from 'cluster';
+import cluster from 'node:cluster';
 import winston from 'winston';
 import type { LogOptions } from '../websocket/utils.js';
 

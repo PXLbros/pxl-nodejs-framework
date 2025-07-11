@@ -13,7 +13,7 @@ import { Helper } from '../../util/index.js';
 import type { AwsS3ConstructorOptions } from './s3.interface.js';
 import { createWriteStream, existsSync, mkdirSync } from 'fs';
 import { Readable, pipeline } from 'stream';
-import { promisify } from 'util';
+import { promisify } from 'node:util';
 import { Logger } from '../../logger/index.js';
 import { dirname } from 'path';
 

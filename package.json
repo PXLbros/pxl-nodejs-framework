@@ -12,9 +12,50 @@
     "pxl": "./pxl.js"
   },
   "exports": {
-    ".": "./dist/index.js",
-    "./application": "./dist/application.js",
-    "./logger": "./dist/logger.js"
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./application": {
+      "import": "./dist/application/index.js",
+      "types": "./dist/application/index.d.ts"
+    },
+    "./logger": {
+      "import": "./dist/logger/index.js",
+      "types": "./dist/logger/index.d.ts"
+    },
+    "./database": {
+      "import": "./dist/database/index.js",
+      "types": "./dist/database/index.d.ts"
+    },
+    "./webserver": {
+      "import": "./dist/webserver/index.js",
+      "types": "./dist/webserver/index.d.ts"
+    },
+    "./websocket": {
+      "import": "./dist/websocket/index.js",
+      "types": "./dist/websocket/index.d.ts"
+    },
+    "./queue": {
+      "import": "./dist/queue/index.js",
+      "types": "./dist/queue/index.d.ts"
+    },
+    "./redis": {
+      "import": "./dist/redis/index.js",
+      "types": "./dist/redis/index.d.ts"
+    },
+    "./cache": {
+      "import": "./dist/cache/index.js",
+      "types": "./dist/cache/index.d.ts"
+    },
+    "./util": {
+      "import": "./dist/util/index.js",
+      "types": "./dist/util/index.d.ts"
+    },
+    "./services": {
+      "import": "./dist/services/index.js",
+      "types": "./dist/services/index.d.ts"
+    }
   },
   "files": [
     "dist"
@@ -22,6 +63,7 @@
   "scripts": {
     "dev": "nodemon",
     "dev:new": "node pxl serve",
+    "dev:import-map": "node --experimental-import-map=import-map.json --loader ts-node/esm src/index.ts",
     "clean": "del-cli dist",
     "build": "npm run clean && tsc",
     "build:local": "npm run clean && tsc && yalc push",
@@ -66,6 +108,7 @@
     "prettier": "^3.1.1",
     "redis-memory-server": "^0.12.1",
     "ts-node": "^10.9.2",
+    "tsc-alias": "^1.8.16",
     "tsconfig-paths": "^4.2.0",
     "typedoc": "^0.28.7"
   },

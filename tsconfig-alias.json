@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "outDir": "./dist"
+  },
+  "resolveFullPaths": true,
+  "replacers": {
+    "@pxl/application/*": "./application/$1",
+    "@pxl/database/*": "./database/$1",
+    "@pxl/webserver/*": "./webserver/$1",
+    "@pxl/websocket/*": "./websocket/$1",
+    "@pxl/queue/*": "./queue/$1",
+    "@pxl/event/*": "./event/$1",
+    "@pxl/redis/*": "./redis/$1",
+    "@pxl/cache/*": "./cache/$1",
+    "@pxl/logger/*": "./logger/$1",
+    "@pxl/util/*": "./util/$1",
+    "@pxl/services/*": "./services/$1"
+  }
+}

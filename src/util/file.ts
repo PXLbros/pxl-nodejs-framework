@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as https from 'https';
 import { pipeline } from 'stream';
-import { promisify } from 'util';
+import { promisify } from 'node:util';
 import ffmpeg from 'fluent-ffmpeg';
 
 const pipelineAsync = promisify(pipeline);

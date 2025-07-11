@@ -1,0 +1,16 @@
+{
+  "imports": {
+    "@pxl/": "./src/",
+    "@pxl/application/": "./src/application/",
+    "@pxl/database/": "./src/database/",
+    "@pxl/webserver/": "./src/webserver/",
+    "@pxl/websocket/": "./src/websocket/",
+    "@pxl/queue/": "./src/queue/",
+    "@pxl/event/": "./src/event/",
+    "@pxl/redis/": "./src/redis/",
+    "@pxl/cache/": "./src/cache/",
+    "@pxl/logger/": "./src/logger/",
+    "@pxl/util/": "./src/util/",
+    "@pxl/services/": "./src/services/"
+  }
+}

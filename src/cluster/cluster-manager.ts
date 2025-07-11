@@ -1,5 +1,5 @@
-import cluster from 'cluster';
-import { cpus } from 'os';
+import cluster from 'node:cluster';
+import { cpus } from 'node:os';
 import type {
   ClusterManagerConfig,
   ClusterManagerProps,

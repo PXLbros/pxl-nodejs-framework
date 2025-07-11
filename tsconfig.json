@@ -15,6 +15,8 @@
     "resolveJsonModule": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
+    "allowImportingTsExtensions": false,
+    "noResolve": false,
     "types": ["node"]
   },
   "include": ["src/**/*"],
