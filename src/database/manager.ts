@@ -50,6 +50,6 @@ export default class DatabaseManager {
    * Log database message
    */
   public log(message: string, meta?: Record<string, unknown>): void {
-    this.logger.custom('database', message, meta);
+    this.logger.custom({ level: 'database', message, meta });
   }
 }

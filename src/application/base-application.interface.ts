@@ -182,6 +182,9 @@ export interface ApplicationPerformanceConfig extends PerformanceMonitorOptions 
 
   /** Performance report generation interval in milliseconds */
   reportInterval?: number;
+
+  /** Performance report format: 'simple' for one-line, 'detailed' for multi-line */
+  reportFormat?: 'simple' | 'detailed';
 }
 
 export interface ApplicationConfig {

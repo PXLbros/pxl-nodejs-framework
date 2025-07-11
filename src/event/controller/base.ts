@@ -37,22 +37,22 @@ export default abstract class BaseEventController {
           error: error instanceof Error ? error.message : String(error),
           stack: error instanceof Error ? error.stack : undefined,
         };
-        this.logger.custom('event', message, errorMeta);
+        this.logger.custom({ level: 'event', message, meta: errorMeta });
       } else {
-        this.logger.custom('event', error);
+        this.logger.custom({ level: 'event', message: error });
       }
     },
 
     info: (message: string, meta?: Record<string, unknown>): void => {
-      this.logger.custom('event', message, meta);
+      this.logger.custom({ level: 'event', message, meta });
     },
 
     warn: (message: string, meta?: Record<string, unknown>): void => {
-      this.logger.custom('event', message, meta);
+      this.logger.custom({ level: 'event', message, meta });
     },
 
     debug: (message: string, meta?: Record<string, unknown>): void => {
-      this.logger.custom('event', message, meta);
+      this.logger.custom({ level: 'event', message, meta });
     },
   };
 }

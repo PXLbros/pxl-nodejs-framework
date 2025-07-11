@@ -10,7 +10,7 @@ export function generateClientId(): string {
 }
 
 export function log(message: string, meta?: Record<string, unknown>, options?: LogOptions): void {
-  Logger.custom('webSocket', message, meta, options);
+  Logger.custom({ level: 'webSocket', message, meta, options });
 }
 
 export function parseServerMessage(message: WebSocket.Data): Record<string, unknown> {

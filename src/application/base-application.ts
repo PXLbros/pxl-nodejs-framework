@@ -407,9 +407,11 @@ export default abstract class BaseApplication {
     // Set up periodic performance reports if configured
     if (this.config.performance.reportInterval && this.config.performance.reportInterval > 0) {
       setInterval(() => {
-        const report = this.performanceMonitor?.generateReport();
+        const reportFormat = this.config.performance?.reportFormat ?? 'detailed';
+        const report = this.performanceMonitor?.generateFormattedReport(reportFormat);
+
         if (report) {
-          Logger.info('Performance Report', report);
+          Logger.info({ message: report });
         }
       }, this.config.performance.reportInterval);
     }
@@ -418,13 +420,17 @@ export default abstract class BaseApplication {
   private setupGlobalErrorHandlers(): void {
     // Handle uncaught exceptions
     process.on('uncaughtException', error => {
-      Logger.error(error, 'Uncaught Exception');
+      Logger.error({ error, message: 'Uncaught Exception' });
       this.initiateGracefulShutdown();
     });
 
     // Handle unhandled promise rejections
     process.on('unhandledRejection', (reason, promise) => {
-      Logger.error(reason instanceof Error ? reason : new Error(String(reason)), 'Unhandled Rejection', { promise });
+      Logger.error({
+        error: reason instanceof Error ? reason : new Error(String(reason)),
+        message: 'Unhandled Rejection',
+        meta: { promise },
+      });
       this.initiateGracefulShutdown();
     });
   }
@@ -437,9 +443,12 @@ export default abstract class BaseApplication {
       return;
     }
 
-    Logger.info('Initiating graceful shutdown due to error');
+    Logger.info({ message: 'Initiating graceful shutdown due to error' });
     this.stop().catch(error => {
-      Logger.error(error instanceof Error ? error : new Error(String(error)), 'Error during graceful shutdown');
+      Logger.error({
+        error: error instanceof Error ? error : new Error(String(error)),
+        message: 'Error during graceful shutdown',
+      });
       process.exit(1);
     });
   }
@@ -468,7 +477,7 @@ export default abstract class BaseApplication {
 
     // Set timeout for forced termination
     const forceExitTimeout = setTimeout(() => {
-      Logger.warn('Forced shutdown due to timeout');
+      Logger.warn({ message: 'Forced shutdown due to timeout' });
       process.exit(1);
     }, this.shutdownTimeout);
 
@@ -490,7 +499,10 @@ export default abstract class BaseApplication {
       clearTimeout(forceExitTimeout);
       process.exit(0);
     } catch (error) {
-      Logger.error(error instanceof Error ? error : new Error(String(error)), 'Error during shutdown');
+      Logger.error({
+        error: error instanceof Error ? error : new Error(String(error)),
+        message: 'Error during shutdown',
+      });
       clearTimeout(forceExitTimeout);
       process.exit(1);
     }

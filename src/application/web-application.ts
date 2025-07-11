@@ -178,16 +178,19 @@ export default class WebApplication extends BaseApplication {
    */
   protected async onStarted({ startupTime }: { startupTime: number }): Promise<void> {
     if (this.config.log?.startUp) {
-      Logger.info('Application started', {
-        Name: this.config.name,
-        'Instance ID': this.config.instanceId,
-        'PXL Framework Version': this.applicationVersion,
-        'Startup Time': Time.formatTime({
-          time: startupTime,
-          format: 's',
-          numDecimals: 2,
-          showUnit: true,
-        }),
+      Logger.info({
+        message: 'Application started',
+        meta: {
+          Name: this.config.name,
+          'Instance ID': this.config.instanceId,
+          'PXL Framework Version': this.applicationVersion,
+          'Startup Time': Time.formatTime({
+            time: startupTime,
+            format: 's',
+            numDecimals: 2,
+            showUnit: true,
+          }),
+        },
       });
     }
 
@@ -201,15 +204,18 @@ export default class WebApplication extends BaseApplication {
 
   protected async onStopped({ runtime }: { runtime: number }): Promise<void> {
     if (this.config.log?.shutdown) {
-      Logger.info('Application stopped', {
-        Name: this.config.name,
-        'Instance ID': this.config.instanceId,
-        Runtime: Time.formatTime({
-          time: runtime,
-          format: 's',
-          numDecimals: 2,
-          showUnit: true,
-        }),
+      Logger.info({
+        message: 'Application stopped',
+        meta: {
+          Name: this.config.name,
+          'Instance ID': this.config.instanceId,
+          Runtime: Time.formatTime({
+            time: runtime,
+            format: 's',
+            numDecimals: 2,
+            showUnit: true,
+          }),
+        },
       });
     }
 

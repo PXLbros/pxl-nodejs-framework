@@ -190,7 +190,7 @@ class WebServer {
 
   private async onError(request: FastifyRequest, reply: FastifyReply, error: Error): Promise<void> {
     // Adjusted for Fastify types
-    Logger.error(error);
+    Logger.error({ error });
     // Implement any additional logic here
   }
 
@@ -238,8 +238,11 @@ class WebServer {
     const controllersDirectoryExists = await existsSync(this.options.controllersDirectory);
 
     if (!controllersDirectoryExists) {
-      Logger.warn('Web server controllers directory not found', {
-        Directory: this.options.controllersDirectory,
+      Logger.warn({
+        message: 'Web server controllers directory not found',
+        meta: {
+          Directory: this.options.controllersDirectory,
+        },
       });
 
       return;
@@ -281,10 +284,13 @@ class WebServer {
       if (typeof ControllerClass !== 'function') {
         const controllerPath = `${this.options.controllersDirectory}/${route.controllerName}.ts`;
 
-        Logger.warn('Web server controller not found', {
-          Controller: route.controllerName,
-          Path: controllerPath,
-          Route: `${route.path}`,
+        Logger.warn({
+          message: 'Web server controller not found',
+          meta: {
+            Controller: route.controllerName,
+            Path: controllerPath,
+            Route: `${route.path}`,
+          },
         });
 
         continue;
@@ -396,9 +402,12 @@ class WebServer {
     const controllerHandler = controllerInstance[routeAction as keyof typeof controllerInstance];
 
     if (!controllerHandler) {
-      Logger.warn('Web server controller action not found', {
-        Controller: controllerName,
-        Action: routeAction,
+      Logger.warn({
+        message: 'Web server controller action not found',
+        meta: {
+          Controller: controllerName,
+          Action: routeAction,
+        },
       });
 
       throw new Error('Web server controller action not found');
@@ -440,7 +449,7 @@ class WebServer {
         port: this.options.port,
       });
     } catch (error) {
-      Logger.error(error);
+      Logger.error({ error });
     }
   }
 
@@ -456,7 +465,7 @@ class WebServer {
    * Log web server message
    */
   public log(message: string, meta?: Record<string, unknown>): void {
-    this.logger.custom('webServer', message, meta);
+    this.logger.custom({ level: 'webServer', message, meta });
   }
 }
 

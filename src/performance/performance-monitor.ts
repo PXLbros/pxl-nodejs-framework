@@ -106,20 +106,26 @@ export class PerformanceMonitor {
     // Check thresholds and log warnings
     const threshold = this.thresholds[metricType];
     if (this.logSlowOperations && entry.duration > threshold) {
-      Logger.warn(`Performance threshold exceeded`, {
-        operation: entry.name,
-        duration: `${entry.duration.toFixed(2)}ms`,
-        threshold: `${threshold}ms`,
-        type: metricType,
+      Logger.warn({
+        message: `Performance threshold exceeded`,
+        meta: {
+          operation: entry.name,
+          duration: `${entry.duration.toFixed(2)}ms`,
+          threshold: `${threshold}ms`,
+          type: metricType,
+        },
       });
     }
 
     // Log all operations if enabled
     if (this.logAllOperations) {
-      Logger.debug(`Performance metric`, {
-        operation: entry.name,
-        duration: `${entry.duration.toFixed(2)}ms`,
-        type: metricType,
+      Logger.debug({
+        message: `Performance metric`,
+        meta: {
+          operation: entry.name,
+          duration: `${entry.duration.toFixed(2)}ms`,
+          type: metricType,
+        },
       });
     }
   }
@@ -149,16 +155,24 @@ export class PerformanceMonitor {
       performance.clearMarks(startMark);
       performance.clearMarks(endMark);
     } catch (error) {
-      Logger.error(error instanceof Error ? error : new Error(String(error)), 'Error measuring performance');
+      Logger.error({
+        error: error instanceof Error ? error : new Error(String(error)),
+        message: 'Error measuring performance',
+      });
     }
   }
 
-  public async measureAsync<T>(
-    name: string,
-    type: PerformanceMetrics['type'],
-    fn: () => Promise<T>,
-    metadata?: Record<string, any>,
-  ): Promise<T> {
+  public async measureAsync<T>({
+    name,
+    type,
+    fn,
+    metadata,
+  }: {
+    name: string;
+    type: PerformanceMetrics['type'];
+    fn: () => Promise<T>;
+    metadata?: Record<string, any>;
+  }): Promise<T> {
     if (!this.isEnabled) {
       return fn();
     }
@@ -272,7 +286,12 @@ export class PerformanceMonitor {
   }
 
   public generateReport(): {
-    summary: Record<string, any>;
+    summary: {
+      totalMetrics: number;
+      averages: Record<string, number>;
+      thresholds: PerformanceThresholds;
+      enabled: boolean;
+    };
     metrics: PerformanceMetrics[];
     memory: Record<string, number>;
     cpu: NodeJS.CpuUsage;
@@ -288,6 +307,37 @@ export class PerformanceMonitor {
       memory: this.getDetailedMemoryUsage(),
       cpu: this.getCpuUsage(),
     };
+  }
+
+  public generateFormattedReport(format: 'simple' | 'detailed' = 'detailed'): string {
+    const report = this.generateReport();
+
+    if (format === 'simple') {
+      const memoryUsed = report.memory.heapUsed;
+      const cpuPercent = Math.round((report.cpu.user + report.cpu.system) / 1000000); // Convert microseconds to rough percentage
+      const avgDurations = Object.values(report.summary.averages);
+      const avgMetric =
+        avgDurations.length > 0 ? Math.round(avgDurations.reduce((sum, val) => sum + val, 0) / avgDurations.length) : 0;
+
+      return `Performance Report (summary: ${report.summary.totalMetrics} ops, avg: ${avgMetric}ms | metrics: ${report.metrics.length} | memory: ${memoryUsed}mb | cpu: ${cpuPercent}%)`;
+    }
+    const lines = [
+      'Performance Report:',
+      `Summary: ${report.summary.totalMetrics} operations tracked, enabled: ${report.summary.enabled}`,
+      `Metrics: ${report.metrics.length} recent operations recorded`,
+      `Memory: RSS: ${report.memory.rss}mb, Heap: ${report.memory.heapUsed}/${report.memory.heapTotal}mb`,
+      `CPU: User: ${Math.round(report.cpu.user / 1000)}ms, System: ${Math.round(report.cpu.system / 1000)}ms`,
+    ];
+
+    if (Object.keys(report.summary.averages).length > 0) {
+      lines.push(
+        `Averages: ${Object.entries(report.summary.averages)
+          .map(([name, avg]) => `${name}: ${Math.round(avg)}ms`)
+          .join(', ')}`,
+      );
+    }
+
+    return lines.join('\n');
   }
 
   public destroy(): void {

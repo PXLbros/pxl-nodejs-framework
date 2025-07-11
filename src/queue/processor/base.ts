@@ -30,22 +30,22 @@ export default abstract class BaseProcessor {
           error: error instanceof Error ? error.message : String(error),
           stack: error instanceof Error ? error.stack : undefined,
         };
-        this.logger.custom('queueJob', message, errorMeta);
+        this.logger.custom({ level: 'queueJob', message, meta: errorMeta });
       } else {
-        this.logger.custom('queueJob', error);
+        this.logger.custom({ level: 'queueJob', message: error });
       }
     },
 
     info: (message: string, meta?: Record<string, unknown>): void => {
-      this.logger.custom('queueJob', message, meta);
+      this.logger.custom({ level: 'queueJob', message, meta });
     },
 
     warn: (message: string, meta?: Record<string, unknown>): void => {
-      this.logger.custom('queueJob', message, meta);
+      this.logger.custom({ level: 'queueJob', message, meta });
     },
 
     debug: (message: string, meta?: Record<string, unknown>): void => {
-      this.logger.custom('queueJob', message, meta);
+      this.logger.custom({ level: 'queueJob', message, meta });
     },
   };
 }

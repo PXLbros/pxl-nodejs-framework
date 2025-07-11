@@ -54,7 +54,7 @@ export default class CommandApplication extends BaseApplication {
     const parsedArgv = argv.parseSync();
 
     if (parsedArgv._.length === 0) {
-      Logger.warn('No command provided');
+      Logger.warn({ message: 'No command provided' });
 
       this.stopCommand();
 
@@ -66,8 +66,11 @@ export default class CommandApplication extends BaseApplication {
     const commandsDirectoryExists = await existsSync(this.config.commandsDirectory);
 
     if (!commandsDirectoryExists) {
-      Logger.warn('Commands directory not found', {
-        Directory: this.config.commandsDirectory,
+      Logger.warn({
+        message: 'Commands directory not found',
+        meta: {
+          Directory: this.config.commandsDirectory,
+        },
       });
 
       return;
@@ -86,7 +89,10 @@ export default class CommandApplication extends BaseApplication {
     }
 
     if (!CommandClass) {
-      Logger.warn('Command not found', { Command: inputCommandName });
+      Logger.warn({
+        message: 'Command not found',
+        meta: { Command: inputCommandName },
+      });
 
       return;
     }
@@ -99,7 +105,10 @@ export default class CommandApplication extends BaseApplication {
       databaseInstance,
     });
 
-    Logger.info('Command started', { Command: inputCommandName });
+    Logger.info({
+      message: 'Command started',
+      meta: { Command: inputCommandName },
+    });
 
     // Run command
     await command.run(parsedArgv);
@@ -119,7 +128,10 @@ export default class CommandApplication extends BaseApplication {
       });
     }
 
-    Logger.info('Command completed', commandCompletedLogParams);
+    Logger.info({
+      message: 'Command completed',
+      meta: commandCompletedLogParams,
+    });
 
     // Call shutdown signtal to stop the command
     this.stopCommand();
@@ -131,6 +143,6 @@ export default class CommandApplication extends BaseApplication {
   }
 
   protected stopCallback(): void {
-    Logger.info('Command stopped');
+    Logger.info({ message: 'Command stopped' });
   }
 }

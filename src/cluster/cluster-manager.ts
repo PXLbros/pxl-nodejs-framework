@@ -44,9 +44,12 @@ export default class ClusterManager {
     }
 
     cluster.on('online', worker => {
-      Logger.debug('Started cluster worker', {
-        ID: worker.id,
-        PID: worker.process.pid,
+      Logger.debug({
+        message: 'Started cluster worker',
+        meta: {
+          ID: worker.id,
+          PID: worker.process.pid,
+        },
       });
     });
 
@@ -57,10 +60,13 @@ export default class ClusterManager {
       }
     });
 
-    Logger.debug('Started cluster master', {
-      Mode: this.config.workerMode,
-      'Worker Count': numClusterWorkers,
-      CPUs: numCPUs,
+    Logger.debug({
+      message: 'Started cluster master',
+      meta: {
+        Mode: this.config.workerMode,
+        'Worker Count': numClusterWorkers,
+        CPUs: numCPUs,
+      },
     });
   }
 
@@ -69,8 +75,11 @@ export default class ClusterManager {
 
     process.on('message', async message => {
       if (message === 'shutdown') {
-        Logger.debug('Worker received shutdown message, stopping...', {
-          PID: process.pid,
+        Logger.debug({
+          message: 'Worker received shutdown message, stopping...',
+          meta: {
+            PID: process.pid,
+          },
         });
 
         // Stop application

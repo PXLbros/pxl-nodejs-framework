@@ -421,7 +421,7 @@ export default class WebSocketServer extends WebSocketBase {
   };
 
   private handleServerError = (error: Error): void => {
-    Logger.error(error);
+    Logger.error({ error });
   };
 
   private handleServerClientConnection = (
@@ -473,7 +473,7 @@ export default class WebSocketServer extends WebSocketBase {
         });
       }
     } catch (error) {
-      logger.error(error);
+      logger.error({ error });
     }
   };
 
@@ -601,11 +601,11 @@ export default class WebSocketServer extends WebSocketBase {
         if (serverMessageResponse?.response?.error) {
           // throw new Error(serverMessageResponse?.response?.error);
 
-          Logger.error(serverMessageResponse.response.error);
+          Logger.error({ error: serverMessageResponse.response.error });
         }
       }
     } catch (error) {
-      Logger.error(error);
+      Logger.error({ error });
 
       log('Error handling client message', {
         Error: error,

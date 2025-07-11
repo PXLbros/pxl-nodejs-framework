@@ -41,10 +41,10 @@ export class DatabasePerformanceWrapper {
       ...additionalMetadata,
     };
 
-    return monitor.measureAsync(
-      `${entity}.${operationName}`,
-      'database',
-      async () => {
+    return monitor.measureAsync({
+      name: `${entity}.${operationName}`,
+      type: 'database',
+      fn: async () => {
         const result = await operation();
 
         // Add result metadata
@@ -59,7 +59,7 @@ export class DatabasePerformanceWrapper {
         return result;
       },
       metadata,
-    );
+    });
   }
 
   /**
@@ -74,10 +74,10 @@ export class DatabasePerformanceWrapper {
       parameters: parameters.slice(0, 10), // Limit parameters for logging
     };
 
-    return monitor.measureAsync(
-      'raw_query',
-      'database',
-      async () => {
+    return monitor.measureAsync({
+      name: 'raw_query',
+      type: 'database',
+      fn: async () => {
         const result = await operation();
 
         // Add result metadata
@@ -90,7 +90,7 @@ export class DatabasePerformanceWrapper {
         return result;
       },
       metadata,
-    );
+    });
   }
 
   /**
@@ -109,7 +109,7 @@ export class DatabasePerformanceWrapper {
       ...additionalMetadata,
     };
 
-    return monitor.measureAsync(`transaction.${transactionName}`, 'database', operation, metadata);
+    return monitor.measureAsync({ name: `transaction.${transactionName}`, type: 'database', fn: operation, metadata });
   }
 
   /**
@@ -122,7 +122,12 @@ export class DatabasePerformanceWrapper {
       operation: connectionOperation,
     };
 
-    return monitor.measureAsync(`connection.${connectionOperation}`, 'database', operation, metadata);
+    return monitor.measureAsync({
+      name: `connection.${connectionOperation}`,
+      type: 'database',
+      fn: operation,
+      metadata,
+    });
   }
 
   /**
@@ -136,7 +141,7 @@ export class DatabasePerformanceWrapper {
       entity: migrationName,
     };
 
-    return monitor.measureAsync(`migration.${migrationName}`, 'database', operation, metadata);
+    return monitor.measureAsync({ name: `migration.${migrationName}`, type: 'database', fn: operation, metadata });
   }
 }
 

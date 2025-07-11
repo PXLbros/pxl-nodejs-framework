@@ -17,7 +17,7 @@ export default class ExampleAuthController extends WebServerBaseController {
       { id: 2, symbol: 'GOOGL', userId },
     ];
 
-    return this.sendSuccessResponse(reply, tickers);
+    return this.sendSuccessResponse({ reply, data: tickers });
   }, this.authenticateRequest.bind(this));
 
   // Method 2: Manual authentication (original approach, now simplified)
@@ -35,7 +35,7 @@ export default class ExampleAuthController extends WebServerBaseController {
       { id: 2, userId: user.userId, symbol: 'GOOGL', quantity: 5 },
     ];
 
-    return this.sendSuccessResponse(reply, orders);
+    return this.sendSuccessResponse({ reply, data: orders });
   };
 
   // Method 3: Creating a simple authenticated wrapper method
@@ -48,7 +48,7 @@ export default class ExampleAuthController extends WebServerBaseController {
         email: user.payload.email ?? 'N/A',
       };
 
-      return this.sendSuccessResponse(reply, userProfile);
+      return this.sendSuccessResponse({ reply, data: userProfile });
     });
   };
 

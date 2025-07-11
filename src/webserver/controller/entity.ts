@@ -81,18 +81,21 @@ export default abstract class EntityController extends BaseController {
       const EntityClass = await this.getEntity();
 
       if (!EntityClass) {
-        this.sendErrorResponse(reply, 'Entity not found');
+        this.sendErrorResponse({ reply, error: 'Entity not found' });
 
         return;
       }
 
       const formFields = generateFormFields({ model: EntityClass });
 
-      this.sendSuccessResponse(reply, {
-        formFields,
+      this.sendSuccessResponse({
+        reply,
+        data: {
+          formFields,
+        },
       });
     } catch (error) {
-      this.sendErrorResponse(reply, error);
+      this.sendErrorResponse({ reply, error });
     }
   };
 
@@ -147,7 +150,7 @@ export default abstract class EntityController extends BaseController {
       const EntityClass = await this.getEntity();
 
       if (!EntityClass) {
-        this.sendErrorResponse(reply, 'Entity not found');
+        this.sendErrorResponse({ reply, error: 'Entity not found' });
 
         return;
       }
@@ -330,7 +333,7 @@ export default abstract class EntityController extends BaseController {
         limit: data.limit,
       });
     } catch (error) {
-      this.sendErrorResponse(reply, error);
+      this.sendErrorResponse({ reply, error });
     }
   };
 
@@ -377,7 +380,7 @@ export default abstract class EntityController extends BaseController {
       const EntityClass = await this.getEntity();
 
       if (!EntityClass) {
-        this.sendErrorResponse(reply, 'Entity not found');
+        this.sendErrorResponse({ reply, error: 'Entity not found' });
         return;
       }
 
@@ -396,9 +399,9 @@ export default abstract class EntityController extends BaseController {
         item,
       });
 
-      this.sendSuccessResponse(reply, item);
+      this.sendSuccessResponse({ reply, data: item });
     } catch (error) {
-      this.sendErrorResponse(reply, error);
+      this.sendErrorResponse({ reply, error });
     }
   };
 
@@ -424,7 +427,7 @@ export default abstract class EntityController extends BaseController {
       const EntityClass = await this.getEntity();
 
       if (!EntityClass) {
-        this.sendErrorResponse(reply, 'Entity not found');
+        this.sendErrorResponse({ reply, error: 'Entity not found' });
         return;
       }
 
@@ -442,7 +445,7 @@ export default abstract class EntityController extends BaseController {
       const { error, value } = EntityClass.validate(request.body, true);
 
       if (error) {
-        return this.sendErrorResponse(reply, error.message);
+        return this.sendErrorResponse({ reply, error: error.message });
       }
 
       const item = this.entityManager.create(this.entityName, value);
@@ -457,9 +460,9 @@ export default abstract class EntityController extends BaseController {
         item,
       });
 
-      this.sendSuccessResponse(reply, item, StatusCodes.CREATED);
+      this.sendSuccessResponse({ reply, data: item, statusCode: StatusCodes.CREATED });
     } catch (error) {
-      this.sendErrorResponse(reply, error);
+      this.sendErrorResponse({ reply, error });
     }
   };
 
@@ -475,7 +478,7 @@ export default abstract class EntityController extends BaseController {
       const EntityClass = await this.getEntity();
 
       if (!EntityClass) {
-        this.sendErrorResponse(reply, 'Entity not found');
+        this.sendErrorResponse({ reply, error: 'Entity not found' });
         return;
       }
 
@@ -484,7 +487,7 @@ export default abstract class EntityController extends BaseController {
       const { error, value } = EntityClass.validate(request.body, false);
 
       if (error) {
-        return this.sendErrorResponse(reply, error.message);
+        return this.sendErrorResponse({ reply, error: error.message });
       }
 
       const item = await this.entityManager.findOne(this.entityName, { id });
@@ -505,9 +508,9 @@ export default abstract class EntityController extends BaseController {
         item,
       });
 
-      this.sendSuccessResponse(reply, item);
+      this.sendSuccessResponse({ reply, data: item });
     } catch (error) {
-      this.sendErrorResponse(reply, error);
+      this.sendErrorResponse({ reply, error });
     }
   };
 
@@ -516,7 +519,7 @@ export default abstract class EntityController extends BaseController {
       const EntityClass = await this.getEntity();
 
       if (!EntityClass) {
-        this.sendErrorResponse(reply, 'Entity not found');
+        this.sendErrorResponse({ reply, error: 'Entity not found' });
 
         return;
       }
@@ -533,7 +536,7 @@ export default abstract class EntityController extends BaseController {
 
       reply.status(StatusCodes.NO_CONTENT).send();
     } catch (error) {
-      this.sendErrorResponse(reply, error);
+      this.sendErrorResponse({ reply, error });
     }
   };
 }

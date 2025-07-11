@@ -43,7 +43,7 @@ export default class QueueWorker extends Worker {
   };
 
   private onWorkerError = (error: Error): void => {
-    Logger.error(error);
+    Logger.error({ error });
   };
 
   private onWorkerFailed = (job: Job<any, Processor<any, any, string>, string> | undefined, error: Error): void => {
@@ -59,7 +59,7 @@ export default class QueueWorker extends Worker {
     //   this.redisInstance.publisherClient.publish('queueJobError', JSON.stringify(errorMessage));
     // }
 
-    Logger.error(error);
+    Logger.error({ error });
   };
 
   private onWorkerStalled = (jobId: string): void => {

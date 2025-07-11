@@ -42,10 +42,10 @@ export class CachePerformanceWrapper {
       ...metadata,
     };
 
-    return monitor.measureAsync(
-      `get.${key}`,
-      'cache',
-      async () => {
+    return monitor.measureAsync({
+      name: `get.${key}`,
+      type: 'cache',
+      fn: async () => {
         const result = await operation();
 
         // Determine cache hit/miss
@@ -54,8 +54,8 @@ export class CachePerformanceWrapper {
 
         return result;
       },
-      operationMetadata,
-    );
+      metadata: operationMetadata,
+    });
   }
 
   /**
@@ -74,7 +74,12 @@ export class CachePerformanceWrapper {
       ...metadata,
     };
 
-    return monitor.measureAsync(`set.${key}`, 'cache', operation, operationMetadata);
+    return monitor.measureAsync({
+      name: `set.${key}`,
+      type: 'cache',
+      fn: operation,
+      metadata: operationMetadata,
+    });
   }
 
   /**
@@ -93,7 +98,12 @@ export class CachePerformanceWrapper {
       ...metadata,
     };
 
-    return monitor.measureAsync(`delete.${key}`, 'cache', operation, operationMetadata);
+    return monitor.measureAsync({
+      name: `delete.${key}`,
+      type: 'cache',
+      fn: operation,
+      metadata: operationMetadata,
+    });
   }
 
   /**
@@ -112,7 +122,12 @@ export class CachePerformanceWrapper {
       ...metadata,
     };
 
-    return monitor.measureAsync(`clear.${pattern}`, 'cache', operation, operationMetadata);
+    return monitor.measureAsync({
+      name: `clear.${pattern}`,
+      type: 'cache',
+      fn: operation,
+      metadata: operationMetadata,
+    });
   }
 
   /**
@@ -131,7 +146,12 @@ export class CachePerformanceWrapper {
       ...metadata,
     };
 
-    return monitor.measureAsync(`exists.${key}`, 'cache', operation, operationMetadata);
+    return monitor.measureAsync({
+      name: `exists.${key}`,
+      type: 'cache',
+      fn: operation,
+      metadata: operationMetadata,
+    });
   }
 
   /**
@@ -150,7 +170,12 @@ export class CachePerformanceWrapper {
       ...metadata,
     };
 
-    return monitor.measureAsync(`multi_get.${keys.length}_keys`, 'cache', operation, operationMetadata);
+    return monitor.measureAsync({
+      name: `multi_get.${keys.length}_keys`,
+      type: 'cache',
+      fn: operation,
+      metadata: operationMetadata,
+    });
   }
 
   /**
@@ -169,7 +194,12 @@ export class CachePerformanceWrapper {
       ...metadata,
     };
 
-    return monitor.measureAsync(`multi_set.${keys.length}_keys`, 'cache', operation, operationMetadata);
+    return monitor.measureAsync({
+      name: `multi_set.${keys.length}_keys`,
+      type: 'cache',
+      fn: operation,
+      metadata: operationMetadata,
+    });
   }
 
   /**
@@ -188,7 +218,12 @@ export class CachePerformanceWrapper {
       ...metadata,
     };
 
-    return monitor.measureAsync(`increment.${key}`, 'cache', operation, operationMetadata);
+    return monitor.measureAsync({
+      name: `increment.${key}`,
+      type: 'cache',
+      fn: operation,
+      metadata: operationMetadata,
+    });
   }
 
   /**
@@ -207,7 +242,12 @@ export class CachePerformanceWrapper {
       ...metadata,
     };
 
-    return monitor.measureAsync(`decrement.${key}`, 'cache', operation, operationMetadata);
+    return monitor.measureAsync({
+      name: `decrement.${key}`,
+      type: 'cache',
+      fn: operation,
+      metadata: operationMetadata,
+    });
   }
 }
 
@@ -223,8 +263,11 @@ export function MonitorCacheOperation(operationName?: string) {
     descriptor.value = async function (...args: any[]) {
       const monitor = CachePerformanceWrapper.getPerformanceMonitor();
 
-      return monitor.measureAsync(`${className}.${operation}`, 'cache', () => originalMethod.apply(this, args), {
-        argumentCount: args.length,
+      return monitor.measureAsync({
+        name: `${className}.${operation}`,
+        type: 'cache',
+        fn: () => originalMethod.apply(this, args),
+        metadata: { argumentCount: args.length },
       });
     };
 

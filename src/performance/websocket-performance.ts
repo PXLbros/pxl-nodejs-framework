@@ -40,7 +40,12 @@ export class WebSocketPerformanceWrapper {
       ...metadata,
     };
 
-    return monitor.measureAsync(`message.${messageType}`, 'websocket', operation, operationMetadata);
+    return monitor.measureAsync({
+      name: `message.${messageType}`,
+      type: 'websocket',
+      fn: operation,
+      metadata: operationMetadata,
+    });
   }
 
   /**
@@ -58,7 +63,12 @@ export class WebSocketPerformanceWrapper {
       ...metadata,
     };
 
-    return monitor.measureAsync(`connection.${connectionOperation}`, 'websocket', operation, operationMetadata);
+    return monitor.measureAsync({
+      name: `connection.${connectionOperation}`,
+      type: 'websocket',
+      fn: operation,
+      metadata: operationMetadata,
+    });
   }
 
   /**
@@ -78,7 +88,12 @@ export class WebSocketPerformanceWrapper {
       ...metadata,
     };
 
-    return monitor.measureAsync(`room.${roomOperation}`, 'websocket', operation, operationMetadata);
+    return monitor.measureAsync({
+      name: `room.${roomOperation}`,
+      type: 'websocket',
+      fn: operation,
+      metadata: operationMetadata,
+    });
   }
 
   /**
@@ -97,7 +112,12 @@ export class WebSocketPerformanceWrapper {
       ...metadata,
     };
 
-    return monitor.measureAsync(`broadcast.${broadcastType}`, 'websocket', operation, operationMetadata);
+    return monitor.measureAsync({
+      name: `broadcast.${broadcastType}`,
+      type: 'websocket',
+      fn: operation,
+      metadata: operationMetadata,
+    });
   }
 
   /**
@@ -114,7 +134,12 @@ export class WebSocketPerformanceWrapper {
       ...metadata,
     };
 
-    return monitor.measureAsync('authentication', 'websocket', operation, operationMetadata);
+    return monitor.measureAsync({
+      name: 'authentication',
+      type: 'websocket',
+      fn: operation,
+      metadata: operationMetadata,
+    });
   }
 
   /**
@@ -133,7 +158,12 @@ export class WebSocketPerformanceWrapper {
       ...metadata,
     };
 
-    return monitor.measureAsync(`${controllerName}.${methodName}`, 'websocket', operation, operationMetadata);
+    return monitor.measureAsync({
+      name: `${controllerName}.${methodName}`,
+      type: 'websocket',
+      fn: operation,
+      metadata: operationMetadata,
+    });
   }
 }
 

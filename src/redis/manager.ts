@@ -48,7 +48,7 @@ export default class RedisManager {
       };
 
       const handleError = (error: Error): void => {
-        Logger.error(error);
+        Logger.error({ error });
 
         reject(error);
       };
@@ -66,6 +66,6 @@ export default class RedisManager {
    * Log Redis message
    */
   public log(message: string, meta?: Record<string, unknown>): void {
-    this.logger.custom('redis', message, meta);
+    this.logger.custom({ level: 'redis', message, meta });
   }
 }

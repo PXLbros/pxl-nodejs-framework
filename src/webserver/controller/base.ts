@@ -47,12 +47,17 @@ export default abstract class BaseController {
     this.databaseInstance = databaseInstance;
   }
 
-  protected sendSuccessResponse<T = any>(
-    reply: FastifyReply,
-    data: T,
-    statusCode: StatusCodes = StatusCodes.OK,
-    meta?: ApiResponse<T>['meta'],
-  ) {
+  protected sendSuccessResponse<T = any>({
+    reply,
+    data,
+    statusCode = StatusCodes.OK,
+    meta,
+  }: {
+    reply: FastifyReply;
+    data: T;
+    statusCode?: StatusCodes;
+    meta?: ApiResponse<T>['meta'];
+  }) {
     const response: ApiResponse<T> = {
       data,
       meta: {
@@ -75,12 +80,17 @@ export default abstract class BaseController {
     reply.status(StatusCodes.NOT_FOUND).send(response);
   }
 
-  protected sendErrorResponse(
-    reply: FastifyReply,
-    error: unknown,
-    statusCode: StatusCodes = StatusCodes.BAD_REQUEST,
-    errorType?: ApiError['type'],
-  ) {
+  protected sendErrorResponse({
+    reply,
+    error,
+    statusCode = StatusCodes.BAD_REQUEST,
+    errorType,
+  }: {
+    reply: FastifyReply;
+    error: unknown;
+    statusCode?: StatusCodes;
+    errorType?: ApiError['type'];
+  }) {
     let publicErrorMessage: string;
     let errorDetails: any = undefined;
 
@@ -110,7 +120,7 @@ export default abstract class BaseController {
       }
     }
 
-    Logger.custom('webServer', error);
+    Logger.custom({ level: 'webServer', message: error });
     console.error(error);
 
     const apiError: ApiError = {
@@ -150,24 +160,34 @@ export default abstract class BaseController {
     const jwtSecretKey = this.applicationConfig.auth?.jwtSecretKey;
 
     if (!jwtSecretKey) {
-      this.sendErrorResponse(
+      this.sendErrorResponse({
         reply,
-        'Authentication not configured.',
-        StatusCodes.INTERNAL_SERVER_ERROR,
-        'server_error',
-      );
+        error: 'Authentication not configured.',
+        statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+        errorType: 'server_error',
+      });
       return null;
     }
 
     const authHeader = request.headers.authorization;
 
     if (!authHeader) {
-      this.sendErrorResponse(reply, 'No token provided.', StatusCodes.UNAUTHORIZED, 'authentication');
+      this.sendErrorResponse({
+        reply,
+        error: 'No token provided.',
+        statusCode: StatusCodes.UNAUTHORIZED,
+        errorType: 'authentication',
+      });
       return null;
     }
 
     if (!authHeader.startsWith('Bearer ')) {
-      this.sendErrorResponse(reply, 'Invalid token.', StatusCodes.UNAUTHORIZED, 'authentication');
+      this.sendErrorResponse({
+        reply,
+        error: 'Invalid token.',
+        statusCode: StatusCodes.UNAUTHORIZED,
+        errorType: 'authentication',
+      });
       return null;
     }
 
@@ -182,7 +202,12 @@ export default abstract class BaseController {
       const { payload } = await Jwt.jwtVerify(jwtAccessToken, importedJwtSecretKey);
 
       if (!payload.sub) {
-        this.sendErrorResponse(reply, 'Invalid token payload.', StatusCodes.UNAUTHORIZED, 'authentication');
+        this.sendErrorResponse({
+          reply,
+          error: 'Invalid token payload.',
+          statusCode: StatusCodes.UNAUTHORIZED,
+          errorType: 'authentication',
+        });
         return null;
       }
 
@@ -193,7 +218,12 @@ export default abstract class BaseController {
         payload,
       };
     } catch {
-      this.sendErrorResponse(reply, 'Invalid or expired token.', StatusCodes.UNAUTHORIZED, 'authentication');
+      this.sendErrorResponse({
+        reply,
+        error: 'Invalid or expired token.',
+        statusCode: StatusCodes.UNAUTHORIZED,
+        errorType: 'authentication',
+      });
       return null;
     }
   }

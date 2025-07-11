@@ -123,48 +123,77 @@ export class WebServerPerformanceWrapper {
   /**
    * Monitor controller method execution
    */
-  public static async monitorControllerMethod<T>(
-    controllerName: string,
-    methodName: string,
-    operation: () => Promise<T>,
-    metadata?: Record<string, any>,
-  ): Promise<T> {
+  public static async monitorControllerMethod<T>({
+    controllerName,
+    methodName,
+    operation,
+    metadata,
+  }: {
+    controllerName: string;
+    methodName: string;
+    operation: () => Promise<T>;
+    metadata?: Record<string, any>;
+  }): Promise<T> {
     const monitor = WebServerPerformanceWrapper.getPerformanceMonitor();
 
-    return monitor.measureAsync(`${controllerName}.${methodName}`, 'http', operation, {
-      controller: controllerName,
-      method: methodName,
-      ...metadata,
+    return monitor.measureAsync({
+      name: `${controllerName}.${methodName}`,
+      type: 'http',
+      fn: operation,
+      metadata: {
+        controller: controllerName,
+        method: methodName,
+        ...metadata,
+      },
     });
   }
 
   /**
    * Monitor route handler execution
    */
-  public static async monitorRouteHandler<T>(
-    route: string,
-    method: string,
-    operation: () => Promise<T>,
-    metadata?: Record<string, any>,
-  ): Promise<T> {
+  public static async monitorRouteHandler<T>({
+    route,
+    method,
+    operation,
+    metadata,
+  }: {
+    route: string;
+    method: string;
+    operation: () => Promise<T>;
+    metadata?: Record<string, any>;
+  }): Promise<T> {
     const monitor = WebServerPerformanceWrapper.getPerformanceMonitor();
 
-    return monitor.measureAsync(`${method} ${route}`, 'http', operation, { route, method, ...metadata });
+    return monitor.measureAsync({
+      name: `${method} ${route}`,
+      type: 'http',
+      fn: operation,
+      metadata: { route, method, ...metadata },
+    });
   }
 
   /**
    * Monitor middleware execution
    */
-  public static async monitorMiddleware<T>(
-    middlewareName: string,
-    operation: () => Promise<T>,
-    metadata?: Record<string, any>,
-  ): Promise<T> {
+  public static async monitorMiddleware<T>({
+    middlewareName,
+    operation,
+    metadata,
+  }: {
+    middlewareName: string;
+    operation: () => Promise<T>;
+    metadata?: Record<string, any>;
+  }): Promise<T> {
     const monitor = WebServerPerformanceWrapper.getPerformanceMonitor();
 
-    return monitor.measureAsync(`middleware.${middlewareName}`, 'http', operation, {
-      middleware: middlewareName,
-      ...metadata,
+    return monitor.measureAsync({
+      name: `middleware.${middlewareName}`,
+      type: 'http',
+      fn: operation,
+      metadata: {
+        middleware: middlewareName,
+        ...metadata,
+      },
     });
   }
 }
@@ -179,12 +208,12 @@ export function MonitorControllerMethod(methodName?: string) {
     const operation = methodName ?? propertyKey;
 
     descriptor.value = async function (...args: any[]) {
-      return WebServerPerformanceWrapper.monitorControllerMethod(
+      return WebServerPerformanceWrapper.monitorControllerMethod({
         controllerName,
-        operation,
-        () => originalMethod.apply(this, args),
-        { argumentCount: args.length },
-      );
+        methodName: operation,
+        operation: () => originalMethod.apply(this, args),
+        metadata: { argumentCount: args.length },
+      });
     };
 
     return descriptor;

@@ -131,7 +131,17 @@ export class Logger {
     this.isSentryInitialized = true;
   }
 
-  public log(level: LoggerLevels, message: unknown, meta?: Record<string, unknown>, _options?: LogOptions): void {
+  public log({
+    level,
+    message,
+    meta,
+    options,
+  }: {
+    level: LoggerLevels;
+    message: unknown;
+    meta?: Record<string, unknown>;
+    options?: LogOptions;
+  }): void {
     // if (options?.muteWorker) {
     // }
 
@@ -145,24 +155,58 @@ export class Logger {
     }
   }
 
-  public debug(message: unknown, meta?: Record<string, unknown>, options?: LogOptions): void {
-    this.log('debug', message, meta, options);
+  public debug({
+    message,
+    meta,
+    options,
+  }: {
+    message: unknown;
+    meta?: Record<string, unknown>;
+    options?: LogOptions;
+  }): void {
+    this.log({ level: 'debug', message, meta, options });
   }
 
-  public info(message: unknown, meta?: Record<string, unknown>, options?: LogOptions): void {
-    this.log('info', message, meta, options);
+  public info({
+    message,
+    meta,
+    options,
+  }: {
+    message: unknown;
+    meta?: Record<string, unknown>;
+    options?: LogOptions;
+  }): void {
+    this.log({ level: 'info', message, meta, options });
   }
 
-  public warn(message: unknown, meta?: Record<string, unknown>, options?: LogOptions): void {
-    this.log('warn', message, meta, options);
+  public warn({
+    message,
+    meta,
+    options,
+  }: {
+    message: unknown;
+    meta?: Record<string, unknown>;
+    options?: LogOptions;
+  }): void {
+    this.log({ level: 'warn', message, meta, options });
   }
 
-  public error(error: Error | unknown, message?: string, meta?: Record<string, unknown>, options?: LogOptions): void {
+  public error({
+    error,
+    message,
+    meta,
+    options,
+  }: {
+    error: Error | unknown;
+    message?: string;
+    meta?: Record<string, unknown>;
+    options?: LogOptions;
+  }): void {
     if (message) {
       // If a message is provided, combine it with the error for better context
       const errorMessage = error instanceof Error ? error.message : String(error);
       const combinedMessage = `${message}: ${errorMessage}`;
-      this.log('error', combinedMessage, meta, options);
+      this.log({ level: 'error', message: combinedMessage, meta, options });
 
       // Also capture the original error for Sentry if it's an Error object
       if (error instanceof Error && this.isSentryInitialized) {
@@ -170,12 +214,22 @@ export class Logger {
       }
     } else {
       // Original behavior when no message is provided
-      this.log('error', error, meta, options);
+      this.log({ level: 'error', message: error, meta, options });
     }
   }
 
-  public custom(level: LoggerLevels, message: unknown, meta?: Record<string, unknown>, options?: LogOptions): void {
-    this.log(level, message, meta, options);
+  public custom({
+    level,
+    message,
+    meta,
+    options,
+  }: {
+    level: LoggerLevels;
+    message: unknown;
+    meta?: Record<string, unknown>;
+    options?: LogOptions;
+  }): void {
+    this.log({ level, message, meta, options });
   }
 }
 

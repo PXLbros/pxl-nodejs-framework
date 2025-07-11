@@ -29,7 +29,7 @@ export default class SystemController extends WebSocketServerBaseController {
         },
       };
     } catch (error) {
-      Logger.error(error);
+      Logger.error({ error });
 
       return {
         error,
@@ -39,7 +39,7 @@ export default class SystemController extends WebSocketServerBaseController {
 
   public leaveRoom = (clientWebSocket: WebSocket, webSocketClientId: string, data: any): any => {
     if (!data?.userId) {
-      logger.warn('Missing user ID when leaving room');
+      logger.warn({ message: 'Missing user ID when leaving room' });
 
       return { error: 'No user ID provided' };
     }

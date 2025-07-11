@@ -44,7 +44,12 @@ export class QueuePerformanceWrapper {
       ...metadata,
     };
 
-    return monitor.measureAsync(`${queueName}.${jobName}`, 'queue', operation, operationMetadata);
+    return monitor.measureAsync({
+      name: `${queueName}.${jobName}`,
+      type: 'queue',
+      fn: operation,
+      metadata: operationMetadata,
+    });
   }
 
   /**
@@ -65,7 +70,12 @@ export class QueuePerformanceWrapper {
       ...metadata,
     };
 
-    return monitor.measureAsync(`add.${queueName}.${jobName}`, 'queue', operation, operationMetadata);
+    return monitor.measureAsync({
+      name: `add.${queueName}.${jobName}`,
+      type: 'queue',
+      fn: operation,
+      metadata: operationMetadata,
+    });
   }
 
   /**
@@ -85,7 +95,12 @@ export class QueuePerformanceWrapper {
       ...metadata,
     };
 
-    return monitor.measureAsync(`queue.${queueName}.${operationName}`, 'queue', operation, operationMetadata);
+    return monitor.measureAsync({
+      name: `queue.${queueName}.${operationName}`,
+      type: 'queue',
+      fn: operation,
+      metadata: operationMetadata,
+    });
   }
 
   /**
@@ -104,7 +119,12 @@ export class QueuePerformanceWrapper {
       ...metadata,
     };
 
-    return monitor.measureAsync(`processor.${processorName}`, 'queue', operation, operationMetadata);
+    return monitor.measureAsync({
+      name: `processor.${processorName}`,
+      type: 'queue',
+      fn: operation,
+      metadata: operationMetadata,
+    });
   }
 
   /**
@@ -122,7 +142,12 @@ export class QueuePerformanceWrapper {
       ...metadata,
     };
 
-    return monitor.measureAsync(`worker.${workerName}`, 'queue', operation, operationMetadata);
+    return monitor.measureAsync({
+      name: `worker.${workerName}`,
+      type: 'queue',
+      fn: operation,
+      metadata: operationMetadata,
+    });
   }
 
   /**
@@ -145,7 +170,12 @@ export class QueuePerformanceWrapper {
       ...metadata,
     };
 
-    return monitor.measureAsync(`retry.${queueName}.${jobName}`, 'queue', operation, operationMetadata);
+    return monitor.measureAsync({
+      name: `retry.${queueName}.${jobName}`,
+      type: 'queue',
+      fn: operation,
+      metadata: operationMetadata,
+    });
   }
 }
 

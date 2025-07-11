@@ -22,19 +22,19 @@ export default class RedisInstance {
     try {
       this.subscriberClient.disconnect();
     } catch (error) {
-      Logger.error(error, 'Could not disconnect Redis subscriber client');
+      Logger.error({ error, message: 'Could not disconnect Redis subscriber client' });
     }
 
     try {
       this.publisherClient.disconnect();
     } catch (error) {
-      Logger.error(error, 'Could not disconnect Redis publisherClient');
+      Logger.error({ error, message: 'Could not disconnect Redis publisherClient' });
     }
 
     try {
       this.client.disconnect();
     } catch (error) {
-      Logger.error(error, 'Could not disconnect Redis client');
+      Logger.error({ error, message: 'Could not disconnect Redis client' });
     }
 
     this.redisManager.log('Disconnected');

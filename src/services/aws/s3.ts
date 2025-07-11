@@ -222,9 +222,12 @@ export default class AwsS3 {
     const decodedKey = decodeURIComponent(key);
     const bucketKey = decodedKey;
 
-    Logger.info('Downloading file from S3', {
-      bucketName,
-      Key: bucketKey,
+    Logger.info({
+      message: 'Downloading file from S3',
+      meta: {
+        bucketName,
+        Key: bucketKey,
+      },
     });
 
     const getObjectParams = {
@@ -273,15 +276,18 @@ export default class AwsS3 {
         throw new Error(`Could not find downloaded file at ${destinationFilePath}`);
       }
 
-      Logger.info('File successfully downloaded', {
-        Path: destinationFilePath,
+      Logger.info({
+        message: 'File successfully downloaded',
+        meta: {
+          Path: destinationFilePath,
+        },
       });
 
       if (onComplete) {
         onComplete();
       }
     } catch (error) {
-      Logger.error(error);
+      Logger.error({ error });
 
       if (onError) {
         onError(error as Error);
@@ -304,13 +310,16 @@ export default class AwsS3 {
       });
 
       // Log the signed URL
-      Logger.info('Generated signed URL', {
-        URL: signedUrl,
+      Logger.info({
+        message: 'Generated signed URL',
+        meta: {
+          URL: signedUrl,
+        },
       });
 
       return signedUrl;
     } catch (error) {
-      Logger.error(error);
+      Logger.error({ error });
 
       throw error;
     }

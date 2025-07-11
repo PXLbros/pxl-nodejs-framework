@@ -59,8 +59,11 @@ export default class QueueManager {
     const processorsDirectoryExists = await existsSync(this.options.processorsDirectory);
 
     if (!processorsDirectoryExists) {
-      Logger.warn('Processors directory not found', {
-        Directory: this.options.processorsDirectory,
+      Logger.warn({
+        message: 'Processors directory not found',
+        meta: {
+          Directory: this.options.processorsDirectory,
+        },
       });
 
       return;
@@ -83,14 +86,17 @@ export default class QueueManager {
         });
       }
     } catch (error) {
-      Logger.error(error);
+      Logger.error({ error });
     }
   }
 
   private registerQueue({ queue, jobProcessorClasses }: { queue: QueueItem; jobProcessorClasses: any }): void {
     if (!queue.jobs) {
-      Logger.warn('No jobs found for queue, skip register', {
-        Name: queue.name,
+      Logger.warn({
+        message: 'No jobs found for queue, skip register',
+        meta: {
+          Name: queue.name,
+        },
       });
 
       return;
@@ -184,7 +190,7 @@ export default class QueueManager {
   }
 
   private onQueueError = (error: Error): void => {
-    Logger.error(error);
+    Logger.error({ error });
   };
 
   private onQueueWaiting = (job: Job): void => {
@@ -261,14 +267,17 @@ export default class QueueManager {
 
       return jobResult;
     } catch (error) {
-      Logger.warn('Queue worker processing error', {
-        Queue: job.queueName,
-        'Job Name': job.name,
-        'Job ID': job.id,
-        Error: (error as Error).message,
+      Logger.warn({
+        message: 'Queue worker processing error',
+        meta: {
+          Queue: job.queueName,
+          'Job Name': job.name,
+          'Job ID': job.id,
+          Error: (error as Error).message,
+        },
       });
 
-      Logger.error(error);
+      Logger.error({ error });
     }
   };
 
@@ -303,6 +312,6 @@ export default class QueueManager {
    * Log queue message
    */
   public log(message: string, meta?: Record<string, unknown>): void {
-    this.logger.custom('queue', message, meta);
+    this.logger.custom({ level: 'queue', message, meta });
   }
 }

@@ -46,8 +46,11 @@ export default class EventManager {
     const controllersDirectoryExists = existsSync(this.options.controllersDirectory);
 
     if (!controllersDirectoryExists) {
-      this.logger.warn('Event controllers directory not found', {
-        Directory: this.options.controllersDirectory,
+      this.logger.warn({
+        message: 'Event controllers directory not found',
+        meta: {
+          Directory: this.options.controllersDirectory,
+        },
       });
       return;
     }
@@ -75,10 +78,13 @@ export default class EventManager {
 
       if (typeof ControllerClass !== 'function') {
         const controllerPath = `${this.options.controllersDirectory}/${event.controllerName}.ts`;
-        this.logger.warn('Event controller not found', {
-          Controller: event.controllerName,
-          Path: controllerPath,
-          Event: event.name,
+        this.logger.warn({
+          message: 'Event controller not found',
+          meta: {
+            Controller: event.controllerName,
+            Path: controllerPath,
+            Event: event.name,
+          },
         });
         continue;
       }
@@ -94,10 +100,13 @@ export default class EventManager {
       const handler = controllerInstance[event.handlerName as keyof typeof controllerInstance];
 
       if (!handler || typeof handler !== 'function') {
-        this.logger.warn('Event handler not found', {
-          Controller: controllerName,
-          Handler: event.handlerName,
-          Event: event.name,
+        this.logger.warn({
+          message: 'Event handler not found',
+          meta: {
+            Controller: controllerName,
+            Handler: event.handlerName,
+            Event: event.name,
+          },
         });
         continue;
       }
@@ -129,9 +138,12 @@ export default class EventManager {
       if (!handler) {
         const availableEvents = Array.from(this.eventHandlers.keys()).join(', ');
 
-        this.logger.warn('Event handler not found for event', {
-          Event: name,
-          AvailableEvents: availableEvents,
+        this.logger.warn({
+          message: 'Event handler not found for event',
+          meta: {
+            Event: name,
+            AvailableEvents: availableEvents,
+          },
         });
 
         throw new Error(`Event handler not found for event '${name}'. Available events are: ${availableEvents}`);
@@ -141,7 +153,7 @@ export default class EventManager {
 
       this.log('Event executed', { Event: name });
     } catch (error) {
-      this.logger.error(error);
+      this.logger.error({ error });
     }
   }
 
@@ -149,6 +161,6 @@ export default class EventManager {
    * Log event message
    */
   public log(message: string, meta?: Record<string, unknown>): void {
-    this.logger.custom('event', message, meta);
+    this.logger.custom({ level: 'event', message, meta });
   }
 }
