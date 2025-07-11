@@ -1,6 +1,6 @@
 import cluster from 'cluster';
 import { cpus } from 'os';
-import {
+import type {
   ClusterManagerConfig,
   ClusterManagerProps,
   ClusterManagerWorkerModeManualConfig,
@@ -16,11 +16,7 @@ export default class ClusterManager {
   private shutdownSignals: NodeJS.Signals[] = ['SIGTERM', 'SIGINT'];
   private isShuttingDown = false;
 
-  constructor({
-    config,
-    startApplicationCallback,
-    stopApplicationCallback,
-  }: ClusterManagerProps) {
+  constructor({ config, startApplicationCallback, stopApplicationCallback }: ClusterManagerProps) {
     this.config = config;
 
     this.startApplicationCallback = startApplicationCallback;
@@ -41,9 +37,7 @@ export default class ClusterManager {
     const numCPUs: number = cpus().length;
 
     const numClusterWorkers =
-      this.config.workerMode === 'auto'
-        ? numCPUs
-        : (this.config as ClusterManagerWorkerModeManualConfig).workerCount;
+      this.config.workerMode === 'auto' ? numCPUs : (this.config as ClusterManagerWorkerModeManualConfig).workerCount;
 
     for (let workerIndex = 0; workerIndex < numClusterWorkers; workerIndex++) {
       cluster.fork();
@@ -114,7 +108,7 @@ export default class ClusterManager {
       cluster.on('exit', () => {
         exitedWorkers++;
 
-        const clusterWorkers = cluster.workers || {};
+        const clusterWorkers = cluster.workers ?? {};
         const numClusterWorkers = Object.keys(clusterWorkers).length;
 
         if (exitedWorkers === numClusterWorkers) {

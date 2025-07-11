@@ -1,6 +1,6 @@
 import { MikroORM } from '@mikro-orm/postgresql';
 import DatabaseInstance from './instance.js';
-import { ApplicationDatabaseOptions } from './manager.interface.js';
+import type { ApplicationDatabaseOptions } from './manager.interface.js';
 import { Logger } from '../logger/index.js';
 
 /**

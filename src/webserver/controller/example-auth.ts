@@ -1,36 +1,27 @@
-import { FastifyReply, FastifyRequest } from 'fastify';
-import WebServerBaseController, { AuthenticatedUser } from './base.js';
-import { AuthenticatedRequest, withAuth } from './auth-middleware.js';
+import type { FastifyReply, FastifyRequest } from 'fastify';
+import WebServerBaseController, { type AuthenticatedUser } from './base.js';
+import { type AuthenticatedRequest, withAuth } from './auth-middleware.js';
 
 /**
  * Example controller demonstrating simplified authentication
  */
 export default class ExampleAuthController extends WebServerBaseController {
   // Method 1: Using wrapper function approach
-  public getUserTickers = withAuth(
-    async (
-      request: AuthenticatedRequest,
-      reply: FastifyReply,
-    ): Promise<void> => {
-      // User is automatically authenticated and available on request.user
-      const { userId } = request.user;
+  public getUserTickers = withAuth(async (request: AuthenticatedRequest, reply: FastifyReply): Promise<void> => {
+    // User is automatically authenticated and available on request.user
+    const { userId } = request.user;
 
-      // Your business logic here
-      const tickers = [
-        { id: 1, symbol: 'AAPL', userId },
-        { id: 2, symbol: 'GOOGL', userId },
-      ];
+    // Your business logic here
+    const tickers = [
+      { id: 1, symbol: 'AAPL', userId },
+      { id: 2, symbol: 'GOOGL', userId },
+    ];
 
-      return this.sendSuccessResponse(reply, tickers);
-    },
-    this.authenticateRequest.bind(this),
-  );
+    return this.sendSuccessResponse(reply, tickers);
+  }, this.authenticateRequest.bind(this));
 
   // Method 2: Manual authentication (original approach, now simplified)
-  public getUserOrders = async (
-    request: FastifyRequest,
-    reply: FastifyReply,
-  ): Promise<void> => {
+  public getUserOrders = async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
     const user = await this.authenticateRequest(request, reply);
 
     if (!user) {
@@ -48,16 +39,13 @@ export default class ExampleAuthController extends WebServerBaseController {
   };
 
   // Method 3: Creating a simple authenticated wrapper method
-  public getUserProfile = async (
-    request: FastifyRequest,
-    reply: FastifyReply,
-  ): Promise<void> => {
+  public getUserProfile = async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
     return this.withAuthentication(request, reply, async user => {
       // Your business logic here with authenticated user
       const userProfile = {
         userId: user.userId,
-        username: user.payload.username || 'N/A',
-        email: user.payload.email || 'N/A',
+        username: user.payload.username ?? 'N/A',
+        email: user.payload.email ?? 'N/A',
       };
 
       return this.sendSuccessResponse(reply, userProfile);

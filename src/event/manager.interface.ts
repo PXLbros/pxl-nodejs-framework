@@ -1,8 +1,8 @@
 // event-manager.interface.ts
-import { ApplicationConfig } from '../application/base-application.interface.js';
-import { RedisInstance } from '../redis/index.js';
-import { DatabaseInstance } from '../database/index.js';
-import { EventControllerType } from './controller/base.interface.js';
+import type { ApplicationConfig } from '../application/base-application.interface.js';
+import type { RedisInstance } from '../redis/index.js';
+import type { DatabaseInstance } from '../database/index.js';
+import type { EventControllerType } from './controller/base.interface.js';
 
 export interface EventDefinition {
   name: string;

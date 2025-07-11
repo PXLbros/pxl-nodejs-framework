@@ -1,16 +1,12 @@
 // event-manager.ts
 import { existsSync } from 'fs';
 import { Logger } from '../logger/index.js';
-import { Loader, Helper } from '../util/index.js';
-import {
-  EventManagerConstructorParams,
-  EventManagerOptions,
-  EventDefinition,
-} from './manager.interface.js';
-import { ApplicationConfig } from '../application/base-application.interface.js';
-import DatabaseInstance from '../database/instance.js';
-import { RedisInstance } from '../redis/index.js';
-import { EventControllerType } from './controller/base.interface.js';
+import { Helper, Loader } from '../util/index.js';
+import type { EventDefinition, EventManagerConstructorParams, EventManagerOptions } from './manager.interface.js';
+import type { ApplicationConfig } from '../application/base-application.interface.js';
+import type DatabaseInstance from '../database/instance.js';
+import type { RedisInstance } from '../redis/index.js';
+import type { EventControllerType } from './controller/base.interface.js';
 
 export default class EventManager {
   private logger: typeof Logger = Logger;
@@ -47,9 +43,7 @@ export default class EventManager {
 
   public async load(): Promise<void> {
     // Check if controllers directory exists
-    const controllersDirectoryExists = existsSync(
-      this.options.controllersDirectory,
-    );
+    const controllersDirectoryExists = existsSync(this.options.controllersDirectory);
 
     if (!controllersDirectoryExists) {
       this.logger.warn('Event controllers directory not found', {
@@ -97,10 +91,7 @@ export default class EventManager {
         databaseInstance: this.databaseInstance,
       });
 
-      const handler =
-        controllerInstance[
-          event.handlerName as keyof typeof controllerInstance
-        ];
+      const handler = controllerInstance[event.handlerName as keyof typeof controllerInstance];
 
       if (!handler || typeof handler !== 'function') {
         this.logger.warn('Event handler not found', {
@@ -112,10 +103,7 @@ export default class EventManager {
       }
 
       // Store the handler
-      this.eventHandlers.set(
-        event.name,
-        (handler as Function).bind(controllerInstance),
-      );
+      this.eventHandlers.set(event.name, (handler as Function).bind(controllerInstance));
     }
 
     // Log the list of registered events
@@ -139,18 +127,14 @@ export default class EventManager {
       const handler = this.eventHandlers.get(name);
 
       if (!handler) {
-        const availableEvents = Array.from(this.eventHandlers.keys()).join(
-          ', ',
-        );
+        const availableEvents = Array.from(this.eventHandlers.keys()).join(', ');
 
         this.logger.warn('Event handler not found for event', {
           Event: name,
           AvailableEvents: availableEvents,
         });
 
-        throw new Error(
-          `Event handler not found for event '${name}'. Available events are: ${availableEvents}`,
-        );
+        throw new Error(`Event handler not found for event '${name}'. Available events are: ${availableEvents}`);
       }
 
       await handler(data);

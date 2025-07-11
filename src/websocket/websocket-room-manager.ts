@@ -1,6 +1,6 @@
 import cluster from 'cluster';
 import { log } from './utils.js';
-import WebSocketClientManager from './websocket-client-manager.js';
+import type WebSocketClientManager from './websocket-client-manager.js';
 
 export default class WebSocketRoomManager {
   private clientManager: WebSocketClientManager;
@@ -54,10 +54,10 @@ export default class WebSocketRoomManager {
     this.printRooms();
 
     log('Client joined room', {
-      'User Type': user?.userType || '-',
+      'User Type': user?.userType ?? '-',
       Room: roomName,
       ID: clientId,
-      Email: user.email || '-',
+      Email: user.email ?? '-',
     });
   }
 
@@ -125,13 +125,7 @@ export default class WebSocketRoomManager {
     this.printRooms();
   }
 
-  public isClientInRoom({
-    clientId,
-    roomName,
-  }: {
-    clientId: string;
-    roomName: string;
-  }) {
+  public isClientInRoom({ clientId, roomName }: { clientId: string; roomName: string }) {
     // Get clients in room
     const clientsInRoom = this.rooms.get(roomName);
 
@@ -146,14 +140,12 @@ export default class WebSocketRoomManager {
   public printRooms() {
     const numRooms = this.rooms.size;
 
-    let logOutput =
-      '\n-------------------------------------------------------\n';
+    let logOutput = '\n-------------------------------------------------------\n';
     logOutput += `Rooms (Count: ${numRooms}):\n`;
     logOutput += '-------------------------------------------------------\n';
 
     if (numRooms > 0) {
-      const workerId =
-        cluster.isWorker && cluster.worker ? cluster.worker.id : null;
+      const workerId = cluster.isWorker && cluster.worker ? cluster.worker.id : null;
 
       // Loop through all rooms
       let roomNumber = 1;
@@ -168,7 +160,7 @@ export default class WebSocketRoomManager {
         clientsInRoom.forEach(clientId => {
           const client = this.clientManager.getClient({ clientId });
 
-          logOutput += `    Client (ID: ${clientId} | Username: ${client?.user?.username || '-'} | User Type: ${client?.user?.userType || '-'} | Email: ${client?.user?.email ? client.user.email : '-'})\n`;
+          logOutput += `    Client (ID: ${clientId} | Username: ${client?.user?.username ?? '-'} | User Type: ${client?.user?.userType ?? '-'} | Email: ${client?.user?.email ?? '-'})\n`;
         });
 
         roomNumber++;

@@ -44,7 +44,7 @@ function removeFileExtension({ filename }: { filename: string }): string {
  * @returns File extension
  */
 function getFileExtension({ filename }: { filename: string }): string {
-  return filename.split('.').pop() || '';
+  return filename.split('.').pop() ?? '';
 }
 
 export default {

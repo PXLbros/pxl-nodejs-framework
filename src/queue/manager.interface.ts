@@ -1,8 +1,8 @@
-import { ApplicationConfig } from '../application/base-application.interface.js';
-import DatabaseInstance from '../database/instance.js';
-import EventManager from '../event/manager.js';
-import { RedisInstance } from '../redis/index.js';
-import { QueueItem } from './index.interface.js';
+import type { ApplicationConfig } from '../application/base-application.interface.js';
+import type DatabaseInstance from '../database/instance.js';
+import type EventManager from '../event/manager.js';
+import type { RedisInstance } from '../redis/index.js';
+import type { QueueItem } from './index.interface.js';
 
 export interface QueueManagerOptions {
   /** Queue processors directory */

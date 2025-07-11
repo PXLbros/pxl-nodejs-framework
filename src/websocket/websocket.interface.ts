@@ -1,9 +1,9 @@
-import { WebSocket, WebSocketServer } from 'ws';
-import DatabaseInstance from '../database/instance.js';
-import QueueManager from '../queue/manager.js';
-import RedisInstance from '../redis/instance.js';
-import { WebSocketServerBaseControllerType } from './controller/server/base.interface.js';
-import { WebSocketClientBaseControllerType } from './controller/client/base.interface.js';
+import type { WebSocket, WebSocketServer } from 'ws';
+import type DatabaseInstance from '../database/instance.js';
+import type QueueManager from '../queue/manager.js';
+import type RedisInstance from '../redis/instance.js';
+import type { WebSocketServerBaseControllerType } from './controller/server/base.interface.js';
+import type { WebSocketClientBaseControllerType } from './controller/client/base.interface.js';
 
 export type WebSocketType = 'server' | 'client';
 
@@ -13,11 +13,7 @@ export interface WebSocketDebugOptions {
 }
 
 export interface WebSocketEventsConfig {
-  onServerStarted?: ({
-    webSocketServer,
-  }: {
-    webSocketServer: WebSocketServer;
-  }) => void;
+  onServerStarted?: ({ webSocketServer }: { webSocketServer: WebSocketServer }) => void;
   onConnected?: ({
     ws,
     clientId,
@@ -104,9 +100,7 @@ export interface WebSocketRoute {
   controllerName: string;
 
   /** WebSocket route controller */
-  controller?:
-    | WebSocketServerBaseControllerType
-    | WebSocketClientBaseControllerType;
+  controller?: WebSocketServerBaseControllerType | WebSocketClientBaseControllerType;
 
   /** WebSocket route action */
   action: string;

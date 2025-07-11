@@ -1,4 +1,4 @@
-import Joi from 'joi';
+import type Joi from 'joi';
 import 'reflect-metadata';
 
 // @FormField({
@@ -30,83 +30,34 @@ export interface FormFieldOptionsExtended extends FormFieldOptions {
 
 export const FormField = (options: FormFieldOptions) => {
   return (target: any, propertyKey: string) => {
-    Reflect.defineMetadata(
-      'custom:formFieldType',
-      options.type,
-      target,
-      propertyKey,
-    );
-    Reflect.defineMetadata(
-      'custom:formFieldLabel',
-      options.label,
-      target,
-      propertyKey,
-    );
+    Reflect.defineMetadata('custom:formFieldType', options.type, target, propertyKey);
+    Reflect.defineMetadata('custom:formFieldLabel', options.label, target, propertyKey);
 
     if (options.placeholder) {
-      Reflect.defineMetadata(
-        'custom:formFieldPlaceholder',
-        options.placeholder,
-        target,
-        propertyKey,
-      );
+      Reflect.defineMetadata('custom:formFieldPlaceholder', options.placeholder, target, propertyKey);
     }
 
     if (options.typeOptions) {
-      Reflect.defineMetadata(
-        'custom:formFieldTypeOptions',
-        options.typeOptions,
-        target,
-        propertyKey,
-      );
+      Reflect.defineMetadata('custom:formFieldTypeOptions', options.typeOptions, target, propertyKey);
     }
 
     if (options.typeValues) {
-      Reflect.defineMetadata(
-        'custom:formFieldTypeValues',
-        options.typeValues,
-        target,
-        propertyKey,
-      );
+      Reflect.defineMetadata('custom:formFieldTypeValues', options.typeValues, target, propertyKey);
     }
   };
 };
 
-export const generateFormFields = ({
-  model,
-}: {
-  model: any;
-}): FormFieldOptionsExtended[] => {
+export const generateFormFields = ({ model }: { model: any }): FormFieldOptionsExtended[] => {
   const formFields: FormFieldOptionsExtended[] = [];
 
   const { prototype } = model;
 
   for (const propertyKey of Object.getOwnPropertyNames(prototype)) {
-    const formFieldType = Reflect.getMetadata(
-      'custom:formFieldType',
-      prototype,
-      propertyKey,
-    );
-    const formFieldLabel = Reflect.getMetadata(
-      'custom:formFieldLabel',
-      prototype,
-      propertyKey,
-    );
-    const formFieldPlaceholder = Reflect.getMetadata(
-      'custom:formFieldPlaceholder',
-      prototype,
-      propertyKey,
-    );
-    const formFieldTypeOptions = Reflect.getMetadata(
-      'custom:formFieldTypeOptions',
-      prototype,
-      propertyKey,
-    );
-    const formFieldTypeValues = Reflect.getMetadata(
-      'custom:formFieldTypeValues',
-      prototype,
-      propertyKey,
-    );
+    const formFieldType = Reflect.getMetadata('custom:formFieldType', prototype, propertyKey);
+    const formFieldLabel = Reflect.getMetadata('custom:formFieldLabel', prototype, propertyKey);
+    const formFieldPlaceholder = Reflect.getMetadata('custom:formFieldPlaceholder', prototype, propertyKey);
+    const formFieldTypeOptions = Reflect.getMetadata('custom:formFieldTypeOptions', prototype, propertyKey);
+    const formFieldTypeValues = Reflect.getMetadata('custom:formFieldTypeValues', prototype, propertyKey);
 
     const validationRules = null;
 

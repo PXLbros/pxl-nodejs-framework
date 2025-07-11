@@ -1,8 +1,5 @@
-import { HTTPMethods } from 'fastify';
-import {
-  EntityRouteDefinition,
-  RouteValidationSchema,
-} from './webserver.interface.js';
+import type { HTTPMethods } from 'fastify';
+import type { EntityRouteDefinition, RouteValidationSchema } from './webserver.interface.js';
 
 function getEntityRouteDefinitions({
   basePath,

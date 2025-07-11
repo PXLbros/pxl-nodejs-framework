@@ -7,22 +7,19 @@ import prettierPlugin from 'eslint-plugin-prettier';
 
 export default [
   {
-    ignores: [
-      'dist/**',
-      'node_modules/**',
-      '*.d.ts',
-      'EXAMPLE_USAGE.ts',
-      'bin/**',
-    ],
+    ignores: ['dist/**', 'node_modules/**', '*.d.ts', 'EXAMPLE_USAGE.ts', 'bin/**'],
   },
   js.configs.recommended,
+  // TypeScript files configuration
   {
-    files: ['**/*.ts', '**/*.js'],
+    files: ['**/*.ts'],
     languageOptions: {
       parser: typescriptParser,
       parserOptions: {
         ecmaVersion: 2024,
         sourceType: 'module',
+        project: './tsconfig.json',
+        tsconfigRootDir: import.meta.dirname,
       },
       globals: {
         console: 'readonly',
@@ -50,15 +47,16 @@ export default [
     },
     rules: {
       // TypeScript rules
-      '@typescript-eslint/no-unused-vars': [
-        'warn',
-        { argsIgnorePattern: '^_' },
-      ],
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/ban-ts-comment': 'warn',
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/explicit-module-boundary-types': 'off',
-      '@typescript-eslint/no-non-null-assertion': 'warn',
+      '@typescript-eslint/no-non-null-assertion': 'error',
+      '@typescript-eslint/prefer-nullish-coalescing': 'error',
+      '@typescript-eslint/prefer-optional-chain': 'error',
+      '@typescript-eslint/consistent-type-imports': 'error',
+      '@typescript-eslint/no-unnecessary-type-assertion': 'error',
 
       // Security rules
       'security/detect-object-injection': 'warn',
@@ -108,6 +106,125 @@ export default [
       'no-unexpected-multiline': 'error',
       'use-isnan': 'error',
       'valid-typeof': 'error',
+      quotes: ['error', 'single'],
+      'max-len': ['error', { code: 120 }],
+      'no-else-return': 'error',
+      'no-nested-ternary': 'error',
+      'no-unneeded-ternary': 'error',
+      'spaced-comment': ['error', 'always'],
+
+      // Import ordering
+      'sort-imports': [
+        'error',
+        {
+          ignoreCase: false,
+          ignoreDeclarationSort: true,
+          ignoreMemberSort: false,
+          memberSyntaxSortOrder: ['none', 'all', 'multiple', 'single'],
+          allowSeparatedGroups: true,
+        },
+      ],
+
+      // Prettier integration
+      'prettier/prettier': 'warn',
+    },
+  },
+  // JavaScript files configuration
+  {
+    files: ['**/*.js'],
+    languageOptions: {
+      ecmaVersion: 2024,
+      sourceType: 'module',
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        Buffer: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        global: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
+        URL: 'readonly',
+        performance: 'readonly',
+        WebSocket: 'readonly',
+        NodeJS: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+      },
+    },
+    plugins: {
+      security: securityPlugin,
+      prettier: prettierPlugin,
+    },
+    rules: {
+      // Security rules
+      'security/detect-object-injection': 'warn',
+      'security/detect-non-literal-regexp': 'warn',
+      'security/detect-unsafe-regex': 'error',
+      'security/detect-buffer-noassert': 'error',
+      'security/detect-child-process': 'warn',
+      'security/detect-disable-mustache-escape': 'error',
+      'security/detect-eval-with-expression': 'error',
+      'security/detect-no-csrf-before-method-override': 'error',
+      'security/detect-possible-timing-attacks': 'warn',
+      'security/detect-pseudoRandomBytes': 'error',
+
+      // General JavaScript rules
+      'no-console': 'off',
+      'no-debugger': 'error',
+      'no-alert': 'error',
+      'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      'prefer-const': 'error',
+      'no-var': 'error',
+      'object-shorthand': 'error',
+      'prefer-arrow-callback': 'error',
+      'prefer-template': 'error',
+      'template-curly-spacing': 'error',
+      'prefer-spread': 'error',
+      'prefer-rest-params': 'error',
+      'no-useless-concat': 'error',
+      'no-useless-escape': 'error',
+      'no-duplicate-imports': 'error',
+      'no-useless-constructor': 'error',
+      'no-useless-return': 'error',
+      'no-unreachable': 'error',
+      'no-unreachable-loop': 'error',
+      'no-constant-condition': 'error',
+      'no-dupe-args': 'error',
+      'no-dupe-keys': 'error',
+      'no-duplicate-case': 'error',
+      'no-empty': 'error',
+      'no-ex-assign': 'error',
+      'no-extra-boolean-cast': 'error',
+      'no-func-assign': 'error',
+      'no-inner-declarations': 'error',
+      'no-invalid-regexp': 'error',
+      'no-obj-calls': 'error',
+      'no-sparse-arrays': 'error',
+      'no-undef': 'error',
+      'no-unexpected-multiline': 'error',
+      'use-isnan': 'error',
+      'valid-typeof': 'error',
+      quotes: ['error', 'single'],
+      'max-len': ['error', { code: 120 }],
+      'no-else-return': 'error',
+      'no-nested-ternary': 'error',
+      'no-unneeded-ternary': 'error',
+      'spaced-comment': ['error', 'always'],
+
+      // Import ordering
+      'sort-imports': [
+        'error',
+        {
+          ignoreCase: false,
+          ignoreDeclarationSort: true,
+          ignoreMemberSort: false,
+          memberSyntaxSortOrder: ['none', 'all', 'multiple', 'single'],
+          allowSeparatedGroups: true,
+        },
+      ],
 
       // Prettier integration
       'prettier/prettier': 'warn',

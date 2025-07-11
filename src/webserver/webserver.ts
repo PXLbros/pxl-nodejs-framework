@@ -1,28 +1,23 @@
-import Fastify, {
-  FastifyInstance,
-  FastifyReply,
-  FastifyRequest,
-  HTTPMethods,
-} from 'fastify';
+import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest, type HTTPMethods } from 'fastify';
 import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
 import {
-  WebServerConstructorParams,
-  WebServerOptions,
-  WebServerRoute,
+  type WebServerConstructorParams,
+  type WebServerOptions,
+  type WebServerRoute,
   WebServerRouteType,
 } from './webserver.interface.js';
 import { Logger } from '../logger/index.js';
 import { Helper, Loader, Time } from '../util/index.js';
 import WebServerUtil from './util.js';
-import { RedisInstance } from '../redis/index.js';
-import { DatabaseInstance } from '../database/index.js';
-import { WebServerBaseControllerType } from './controller/base.interface.js';
-import { QueueManager } from '../queue/index.js';
+import type { RedisInstance } from '../redis/index.js';
+import type { DatabaseInstance } from '../database/index.js';
+import type { WebServerBaseControllerType } from './controller/base.interface.js';
+import type { QueueManager } from '../queue/index.js';
 import { WebServerHealthController } from '../index.js';
-import { ApplicationConfig } from '../application/base-application.interface.js';
+import type { ApplicationConfig } from '../application/base-application.interface.js';
 import { existsSync } from 'fs';
-import EventManager from '../event/manager.js';
+import type EventManager from '../event/manager.js';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -113,15 +108,9 @@ class WebServer {
    */
   private configureHooks(): void {
     this.fastifyServer.addHook('onListen', async () => this.onListen());
-    this.fastifyServer.addHook('onRequest', async request =>
-      this.onRequest(request),
-    );
-    this.fastifyServer.addHook('onResponse', async (request, reply) =>
-      this.onResponse(request, reply),
-    );
-    this.fastifyServer.addHook('onError', async (request, reply, error) =>
-      this.onError(request, reply, error),
-    );
+    this.fastifyServer.addHook('onRequest', async request => this.onRequest(request));
+    this.fastifyServer.addHook('onResponse', async (request, reply) => this.onResponse(request, reply));
+    this.fastifyServer.addHook('onError', async (request, reply, error) => this.onError(request, reply, error));
     this.fastifyServer.addHook('onClose', async () => this.onClose());
 
     // if (process.env.NODE_ENV === 'local') {
@@ -141,9 +130,7 @@ class WebServer {
         Host: this.options.host,
         Port: port,
         // CORS: this.options.cors?.enabled && this.options.cors?..length > 0 ? this.options.corsUrls.join(', ') : 'Disabled',
-        CORS: this.options.cors?.enabled
-          ? this.options.cors.urls.join(', ')
-          : 'Disabled',
+        CORS: this.options.cors?.enabled ? this.options.cors.urls.join(', ') : 'Disabled',
         'Fastify Version': this.fastifyServer.version,
       });
     }
@@ -155,9 +142,7 @@ class WebServer {
       this.options.debug?.simulateSlowConnection?.delay &&
       this.options.debug?.simulateSlowConnection?.delay > 0
     ) {
-      await new Promise(resolve =>
-        setTimeout(resolve, this.options.debug?.simulateSlowConnection?.delay),
-      );
+      await new Promise(resolve => setTimeout(resolve, this.options.debug?.simulateSlowConnection?.delay));
     }
 
     const pathsToIgnore = ['/health'];
@@ -169,10 +154,7 @@ class WebServer {
     }
   }
 
-  private async onResponse(
-    request: FastifyRequest,
-    reply: FastifyReply,
-  ): Promise<void> {
+  private async onResponse(request: FastifyRequest, reply: FastifyReply): Promise<void> {
     if (!request.startTime) {
       return;
     }
@@ -185,7 +167,7 @@ class WebServer {
       numDecimals: 3,
     });
 
-    const ip = request.headers['x-forwarded-for'] || request.ip;
+    const ip = request.headers['x-forwarded-for'] ?? request.ip;
 
     const logParams: Record<string, unknown> = {
       Method: request.method,
@@ -206,11 +188,7 @@ class WebServer {
     this.log('API Request', logParams);
   }
 
-  private async onError(
-    request: FastifyRequest,
-    reply: FastifyReply,
-    error: Error,
-  ): Promise<void> {
+  private async onError(request: FastifyRequest, reply: FastifyReply, error: Error): Promise<void> {
     // Adjusted for Fastify types
     Logger.error(error);
     // Implement any additional logic here
@@ -226,9 +204,7 @@ class WebServer {
     }
 
     // Handle wildcard origin for development
-    const origin = this.options.cors.urls.includes('*')
-      ? true
-      : this.options.cors.urls;
+    const origin = this.options.cors.urls.includes('*') ? true : this.options.cors.urls;
 
     this.fastifyServer.register(cors, {
       origin,
@@ -259,9 +235,7 @@ class WebServer {
    */
   private async configureRoutes(): Promise<void> {
     // Check if controllers directory exists
-    const controllersDirectoryExists = await existsSync(
-      this.options.controllersDirectory,
-    );
+    const controllersDirectoryExists = await existsSync(this.options.controllersDirectory);
 
     if (!controllersDirectoryExists) {
       Logger.warn('Web server controllers directory not found', {
@@ -348,13 +322,9 @@ class WebServer {
           break;
         }
         case WebServerRouteType.Entity: {
-          if (
-            this.applicationConfig.database &&
-            this.applicationConfig.database.enabled === true
-          ) {
+          if (this.applicationConfig.database && this.applicationConfig.database.enabled === true) {
             const entityModel = await Loader.loadEntityModule({
-              entitiesDirectory:
-                this.applicationConfig.database.entitiesDirectory,
+              entitiesDirectory: this.applicationConfig.database.entitiesDirectory,
               entityName: route.entityName,
             });
 
@@ -364,23 +334,21 @@ class WebServer {
               ? {
                   type: 'object',
                   properties: Object.fromEntries(
-                    Object.entries(entityValidationSchema.keys).map(
-                      ([key, value]) => [key, { type: (value as any).type }],
-                    ),
+                    Object.entries(entityValidationSchema.keys).map(([key, value]) => [
+                      key,
+                      { type: (value as any).type },
+                    ]),
                   ),
                   required: Object.keys(entityValidationSchema.keys).filter(
-                    key =>
-                      entityValidationSchema.keys[key].flags?.presence ===
-                      'required',
+                    key => entityValidationSchema.keys[key].flags?.presence === 'required',
                   ),
                 }
               : {};
 
-            const entityRouteDefinitions =
-              WebServerUtil.getEntityRouteDefinitions({
-                basePath: route.path,
-                entityValidationSchema: formattedEntityValidationSchema,
-              });
+            const entityRouteDefinitions = WebServerUtil.getEntityRouteDefinitions({
+              basePath: route.path,
+              entityValidationSchema: formattedEntityValidationSchema,
+            });
 
             for (const entityRouteDefinition of entityRouteDefinitions) {
               this.defineRoute({
@@ -425,8 +393,7 @@ class WebServer {
     };
   }): Promise<void> {
     // Get controller action handler
-    const controllerHandler =
-      controllerInstance[routeAction as keyof typeof controllerInstance];
+    const controllerHandler = controllerInstance[routeAction as keyof typeof controllerInstance];
 
     if (!controllerHandler) {
       Logger.warn('Web server controller action not found', {
@@ -452,9 +419,7 @@ class WebServer {
           return;
         }
 
-        const validate = request.compileValidationSchema(
-          routeValidation.schema,
-        );
+        const validate = request.compileValidationSchema(routeValidation.schema);
 
         if (!validate(request[routeValidation.type])) {
           return reply.code(400).send({

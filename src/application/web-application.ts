@@ -1,14 +1,14 @@
-import RedisInstance from '../redis/instance.js';
-import DatabaseInstance from '../database/instance.js';
+import type RedisInstance from '../redis/instance.js';
+import type DatabaseInstance from '../database/instance.js';
 import WebServer from '../webserver/webserver.js';
-import QueueManager from '../queue/manager.js';
+import type QueueManager from '../queue/manager.js';
 import BaseApplication from './base-application.js';
-import { WebApplicationConfig } from './web-application.interface.js';
+import type { WebApplicationConfig } from './web-application.interface.js';
 import { Helper, Time } from '../util/index.js';
 import { Logger } from '../logger/index.js';
 import WebSocketServer from '../websocket/websocket-server.js';
 import WebSocketClient from '../websocket/websocket-client.js';
-import EventManager from '../event/manager.js';
+import type EventManager from '../event/manager.js';
 
 /**
  * Application
@@ -51,8 +51,6 @@ export default class WebApplication extends BaseApplication {
     queueManager: QueueManager;
     eventManager: EventManager;
   }): Promise<void> {
-    console.log('HELLO THERE');
-
     if (this.config.webServer?.enabled) {
       // Initialize web server
       this.webServer = new WebServer({
@@ -139,9 +137,7 @@ export default class WebApplication extends BaseApplication {
           if (!this.config.webSocket.type) {
             throw new Error('WebSocket type is required');
           } else {
-            throw new Error(
-              `WebSocket type is not supported (Type: ${this.config.webSocket.type})`,
-            );
+            throw new Error(`WebSocket type is not supported (Type: ${this.config.webSocket.type})`);
           }
         }
       }
@@ -169,11 +165,7 @@ export default class WebApplication extends BaseApplication {
   /**
    * Application started event
    */
-  protected async onStarted({
-    startupTime,
-  }: {
-    startupTime: number;
-  }): Promise<void> {
+  protected async onStarted({ startupTime }: { startupTime: number }): Promise<void> {
     if (this.config.log?.startUp) {
       Logger.info('Application started', {
         Name: this.config.name,

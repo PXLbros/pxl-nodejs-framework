@@ -1,6 +1,6 @@
-import { EntityManager, MikroORM } from '@mikro-orm/postgresql';
-import { ApplicationConfig } from '../application/base-application.interface.js';
-import DatabaseManager from './manager.js';
+import type { EntityManager, MikroORM } from '@mikro-orm/postgresql';
+import type { ApplicationConfig } from '../application/base-application.interface.js';
+import type DatabaseManager from './manager.js';
 
 /**
  * Database Instance

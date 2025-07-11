@@ -1,23 +1,23 @@
-import { RawData, WebSocket, WebSocketServer as WS } from 'ws';
+import { type RawData, WebSocketServer as WS, WebSocket } from 'ws';
 import {
-  WebSocketOptions,
+  type WebSocketOptions,
   WebSocketRedisSubscriberEvent,
-  WebSocketRoute,
-  WebSocketType,
+  type WebSocketRoute,
+  type WebSocketType,
 } from './websocket.interface.js';
-import RedisInstance from '../redis/instance.js';
-import QueueManager from '../queue/manager.js';
-import DatabaseInstance from '../database/instance.js';
-import { WebSocketServerProps } from './websocket-server.interface.js';
+import type RedisInstance from '../redis/instance.js';
+import type QueueManager from '../queue/manager.js';
+import type DatabaseInstance from '../database/instance.js';
+import type { WebSocketServerProps } from './websocket-server.interface.js';
 import WebSocketClientManager from './websocket-client-manager.js';
 import { generateClientId, log } from './utils.js';
 import WebSocketBase from './websocket-base.js';
 import { Logger } from '../logger/index.js';
 import path from 'path';
-import { baseDir, WebApplicationConfig } from '../index.js';
+import { type WebApplicationConfig, baseDir } from '../index.js';
 import WebSocketRoomManager from './websocket-room-manager.js';
 import logger from '../logger/logger.js';
-import { FastifyInstance } from 'fastify';
+import type { FastifyInstance } from 'fastify';
 import { URL } from 'url';
 import Jwt from '../auth/jwt.js';
 
@@ -86,9 +86,7 @@ export default class WebSocketServer extends WebSocketBase {
     return 'server';
   }
 
-  private async validateWebSocketAuth(
-    url: string,
-  ): Promise<{ userId: number; payload: any } | null> {
+  private async validateWebSocketAuth(url: string): Promise<{ userId: number; payload: any } | null> {
     try {
       const parsedUrl = new URL(url, 'ws://localhost');
       const token = parsedUrl.searchParams.get('token');
@@ -125,12 +123,7 @@ export default class WebSocketServer extends WebSocketBase {
   }
 
   public async load(): Promise<void> {
-    const libraryControllersDirectory = path.join(
-      baseDir,
-      'websocket',
-      'controllers',
-      'server',
-    );
+    const libraryControllersDirectory = path.join(baseDir, 'websocket', 'controllers', 'server');
 
     // Configure default routes
     await this.configureRoutes(this.defaultRoutes, libraryControllersDirectory);
@@ -139,11 +132,7 @@ export default class WebSocketServer extends WebSocketBase {
     await this.configureRoutes(this.routes, this.options.controllersDirectory);
   }
 
-  public async start({
-    fastifyServer,
-  }: {
-    fastifyServer: FastifyInstance;
-  }): Promise<{ server: WS }> {
+  public async start({ fastifyServer }: { fastifyServer: FastifyInstance }): Promise<{ server: WS }> {
     return new Promise(resolve => {
       const server = new WS({
         noServer: true, // We're handling the server externally
@@ -158,9 +147,7 @@ export default class WebSocketServer extends WebSocketBase {
         if (request.url?.startsWith('/ws')) {
           try {
             // Validate authentication token if provided
-            const authenticatedUser = await this.validateWebSocketAuth(
-              request.url,
-            );
+            const authenticatedUser = await this.validateWebSocketAuth(request.url);
 
             server.handleUpgrade(request, socket, head, ws => {
               server.emit('connection', ws, request, authenticatedUser);
@@ -179,11 +166,7 @@ export default class WebSocketServer extends WebSocketBase {
 
       server.on(
         'connection',
-        (
-          ws: WebSocket,
-          request: any,
-          authenticatedUser: { userId: number; payload: any } | null,
-        ) => {
+        (ws: WebSocket, request: any, authenticatedUser: { userId: number; payload: any } | null) => {
           this.handleServerClientConnection(ws, authenticatedUser);
         },
       );
@@ -200,10 +183,7 @@ export default class WebSocketServer extends WebSocketBase {
     }
 
     // Clean up Redis subscriber listeners
-    this.redisInstance.subscriberClient?.removeListener(
-      'message',
-      this.handleSubscriberMessage,
-    );
+    this.redisInstance.subscriberClient?.removeListener('message', this.handleSubscriberMessage);
 
     // Unsubscribe from all Redis events
     this.redisSubscriberEvents.forEach(subscriberEventName => {
@@ -271,10 +251,7 @@ export default class WebSocketServer extends WebSocketBase {
     });
 
     // Handle subscriber message
-    this.redisInstance.subscriberClient.on(
-      'message',
-      this.handleSubscriberMessage,
-    );
+    this.redisInstance.subscriberClient.on('message', this.handleSubscriberMessage);
 
     log('Server started', {
       Host: this.options.host,
@@ -291,10 +268,7 @@ export default class WebSocketServer extends WebSocketBase {
   /**
    * Handle subscriber message.
    */
-  private handleSubscriberMessage = async (
-    channel: string,
-    message: string,
-  ): Promise<void> => {
+  private handleSubscriberMessage = async (channel: string, message: string): Promise<void> => {
     let parsedMessage: { [key: string]: any };
 
     try {
@@ -322,7 +296,7 @@ export default class WebSocketServer extends WebSocketBase {
     log('Incoming subscriber message', {
       Channel: channel,
       // 'Run Same Worker': parsedMessage.runSameWorker ? 'Yes' : 'No',
-      'Client ID': parsedMessage.clientId || '-',
+      'Client ID': parsedMessage.clientId ?? '-',
     });
 
     switch (channel) {
@@ -349,15 +323,10 @@ export default class WebSocketServer extends WebSocketBase {
         });
 
         log(
-          `GOT A REQUEST TO POTENTIALLY DISCONNECT LCIENT IF THIS CLIENT IS CONNETED HERE, GET CLIENT ------------------------- ${clientToDisconnect ? clientToDisconnect : 'NO CLIENT'}`,
+          `GOT A REQUEST TO POTENTIALLY DISCONNECT LCIENT IF THIS CLIENT IS CONNETED HERE, GET CLIENT ------------------------- ${clientToDisconnect ?? 'NO CLIENT'}`,
         );
 
-        console.log(
-          'clientToDisconnect',
-          clientToDisconnect,
-          'workerId: ',
-          this.workerId,
-        );
+        console.log('clientToDisconnect', clientToDisconnect, 'workerId: ', this.workerId);
 
         if (clientToDisconnect) {
           this.clientManager.disconnectClient({
@@ -440,10 +409,7 @@ export default class WebSocketServer extends WebSocketBase {
       }
     }
 
-    if (
-      typeof this.applicationConfig.webSocket?.subscriberEventHandler ===
-      'function'
-    ) {
+    if (typeof this.applicationConfig.webSocket?.subscriberEventHandler === 'function') {
       // Execute custom application subscriber event handler
       this.applicationConfig.webSocket.subscriberEventHandler({
         channel,
@@ -466,9 +432,7 @@ export default class WebSocketServer extends WebSocketBase {
 
     const lastActivity = Date.now();
 
-    ws.on('message', (message: RawData) =>
-      this.handleClientMessage(ws, message),
-    );
+    ws.on('message', (message: RawData) => this.handleClientMessage(ws, message));
 
     ws.on('close', () => {
       this.handleServerClientDisconnection(clientId);
@@ -513,13 +477,7 @@ export default class WebSocketServer extends WebSocketBase {
     }
   };
 
-  public leaveRoom({
-    ws,
-    roomName,
-  }: {
-    ws: WebSocket;
-    roomName: string;
-  }): void {
+  public leaveRoom({ ws, roomName }: { ws: WebSocket; roomName: string }): void {
     const clientId = this.clientManager.getClientId({ ws });
 
     if (!clientId) {
@@ -618,10 +576,7 @@ export default class WebSocketServer extends WebSocketBase {
     // log('Client disconnected', { ID: clientId });
   };
 
-  private handleClientMessage = async (
-    ws: WebSocket,
-    message: RawData,
-  ): Promise<void> => {
+  private handleClientMessage = async (ws: WebSocket, message: RawData): Promise<void> => {
     try {
       const clientId = this.clientManager.getClientId({
         ws,
@@ -634,11 +589,7 @@ export default class WebSocketServer extends WebSocketBase {
       }
 
       // Handle server message
-      const serverMessageResponse = await this.handleServerMessage(
-        ws,
-        message,
-        clientId,
-      );
+      const serverMessageResponse = await this.handleServerMessage(ws, message, clientId);
 
       if (serverMessageResponse) {
         this.sendClientMessage(ws, {
@@ -676,10 +627,7 @@ export default class WebSocketServer extends WebSocketBase {
   private checkInactiveClients(): void {
     // const now = Date.now();
 
-    if (
-      this.options.disconnectInactiveClients?.enabled &&
-      this.options.disconnectInactiveClients.log
-    ) {
+    if (this.options.disconnectInactiveClients?.enabled && this.options.disconnectInactiveClients.log) {
       log('Checking inactive clients...');
     }
 
@@ -790,13 +738,7 @@ export default class WebSocketServer extends WebSocketBase {
     });
   }
 
-  public sendMessageError({
-    webSocketClientId,
-    error,
-  }: {
-    webSocketClientId: string;
-    error: string;
-  }): void {
+  public sendMessageError({ webSocketClientId, error }: { webSocketClientId: string; error: string }): void {
     const client = this.clientManager.getClient({
       clientId: webSocketClientId,
     });
@@ -836,15 +778,7 @@ export default class WebSocketServer extends WebSocketBase {
   //   )?.[0];
   // }
 
-  private onJoinRoom({
-    clientId,
-    roomName,
-    userData,
-  }: {
-    clientId: string;
-    roomName: string;
-    userData: any;
-  }): void {
+  private onJoinRoom({ clientId, roomName, userData }: { clientId: string; roomName: string; userData: any }): void {
     // TODO: If config clientCanJoinMultipleRooms !== true, then it should remove the user from existing room first
     const client = this.clientManager.getClient({
       clientId,
@@ -926,10 +860,7 @@ export default class WebSocketServer extends WebSocketBase {
       const getUserQuery = 'SELECT email FROM users WHERE id = ?';
       const getUserParams = [userId];
 
-      const getUserResult = await dbEntityManager.execute(
-        getUserQuery,
-        getUserParams,
-      );
+      const getUserResult = await dbEntityManager.execute(getUserQuery, getUserParams);
 
       if (!getUserResult || getUserResult.length === 0) {
         throw new Error('User not found in database');
@@ -995,11 +926,7 @@ export default class WebSocketServer extends WebSocketBase {
     return true;
   }
 
-  public sendClientMessage = (
-    ws: WebSocket,
-    data: unknown,
-    binary: boolean = false,
-  ): void => {
+  public sendClientMessage = (ws: WebSocket, data: unknown, binary: boolean = false): void => {
     const webSocketMessage = JSON.stringify(data);
 
     ws.send(webSocketMessage, { binary });
@@ -1037,10 +964,7 @@ export default class WebSocketServer extends WebSocketBase {
 
     console.log('SEND CUSTOM MESSAGE:', formattedData);
 
-    this.redisInstance.publisherClient.publish(
-      WebSocketRedisSubscriberEvent.Custom,
-      JSON.stringify(formattedData),
-    );
+    this.redisInstance.publisherClient.publish(WebSocketRedisSubscriberEvent.Custom, JSON.stringify(formattedData));
   };
 
   public getClients({ userType }: { userType?: string }): any[] {

@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import Emailer, { EmailerProps } from '../emailer.js';
+import Emailer, { type EmailerProps } from '../emailer.js';
 
 interface SmtpEmailerProps extends EmailerProps {
   smtpConfig: {

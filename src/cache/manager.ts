@@ -1,6 +1,6 @@
-import { RedisClientType, createClient } from 'redis';
-import { ApplicationConfig } from '../application/base-application.interface.js';
-import RedisManager from '../redis/manager.js';
+import { type RedisClientType, createClient } from 'redis';
+import type { ApplicationConfig } from '../application/base-application.interface.js';
+import type RedisManager from '../redis/manager.js';
 
 export interface CacheManagerProps {
   applicationConfig: ApplicationConfig;
@@ -39,15 +39,7 @@ export default class CacheManager {
     return value ? JSON.parse(value) : null;
   }
 
-  public async setItem<T>({
-    key,
-    value,
-    lifetime,
-  }: {
-    key: string;
-    value: T;
-    lifetime?: number;
-  }): Promise<void> {
+  public async setItem<T>({ key, value, lifetime }: { key: string; value: T; lifetime?: number }): Promise<void> {
     const client = await this.getClient();
     const stringValue = JSON.stringify(value);
 

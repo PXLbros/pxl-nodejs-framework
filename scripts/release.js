@@ -84,9 +84,7 @@ function checkGitStatus() {
       encoding: 'utf8',
     });
     if (status.trim()) {
-      error(
-        'Working directory is not clean. Please commit or stash your changes.',
-      );
+      error('Working directory is not clean. Please commit or stash your changes.');
       console.log('\nUncommitted changes:');
       console.log(status);
       process.exit(1);
@@ -98,10 +96,7 @@ function checkGitStatus() {
 }
 
 function getCurrentBranch() {
-  return execCommand(
-    'git rev-parse --abbrev-ref HEAD',
-    'Getting current branch',
-  );
+  return execCommand('git rev-parse --abbrev-ref HEAD', 'Getting current branch');
 }
 
 function incrementVersion(currentVersion, type) {
@@ -172,20 +167,13 @@ async function main() {
   const hasMinor = args.includes('--minor');
   const hasMajor = args.includes('--major');
 
-  if (
-    [versionIndex !== -1, hasPatch, hasMinor, hasMajor].filter(Boolean)
-      .length !== 1
-  ) {
-    error(
-      'Please specify exactly one version option: --version, --patch, --minor, or --major',
-    );
+  if ([versionIndex !== -1, hasPatch, hasMinor, hasMajor].filter(Boolean).length !== 1) {
+    error('Please specify exactly one version option: --version, --patch, --minor, or --major');
     showHelp();
     process.exit(1);
   }
 
-  log(
-    `\n🚀 ${colors.cyan}PXL Node.js Framework Release Script${colors.reset}\n`,
-  );
+  log(`\n🚀 ${colors.cyan}PXL Node.js Framework Release Script${colors.reset}\n`);
 
   // Check git status
   checkGitStatus();
@@ -193,9 +181,7 @@ async function main() {
   // Check current branch
   const currentBranch = getCurrentBranch();
   if (!['main', 'master'].includes(currentBranch)) {
-    warning(
-      `You are on branch '${currentBranch}'. Releases should typically be made from 'main' or 'master'.`,
-    );
+    warning(`You are on branch '${currentBranch}'. Releases should typically be made from 'main' or 'master'.`);
     if (!isDryRun) {
       // For simplicity, we'll just proceed with a warning rather than prompting
       warning('Proceeding with release on current branch...');
@@ -225,12 +211,8 @@ async function main() {
 
   // Check if version is actually changing
   if (newVersion === currentVersion) {
-    warning(
-      `Version ${newVersion} is already the current version. No changes needed.`,
-    );
-    info(
-      'If you want to create a new release, please specify a different version.',
-    );
+    warning(`Version ${newVersion} is already the current version. No changes needed.`);
+    info('If you want to create a new release, please specify a different version.');
     process.exit(0);
   }
 
@@ -254,18 +236,13 @@ async function main() {
 
     // Git operations
     execCommand('git add package.json', 'Staging package.json');
-    execCommand(
-      `git commit -m "chore: release v${newVersion}"`,
-      'Creating release commit',
-    );
+    execCommand(`git commit -m "chore: release v${newVersion}"`, 'Creating release commit');
     execCommand(`git tag v${newVersion}`, 'Creating git tag');
     execCommand(`git push origin ${currentBranch} --tags`, 'Pushing to origin');
 
     success(`\n🎉 Release v${newVersion} created successfully!`);
     info(`GitHub Actions will now build and publish the release.`);
-    info(
-      `Monitor the progress at: https://github.com/your-org/pxl-nodejs-framework/actions`,
-    );
+    info(`Monitor the progress at: https://github.com/your-org/pxl-nodejs-framework/actions`);
   } catch (err) {
     error(`Release failed: ${err.message}`);
     process.exit(1);

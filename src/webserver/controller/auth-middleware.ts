@@ -1,5 +1,5 @@
-import { FastifyRequest, FastifyReply } from 'fastify';
-import { AuthenticatedUser } from './base.js';
+import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { AuthenticatedUser } from './base.js';
 
 export type { AuthenticatedUser } from './base.js';
 
@@ -7,14 +7,8 @@ export interface AuthenticatedRequest extends FastifyRequest {
   user: AuthenticatedUser;
 }
 
-export type AuthenticatedRouteHandler = (
-  request: AuthenticatedRequest,
-  reply: FastifyReply,
-) => Promise<void>;
-export type RouteHandler = (
-  request: FastifyRequest,
-  reply: FastifyReply,
-) => Promise<void>;
+export type AuthenticatedRouteHandler = (request: AuthenticatedRequest, reply: FastifyReply) => Promise<void>;
+export type RouteHandler = (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
 
 /**
  * Higher-order function that wraps a route handler with authentication
@@ -24,15 +18,9 @@ export type RouteHandler = (
  */
 export function withAuth(
   handler: AuthenticatedRouteHandler,
-  authenticateRequest: (
-    request: FastifyRequest,
-    reply: FastifyReply,
-  ) => Promise<AuthenticatedUser | null>,
+  authenticateRequest: (request: FastifyRequest, reply: FastifyReply) => Promise<AuthenticatedUser | null>,
 ): RouteHandler {
-  return async (
-    request: FastifyRequest,
-    reply: FastifyReply,
-  ): Promise<void> => {
+  return async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
     const user = await authenticateRequest(request, reply);
 
     if (!user) {
@@ -53,18 +41,10 @@ export function withAuth(
  * Usage: @requiresAuth()
  */
 export function requiresAuth() {
-  return function (
-    target: any,
-    propertyKey: string,
-    descriptor: PropertyDescriptor,
-  ) {
+  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
     const originalMethod = descriptor.value;
 
-    descriptor.value = async function (
-      this: any,
-      request: FastifyRequest,
-      reply: FastifyReply,
-    ) {
+    descriptor.value = async function (this: any, request: FastifyRequest, reply: FastifyReply) {
       const user = await this.authenticateRequest(request, reply);
 
       if (!user) {

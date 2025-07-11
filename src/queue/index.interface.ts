@@ -1,4 +1,4 @@
-import { QueueJob } from './job.interface.js';
+import type { QueueJob } from './job.interface.js';
 
 export interface QueueItem {
   /** Queue name */

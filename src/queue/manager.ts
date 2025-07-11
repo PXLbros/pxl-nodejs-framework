@@ -1,21 +1,18 @@
-import { Queue, WorkerOptions, Job, Processor, QueueOptions } from 'bullmq';
+import { type Job, type Processor, Queue, type QueueOptions, type WorkerOptions } from 'bullmq';
 import path from 'path';
-import {
-  QueueManagerConstructorParams,
-  QueueManagerOptions,
-} from './manager.interface.js';
-import { RedisInstance } from '../redis/index.js';
-import { DatabaseInstance } from '../database/index.js';
+import type { QueueManagerConstructorParams, QueueManagerOptions } from './manager.interface.js';
+import type { RedisInstance } from '../redis/index.js';
+import type { DatabaseInstance } from '../database/index.js';
 import { Logger } from '../logger/index.js';
 import QueueWorker from './worker.js';
-import BaseProcessor from './processor/base.js';
+import type BaseProcessor from './processor/base.js';
 import { Helper, Loader } from '../util/index.js';
-import { QueueJob, QueueJobData } from './job.interface.js';
-import { ProcessorConstructor } from './processor/processor.interface.js';
-import { QueueItem } from './index.interface.js';
+import type { QueueJob, QueueJobData } from './job.interface.js';
+import type { ProcessorConstructor } from './processor/processor.interface.js';
+import type { QueueItem } from './index.interface.js';
 import { existsSync } from 'fs';
-import { ApplicationConfig } from '../application/base-application.interface.js';
-import EventManager from '../event/manager.js';
+import type { ApplicationConfig } from '../application/base-application.interface.js';
+import type EventManager from '../event/manager.js';
 
 export default class QueueManager {
   private logger: typeof Logger = Logger;
@@ -53,19 +50,13 @@ export default class QueueManager {
     this.eventManager = eventManager;
   }
 
-  public async registerQueues({
-    queues,
-  }: {
-    queues: QueueItem[];
-  }): Promise<void> {
+  public async registerQueues({ queues }: { queues: QueueItem[] }): Promise<void> {
     if (!queues) {
       return;
     }
 
     // Check if processors directory exists
-    const processorsDirectoryExists = await existsSync(
-      this.options.processorsDirectory,
-    );
+    const processorsDirectoryExists = await existsSync(this.options.processorsDirectory);
 
     if (!processorsDirectoryExists) {
       Logger.warn('Processors directory not found', {
@@ -96,13 +87,7 @@ export default class QueueManager {
     }
   }
 
-  private registerQueue({
-    queue,
-    jobProcessorClasses,
-  }: {
-    queue: QueueItem;
-    jobProcessorClasses: any;
-  }): void {
+  private registerQueue({ queue, jobProcessorClasses }: { queue: QueueItem; jobProcessorClasses: any }): void {
     if (!queue.jobs) {
       Logger.warn('No jobs found for queue, skip register', {
         Name: queue.name,
@@ -176,14 +161,9 @@ export default class QueueManager {
         const ProcessorClass = jobProcessorClasses[job.id];
 
         if (!ProcessorClass) {
-          const jobPath = path.join(
-            this.options.processorsDirectory,
-            `${job.id}.${scriptFileExtension}`,
-          );
+          const jobPath = path.join(this.options.processorsDirectory, `${job.id}.${scriptFileExtension}`);
 
-          throw new Error(
-            `Processor class not found (Job ID: ${job.id} | Path: ${jobPath})`,
-          );
+          throw new Error(`Processor class not found (Job ID: ${job.id} | Path: ${jobPath})`);
         }
 
         const processorInstance = new ProcessorClass(
@@ -213,10 +193,7 @@ export default class QueueManager {
     }
   };
 
-  private onQueueProgress = (
-    job: Job<any, any, string>,
-    progress: number | object,
-  ): void => {
+  private onQueueProgress = (job: Job<any, any, string>, progress: number | object): void => {
     this.log('Progress update', {
       Queue: job.queueName,
       'Job Name': job.name,
@@ -229,15 +206,7 @@ export default class QueueManager {
     this.log('Removed queue', { Queue: job.queueName, Job: job.id });
   };
 
-  public addJobToQueue = async ({
-    queueId,
-    jobId,
-    data,
-  }: {
-    queueId: string;
-    jobId: string;
-    data: QueueJobData;
-  }) => {
+  public addJobToQueue = async ({ queueId, jobId, data }: { queueId: string; jobId: string; data: QueueJobData }) => {
     const queue = this.queues.get(queueId);
 
     if (!queue) {
@@ -252,9 +221,7 @@ export default class QueueManager {
 
     const maxLogDataStrLength = 50;
     const truncatedLogDataStr =
-      dataStr.length > maxLogDataStrLength
-        ? `${dataStr.substring(0, maxLogDataStrLength)}...`
-        : dataStr;
+      dataStr.length > maxLogDataStrLength ? `${dataStr.substring(0, maxLogDataStrLength)}...` : dataStr;
 
     if (this.applicationConfig.queue.log?.jobAdded) {
       this.log('Job added', {
@@ -267,9 +234,7 @@ export default class QueueManager {
     return job;
   };
 
-  private workerProcessor = async (
-    job: Job,
-  ): Promise<Processor<any, any, string> | undefined> => {
+  private workerProcessor = async (job: Job): Promise<Processor<any, any, string> | undefined> => {
     if (!job) {
       return;
     }
@@ -311,14 +276,7 @@ export default class QueueManager {
     const jobsSummary: any[] = [];
 
     for (const [queueName, queue] of this.queues) {
-      const jobStates = [
-        'active',
-        'waiting',
-        'completed',
-        'failed',
-        'delayed',
-        'paused',
-      ];
+      const jobStates = ['active', 'waiting', 'completed', 'failed', 'delayed', 'paused'];
 
       const jobsDetailsPromises = jobStates.map(async (state: any) => {
         const jobs = await queue.getJobs([state]);

@@ -1,6 +1,6 @@
 import WebSocket from 'ws';
 import { log } from './utils.js';
-import { WebSocketClientData } from './websocket-client-manager.interface.js';
+import type { WebSocketClientData } from './websocket-client-manager.interface.js';
 import { Helper, Time } from '../util/index.js';
 import cluster from 'cluster';
 
@@ -28,16 +28,14 @@ export default class WebSocketClientManager {
 
     log('Client connected', {
       ID: clientId,
-      UserId: user?.userId || 'unauthenticated',
+      UserId: user?.userId ?? 'unauthenticated',
     });
 
     this.printClients();
   }
 
   public getClientId({ ws }: { ws: WebSocket }): string | undefined {
-    return [...this.clients.entries()].find(
-      ([_, value]) => value.ws === ws,
-    )?.[0];
+    return [...this.clients.entries()].find(([_, value]) => value.ws === ws)?.[0];
   }
 
   public getClient({
@@ -229,17 +227,15 @@ export default class WebSocketClientManager {
   public printClients() {
     const numClients = this.clients.size;
 
-    const workerId =
-      cluster.isWorker && cluster.worker ? cluster.worker.id : null;
+    const workerId = cluster.isWorker && cluster.worker ? cluster.worker.id : null;
 
-    let logOutput =
-      '\n-------------------------------------------------------\n';
+    let logOutput = '\n-------------------------------------------------------\n';
     logOutput += `Connected clients (Count: ${numClients}${workerId ? ` | Worker: ${workerId}` : ''}):\n`;
     logOutput += '-------------------------------------------------------\n';
 
     if (numClients > 0) {
       this.clients.forEach((client, clientId) => {
-        logOutput += `ID: ${clientId} | Username: ${client?.user?.username || '-'} | User Type: ${client?.user?.userType || '-'} | Email: ${client.user?.email ? client.user.email : '-'}\n`;
+        logOutput += `ID: ${clientId} | Username: ${client?.user?.username ?? '-'} | User Type: ${client?.user?.userType ?? '-'} | Email: ${client.user?.email ?? '-'}\n`;
       });
     } else {
       logOutput += 'No clients';

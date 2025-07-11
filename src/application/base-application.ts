@@ -2,16 +2,16 @@ import cluster from 'cluster';
 import { existsSync, readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join, resolve } from 'path';
-import { DatabaseInstance, DatabaseManager } from '../database/index.js';
+import { type DatabaseInstance, DatabaseManager } from '../database/index.js';
 import QueueManager from '../queue/manager.js';
 import RedisManager from '../redis/manager.js';
-import {
+import type {
   ApplicationConfig,
   ApplicationStartInstanceOptions,
   ApplicationStopInstanceOptions,
 } from './base-application.interface.js';
 import ClusterManager from '../cluster/cluster-manager.js';
-import RedisInstance from '../redis/instance.js';
+import type RedisInstance from '../redis/instance.js';
 import { OS, Time } from '../util/index.js';
 import CacheManager from '../cache/manager.js';
 import os from 'os';
@@ -41,8 +41,7 @@ export default abstract class BaseApplication {
   private static applicationVersionCache: string | undefined;
 
   /** Cluster worker ID */
-  protected workerId =
-    cluster.isWorker && cluster.worker ? cluster.worker.id : null;
+  protected workerId = cluster.isWorker && cluster.worker ? cluster.worker.id : null;
 
   /** Application config */
   protected config: ApplicationConfig;
@@ -122,21 +121,14 @@ export default abstract class BaseApplication {
     this.setupGlobalErrorHandlers();
 
     if (this.config.database && this.config.database.enabled === true) {
-      const defaultEntitiesDirectory = join(
-        this.config.rootDirectory,
-        'src',
-        'database',
-        'entities',
-      );
+      const defaultEntitiesDirectory = join(this.config.rootDirectory, 'src', 'database', 'entities');
 
       if (!this.config.database.entitiesDirectory) {
         this.config.database.entitiesDirectory = defaultEntitiesDirectory;
       }
 
       if (!existsSync(this.config.database.entitiesDirectory)) {
-        throw new Error(
-          `Database entities directory not found (Path: ${this.config.database.entitiesDirectory})`,
-        );
+        throw new Error(`Database entities directory not found (Path: ${this.config.database.entitiesDirectory})`);
       }
 
       // Initialize Database manager
@@ -228,8 +220,7 @@ export default abstract class BaseApplication {
       const clusterManager = new ClusterManager({
         config: this.config.cluster,
 
-        startApplicationCallback: () =>
-          this.startInstance(startInstanceOptions),
+        startApplicationCallback: () => this.startInstance(startInstanceOptions),
         stopApplicationCallback: () => this.stop(stopInstanceOptions),
       });
 
@@ -259,9 +250,7 @@ export default abstract class BaseApplication {
     const redisInstance = await this.redisManager.connect();
 
     // Connect to database
-    const databaseInstance = this.databaseManager
-      ? await this.databaseManager.connect()
-      : null;
+    const databaseInstance = this.databaseManager ? await this.databaseManager.connect() : null;
 
     let eventManager: EventManager | undefined;
 
@@ -306,11 +295,7 @@ export default abstract class BaseApplication {
   /**
    * Application started event
    */
-  protected onStarted({
-    startupTime: _startupTime,
-  }: {
-    startupTime: number;
-  }): void {}
+  protected onStarted({ startupTime: _startupTime }: { startupTime: number }): void {}
 
   /**
    * Application stopped event
@@ -333,13 +318,10 @@ export default abstract class BaseApplication {
   /**
    * Start application instance
    */
-  private async startInstance(
-    options: ApplicationStartInstanceOptions,
-  ): Promise<void> {
+  private async startInstance(options: ApplicationStartInstanceOptions): Promise<void> {
     try {
       // Before application start
-      const { redisInstance, databaseInstance, queueManager, eventManager } =
-        await this.onBeforeStart();
+      const { redisInstance, databaseInstance, queueManager, eventManager } = await this.onBeforeStart();
 
       // Start application
       await this.startHandler({
@@ -392,11 +374,7 @@ export default abstract class BaseApplication {
 
     // Handle unhandled promise rejections
     process.on('unhandledRejection', (reason, promise) => {
-      Logger.error(
-        reason instanceof Error ? reason : new Error(String(reason)),
-        'Unhandled Rejection',
-        { promise },
-      );
+      Logger.error(reason instanceof Error ? reason : new Error(String(reason)), 'Unhandled Rejection', { promise });
       this.initiateGracefulShutdown();
     });
   }
@@ -411,10 +389,7 @@ export default abstract class BaseApplication {
 
     Logger.info('Initiating graceful shutdown due to error');
     this.stop().catch(error => {
-      Logger.error(
-        error instanceof Error ? error : new Error(String(error)),
-        'Error during graceful shutdown',
-      );
+      Logger.error(error instanceof Error ? error : new Error(String(error)), 'Error during graceful shutdown');
       process.exit(1);
     });
   }
@@ -422,11 +397,7 @@ export default abstract class BaseApplication {
   /**
    * Handle shutdown
    */
-  public handleShutdown({
-    onStopped,
-  }: {
-    onStopped?: ({ runtime }: { runtime: number }) => void;
-  }): void {
+  public handleShutdown({ onStopped }: { onStopped?: ({ runtime }: { runtime: number }) => void }): void {
     this.shutdownSignals.forEach(signal => {
       process.on(signal, async () => {
         // Stop application
@@ -438,9 +409,7 @@ export default abstract class BaseApplication {
   /**
    * Stop application
    */
-  private async stop({
-    onStopped,
-  }: ApplicationStopInstanceOptions = {}): Promise<void> {
+  private async stop({ onStopped }: ApplicationStopInstanceOptions = {}): Promise<void> {
     if (this.isStopping) {
       return;
     }
@@ -471,10 +440,7 @@ export default abstract class BaseApplication {
       clearTimeout(forceExitTimeout);
       process.exit(0);
     } catch (error) {
-      Logger.error(
-        error instanceof Error ? error : new Error(String(error)),
-        'Error during shutdown',
-      );
+      Logger.error(error instanceof Error ? error : new Error(String(error)), 'Error during shutdown');
       clearTimeout(forceExitTimeout);
       process.exit(1);
     }

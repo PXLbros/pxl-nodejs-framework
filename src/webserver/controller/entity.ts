@@ -1,13 +1,13 @@
 import 'reflect-metadata';
 import path from 'path';
-import { EntityManager, FilterQuery, Populate } from '@mikro-orm/core';
-import { FastifyReply, FastifyRequest } from 'fastify';
+import type { EntityManager, FilterQuery, Populate } from '@mikro-orm/core';
+import type { FastifyReply, FastifyRequest } from 'fastify';
 import { StatusCodes } from 'http-status-codes';
 import BaseController from './base.js';
-import { DynamicEntity } from '../../database/dynamic-entity.js';
+import type { DynamicEntity } from '../../database/dynamic-entity.js';
 import { generateFormFields } from '../../database/dynamic-entity-form-decorators.js';
 import { Helper } from '../../util/index.js';
-import { WebServerBaseControllerConstructorParams } from './base.interface.js';
+import type { WebServerBaseControllerConstructorParams } from './base.interface.js';
 
 export default abstract class EntityController extends BaseController {
   protected abstract entityName: string;
@@ -26,10 +26,7 @@ export default abstract class EntityController extends BaseController {
   }
 
   protected getEntity = async (): Promise<typeof DynamicEntity | undefined> => {
-    if (
-      !this.applicationConfig.database ||
-      this.applicationConfig.database.enabled !== true
-    ) {
+    if (!this.applicationConfig.database || this.applicationConfig.database.enabled !== true) {
       throw new Error(`Database not enabled (Entity: ${this.entityName})`);
     }
 
@@ -66,9 +63,7 @@ export default abstract class EntityController extends BaseController {
 
     const reservedPropertyKeys = ['constructor', 'toJSON'];
 
-    for (const propertyKey of Object.getOwnPropertyNames(
-      entityClass.prototype,
-    )) {
+    for (const propertyKey of Object.getOwnPropertyNames(entityClass.prototype)) {
       if (propertyKey.startsWith('__')) {
         continue;
       } else if (reservedPropertyKeys.includes(propertyKey)) {
@@ -163,23 +158,15 @@ export default abstract class EntityController extends BaseController {
       const offset = (page - 1) * (limit > 0 ? limit : 0);
 
       // Filtering and sorting
-      const filters = request.query.filters
-        ? JSON.parse(request.query.filters)
-        : {};
+      const filters = request.query.filters ? JSON.parse(request.query.filters) : {};
       const sortOrder = request.query['sort-order'] || 'ASC';
-      const orderBy = request.query.sort
-        ? { [request.query.sort]: sortOrder }
-        : { id: sortOrder };
+      const orderBy = request.query.sort ? { [request.query.sort]: sortOrder } : { id: sortOrder };
 
       const normalizedQuery: { [key: string]: any } = {};
 
       for (const key in request.query) {
         // Skip prototype pollution attempts
-        if (
-          key === '__proto__' ||
-          key === 'constructor' ||
-          key === 'prototype'
-        ) {
+        if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
           continue;
         }
 
@@ -192,16 +179,8 @@ export default abstract class EntityController extends BaseController {
           const normalizedKey = key.slice(0, -2);
 
           // Safe property assignment
-          if (
-            normalizedKey !== '__proto__' &&
-            normalizedKey !== 'constructor' &&
-            normalizedKey !== 'prototype'
-          ) {
-            Reflect.set(
-              normalizedQuery,
-              normalizedKey,
-              Reflect.get(request.query, key),
-            );
+          if (normalizedKey !== '__proto__' && normalizedKey !== 'constructor' && normalizedKey !== 'prototype') {
+            Reflect.set(normalizedQuery, normalizedKey, Reflect.get(request.query, key));
           }
         } else {
           Reflect.set(normalizedQuery, key, Reflect.get(request.query, key));
@@ -225,23 +204,12 @@ export default abstract class EntityController extends BaseController {
       }
 
       const entityProperties = this.getEntityProperties(EntityClass);
-      const reservedQueryKeys = [
-        'page',
-        'limit',
-        'filters',
-        'sort',
-        'populate',
-        'search',
-      ];
+      const reservedQueryKeys = ['page', 'limit', 'filters', 'sort', 'populate', 'search'];
       const searchQuery = request.query.search || '';
 
       for (const key in normalizedQuery) {
         // Skip prototype pollution attempts
-        if (
-          key === '__proto__' ||
-          key === 'constructor' ||
-          key === 'prototype'
-        ) {
+        if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
           continue;
         }
 
@@ -326,21 +294,15 @@ export default abstract class EntityController extends BaseController {
           });
       }
 
-      const populate = request.query.populate
-        ? request.query.populate.split(',')
-        : [];
+      const populate = request.query.populate ? request.query.populate.split(',') : [];
 
       // Fetch items from the database
-      const [items, total] = await this.entityManager.findAndCount(
-        this.entityName,
-        options.filters,
-        {
-          limit: options.limit,
-          offset: options.offset,
-          orderBy: options.orderBy,
-          populate,
-        },
-      );
+      const [items, total] = await this.entityManager.findAndCount(this.entityName, options.filters, {
+        limit: options.limit,
+        offset: options.offset,
+        orderBy: options.orderBy,
+        populate,
+      });
 
       const totalPages = limit > 0 ? Math.ceil(total / limit) : 1;
 
@@ -404,14 +366,13 @@ export default abstract class EntityController extends BaseController {
       });
 
       const queryPopulate = request.query.populate || null;
-      const populateList: string[] = queryPopulate
-        ? queryPopulate.split(',')
-        : [];
+      const populateList: string[] = queryPopulate ? queryPopulate.split(',') : [];
 
       // Ensure populate is typed correctly for MikroORM
-      const populate = populateList.map(
-        field => `${field}.*`,
-      ) as unknown as Populate<object, `${string}.*` | `${string}.$infer`>;
+      const populate = populateList.map(field => `${field}.*`) as unknown as Populate<
+        object,
+        `${string}.*` | `${string}.$infer`
+      >;
 
       const EntityClass = await this.getEntity();
 
@@ -422,17 +383,10 @@ export default abstract class EntityController extends BaseController {
 
       const id = request.params.id;
 
-      const item = await this.entityManager.findOne(
-        this.entityName,
-        { id },
-        { populate },
-      );
+      const item = await this.entityManager.findOne(this.entityName, { id }, { populate });
 
       if (!item) {
-        return this.sendNotFoundResponse(
-          reply,
-          `${EntityClass.singularNameCapitalized} not found`,
-        );
+        return this.sendNotFoundResponse(reply, `${EntityClass.singularNameCapitalized} not found`);
       }
 
       await this.postGetOne({
@@ -516,10 +470,7 @@ export default abstract class EntityController extends BaseController {
     item: any;
   }): Promise<void> {}
 
-  public updateOne = async (
-    request: FastifyRequest<{ Params: { id: number } }>,
-    reply: FastifyReply,
-  ) => {
+  public updateOne = async (request: FastifyRequest<{ Params: { id: number } }>, reply: FastifyReply) => {
     try {
       const EntityClass = await this.getEntity();
 
@@ -539,10 +490,7 @@ export default abstract class EntityController extends BaseController {
       const item = await this.entityManager.findOne(this.entityName, { id });
 
       if (!item) {
-        return this.sendNotFoundResponse(
-          reply,
-          `${EntityClass.singularNameCapitalized} not found`,
-        );
+        return this.sendNotFoundResponse(reply, `${EntityClass.singularNameCapitalized} not found`);
       }
 
       this.entityManager.assign(item, value);
@@ -563,10 +511,7 @@ export default abstract class EntityController extends BaseController {
     }
   };
 
-  public deleteOne = async (
-    request: FastifyRequest<{ Params: { id: number } }>,
-    reply: FastifyReply,
-  ) => {
+  public deleteOne = async (request: FastifyRequest<{ Params: { id: number } }>, reply: FastifyReply) => {
     try {
       const EntityClass = await this.getEntity();
 
@@ -581,10 +526,7 @@ export default abstract class EntityController extends BaseController {
       const item = await this.entityManager.findOne(this.entityName, { id });
 
       if (!item) {
-        return this.sendNotFoundResponse(
-          reply,
-          `${EntityClass.singularNameCapitalized} not found`,
-        );
+        return this.sendNotFoundResponse(reply, `${EntityClass.singularNameCapitalized} not found`);
       }
 
       await this.entityManager.removeAndFlush(item);

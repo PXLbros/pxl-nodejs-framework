@@ -14,11 +14,14 @@ const loadModulesInDirectory = async ({
   extensions?: string[];
 }): Promise<{ [key: string]: any }> => {
   // Create cache key based on directory and extensions
-  const cacheKey = `${directory}:${extensions?.join(',') || 'all'}`;
+  const cacheKey = `${directory}:${extensions?.join(',') ?? 'all'}`;
 
   // Check cache first
   if (moduleCache.has(cacheKey)) {
-    return moduleCache.get(cacheKey)!;
+    const cachedModule = moduleCache.get(cacheKey);
+    if (cachedModule) {
+      return cachedModule;
+    }
   }
 
   const loadedModules: { [key: string]: any } = {};
@@ -37,10 +40,7 @@ const loadModulesInDirectory = async ({
     const isDeclarationFile = file.endsWith('.d.ts');
 
     // Skip files that are not in the specified extensions or are .d.ts files
-    if (
-      (extensions && extensions.length > 0 && !extensions.includes(ext)) ||
-      isDeclarationFile
-    ) {
+    if ((extensions && extensions.length > 0 && !extensions.includes(ext)) || isDeclarationFile) {
       continue;
     }
 
@@ -51,11 +51,7 @@ const loadModulesInDirectory = async ({
       const importedModule = await import(filePath);
 
       // Use safe property assignment to prevent prototype pollution
-      if (
-        moduleName !== '__proto__' &&
-        moduleName !== 'constructor' &&
-        moduleName !== 'prototype'
-      ) {
+      if (moduleName !== '__proto__' && moduleName !== 'constructor' && moduleName !== 'prototype') {
         Reflect.set(loadedModules, moduleName, importedModule.default);
       }
     } catch (error) {
@@ -85,27 +81,17 @@ const loadEntityModule = async ({
   }
 
   // Define entity module path
-  const entityModulePath = path.join(
-    entitiesDirectory,
-    `${entityName}.${Helper.getScriptFileExtension()}`,
-  );
+  const entityModulePath = path.join(entitiesDirectory, `${entityName}.${Helper.getScriptFileExtension()}`);
 
   // Import entity module
   const entityModule = await import(entityModulePath);
 
   // Safe property access to prevent prototype pollution
-  if (
-    entityName === '__proto__' ||
-    entityName === 'constructor' ||
-    entityName === 'prototype'
-  ) {
+  if (entityName === '__proto__' || entityName === 'constructor' || entityName === 'prototype') {
     throw new Error(`Invalid entity name (Entity: ${entityName})`);
   }
 
-  if (
-    !entityModule ||
-    !Object.prototype.hasOwnProperty.call(entityModule, entityName)
-  ) {
+  if (!entityModule || !Object.prototype.hasOwnProperty.call(entityModule, entityName)) {
     throw new Error(`Entity not found (Entity: ${entityName})`);
   }
 

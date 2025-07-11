@@ -1,10 +1,10 @@
 import { existsSync } from 'fs';
-import DatabaseInstance from '../database/instance.js';
+import type DatabaseInstance from '../database/instance.js';
 import { Logger } from '../logger/index.js';
-import QueueManager from '../queue/manager.js';
-import RedisInstance from '../redis/instance.js';
+import type QueueManager from '../queue/manager.js';
+import type RedisInstance from '../redis/instance.js';
 import BaseApplication from './base-application.js';
-import { CommandApplicationConfig } from './command-application.interface.js';
+import type { CommandApplicationConfig } from './command-application.interface.js';
 import { Helper, Loader, Time } from '../util/index.js';
 
 export default class CommandApplication extends BaseApplication {
@@ -28,10 +28,7 @@ export default class CommandApplication extends BaseApplication {
       },
     };
 
-    const mergedConfig: CommandApplicationConfig = Helper.defaultsDeep(
-      config,
-      defaultConfig,
-    );
+    const mergedConfig: CommandApplicationConfig = Helper.defaultsDeep(config, defaultConfig);
 
     if (mergedConfig.cluster) {
       mergedConfig.cluster.enabled = false;
@@ -66,9 +63,7 @@ export default class CommandApplication extends BaseApplication {
 
     const inputCommandName = parsedArgv._[0];
 
-    const commandsDirectoryExists = await existsSync(
-      this.config.commandsDirectory,
-    );
+    const commandsDirectoryExists = await existsSync(this.config.commandsDirectory);
 
     if (!commandsDirectoryExists) {
       Logger.warn('Commands directory not found', {

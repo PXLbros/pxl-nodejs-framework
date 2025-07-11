@@ -1,8 +1,8 @@
-import DatabaseInstance from '../../../database/instance.js';
-import QueueManager from '../../../queue/manager.js';
-import { RedisInstance } from '../../../redis/index.js';
-import WebSocketServer from '../../websocket-server.js';
-import { WebSocketServerBaseControllerConstructorParams } from './base.interface.js';
+import type DatabaseInstance from '../../../database/instance.js';
+import type QueueManager from '../../../queue/manager.js';
+import type { RedisInstance } from '../../../redis/index.js';
+import type WebSocketServer from '../../websocket-server.js';
+import type { WebSocketServerBaseControllerConstructorParams } from './base.interface.js';
 
 export default abstract class WebSocketServerBaseController {
   protected webSocketServer: WebSocketServer;

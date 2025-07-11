@@ -1,5 +1,5 @@
-import sgMail, { MailDataRequired } from '@sendgrid/mail';
-import Emailer, { EmailerProps } from '../emailer.js';
+import sgMail, { type MailDataRequired } from '@sendgrid/mail';
+import Emailer, { type EmailerProps } from '../emailer.js';
 
 interface SendgridEmailerProps extends EmailerProps {
   apiKey: string;

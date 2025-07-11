@@ -1,10 +1,10 @@
-import { ApplicationConfig } from '../../application/base-application.interface.js';
-import { DatabaseInstance } from '../../database/index.js';
-import EventManager from '../../event/manager.js';
-import { QueueManager } from '../../queue/index.js';
-import { RedisInstance } from '../../redis/index.js';
-import { WebServerOptions } from '../webserver.interface.js';
-import WebServerBaseController from './base.js';
+import type { ApplicationConfig } from '../../application/base-application.interface.js';
+import type { DatabaseInstance } from '../../database/index.js';
+import type EventManager from '../../event/manager.js';
+import type { QueueManager } from '../../queue/index.js';
+import type { RedisInstance } from '../../redis/index.js';
+import type { WebServerOptions } from '../webserver.interface.js';
+import type WebServerBaseController from './base.js';
 
 export interface WebServerBaseControllerConstructorParams {
   applicationConfig: ApplicationConfig;
@@ -38,13 +38,7 @@ export interface ApiResponse<T = any> {
 export interface ApiError {
   message: string;
   code?: string;
-  type:
-    | 'validation'
-    | 'authentication'
-    | 'authorization'
-    | 'not_found'
-    | 'server_error'
-    | 'client_error';
+  type: 'validation' | 'authentication' | 'authorization' | 'not_found' | 'server_error' | 'client_error';
   details?: any;
   timestamp: string;
   requestId: string;

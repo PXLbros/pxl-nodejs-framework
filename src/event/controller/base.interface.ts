@@ -1,8 +1,8 @@
-import { ApplicationConfig } from '../../application/base-application.interface.js';
-import { DatabaseInstance } from '../../database/index.js';
+import type { ApplicationConfig } from '../../application/base-application.interface.js';
+import type { DatabaseInstance } from '../../database/index.js';
 // import { QueueManager } from '../../queue/index.js';
-import { RedisInstance } from '../../redis/index.js';
-import EventBaseController from './base.js';
+import type { RedisInstance } from '../../redis/index.js';
+import type EventBaseController from './base.js';
 
 export interface EventControllerConstructorParams {
   applicationConfig: ApplicationConfig;
@@ -12,6 +12,4 @@ export interface EventControllerConstructorParams {
   databaseInstance: DatabaseInstance | null;
 }
 
-export type EventControllerType = new (
-  params: EventControllerConstructorParams,
-) => EventBaseController;
+export type EventControllerType = new (params: EventControllerConstructorParams) => EventBaseController;

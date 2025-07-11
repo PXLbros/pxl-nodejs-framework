@@ -17,9 +17,7 @@ async function convertFile({
   format: string;
 }): Promise<void> {
   return new Promise((resolve, reject) => {
-    console.log(
-      `Starting conversion: ${inputFilePath} -> ${outputFilePath} (format: ${format})`,
-    );
+    console.log(`Starting conversion: ${inputFilePath} -> ${outputFilePath} (format: ${format})`);
 
     const command = ffmpeg(inputFilePath)
       .output(outputFilePath)
@@ -79,24 +77,14 @@ function copySync(src: string, dest: string): void {
  * @param url The URL to download the file from
  * @param destinationPath The path to save the downloaded file
  */
-async function downloadFile({
-  url,
-  destinationPath,
-}: {
-  url: string;
-  destinationPath: string;
-}): Promise<void> {
+async function downloadFile({ url, destinationPath }: { url: string; destinationPath: string }): Promise<void> {
   return new Promise((resolve, reject) => {
     const file = fs.createWriteStream(destinationPath);
 
     https
       .get(url, response => {
         // Check if response status is OK (200–299)
-        if (
-          response.statusCode &&
-          response.statusCode >= 200 &&
-          response.statusCode < 300
-        ) {
+        if (response.statusCode && response.statusCode >= 200 && response.statusCode < 300) {
           pipelineAsync(response, file)
             .then(() => resolve())
             .catch(err => {
@@ -104,11 +92,7 @@ async function downloadFile({
             });
         } else {
           fs.unlink(destinationPath, () => {
-            reject(
-              new Error(
-                `Failed to download file, status code: ${response.statusCode}`,
-              ),
-            );
+            reject(new Error(`Failed to download file, status code: ${response.statusCode}`));
           });
         }
       })

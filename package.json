@@ -31,7 +31,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --check .",
-    "format:fix": "prettier . --write",
+    "format:fix": "prettier --write .",
     "typecheck": "tsc --noEmit",
     "test": "vitest",
     "test:watch": "vitest --watch",
@@ -39,7 +39,8 @@
     "test:coverage": "vitest --coverage",
     "test:unit": "vitest test/unit",
     "test:integration": "vitest test/integration",
-    "test:e2e": "vitest test/e2e"
+    "test:e2e": "vitest test/e2e",
+    "check-all": "npm run lint && npm run format && npm run typecheck"
   },
   "keywords": [],
   "author": "PXL <devops@pxlagency.com>",

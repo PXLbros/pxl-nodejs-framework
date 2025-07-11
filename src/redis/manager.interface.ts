@@ -1,4 +1,4 @@
-import { ApplicationConfig } from '../application/base-application.interface.js';
+import type { ApplicationConfig } from '../application/base-application.interface.js';
 
 export interface RedisManagerConfig {
   applicationConfig: ApplicationConfig;

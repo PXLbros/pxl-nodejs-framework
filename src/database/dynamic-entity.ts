@@ -1,5 +1,5 @@
 import { BaseEntity } from '@mikro-orm/core';
-import { Schema, ValidationResult } from 'joi';
+import type { Schema, ValidationResult } from 'joi';
 
 export abstract class DynamicEntity extends BaseEntity {
   public static schema: Schema;
@@ -22,17 +22,11 @@ export abstract class DynamicEntity extends BaseEntity {
   }
 
   public static get singularNameCapitalized(): string {
-    return (
-      this.singularName.charAt(0).toUpperCase() +
-      this.singularName.slice(1).toLowerCase()
-    );
+    return this.singularName.charAt(0).toUpperCase() + this.singularName.slice(1).toLowerCase();
   }
 
   public static get pluralNameCapitalized(): string {
-    return (
-      this.pluralName.charAt(0).toUpperCase() +
-      this.pluralName.slice(1).toLowerCase()
-    );
+    return this.pluralName.charAt(0).toUpperCase() + this.pluralName.slice(1).toLowerCase();
   }
 
   public static validate<T>(item: T, isCreating: boolean): ValidationResult {

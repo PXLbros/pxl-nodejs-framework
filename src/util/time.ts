@@ -1,16 +1,9 @@
-import {
-  FormatTimeOptions,
-  FormatRelativeTimeOptions,
-} from './time.interface.js';
+import type { FormatRelativeTimeOptions, FormatTimeOptions } from './time.interface.js';
 
 /**
  * Calculate elapsed time in milliseconds.
  */
-const calculateElapsedTime = ({
-  startTime,
-}: {
-  startTime: [number, number];
-}): number => {
+const calculateElapsedTime = ({ startTime }: { startTime: [number, number] }): number => {
   const endTime = process.hrtime(startTime);
   const elapsedTime = (endTime[0] * 1e9 + endTime[1]) / 1e6;
 
@@ -20,12 +13,7 @@ const calculateElapsedTime = ({
 /**
  * Format time.
  */
-const formatTime = ({
-  time,
-  format = 'auto',
-  numDecimals = 0,
-  showUnit = true,
-}: FormatTimeOptions): string => {
+const formatTime = ({ time, format = 'auto', numDecimals = 0, showUnit = true }: FormatTimeOptions): string => {
   let formattedTime: number;
   let formattedTimeText: string;
 
@@ -113,9 +101,8 @@ const formatRelativeTime = ({
 
   if (isFuture) {
     return `in ${value} ${unit}`;
-  } else {
-    return `${value} ${unit} ago`;
   }
+  return `${value} ${unit} ago`;
 };
 
 export default {

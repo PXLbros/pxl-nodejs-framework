@@ -1,4 +1,4 @@
-import { WebSocketRoute } from '../../websocket.interface.js';
+import type { WebSocketRoute } from '../../websocket.interface.js';
 
 export const webSocketSystemClientRoutes: WebSocketRoute[] = [
   // {

@@ -1,5 +1,5 @@
-import { Redis } from 'ioredis';
-import { RedisManager } from './index.js';
+import type { Redis } from 'ioredis';
+import type { RedisManager } from './index.js';
 
 export interface RedisInstanceProps {
   redisManager: RedisManager;

@@ -1,16 +1,12 @@
-import WebSocket, { RawData } from 'ws';
-import {
-  WebSocketOptions,
-  WebSocketRoute,
-  WebSocketType,
-} from './websocket.interface.js';
-import RedisInstance from '../redis/instance.js';
-import QueueManager from '../queue/manager.js';
-import DatabaseInstance from '../database/instance.js';
-import { WebSocketClientProps } from './websocket-client.interface.js';
+import WebSocket, { type RawData } from 'ws';
+import type { WebSocketOptions, WebSocketRoute, WebSocketType } from './websocket.interface.js';
+import type RedisInstance from '../redis/instance.js';
+import type QueueManager from '../queue/manager.js';
+import type DatabaseInstance from '../database/instance.js';
+import type { WebSocketClientProps } from './websocket-client.interface.js';
 import { generateClientId, log, parseServerMessage } from './utils.js';
 import WebSocketBase from './websocket-base.js';
-import { ApplicationConfig } from '../application/base-application.interface.js';
+import type { ApplicationConfig } from '../application/base-application.interface.js';
 import path from 'path';
 import { baseDir } from '../index.js';
 
@@ -48,12 +44,7 @@ export default class WebSocketClient extends WebSocketBase {
   }
 
   public async load(): Promise<void> {
-    const libraryControllersDirectory = path.join(
-      baseDir,
-      'websocket',
-      'controllers',
-      'client',
-    );
+    const libraryControllersDirectory = path.join(baseDir, 'websocket', 'controllers', 'client');
 
     await this.configureRoutes(this.defaultRoutes, libraryControllersDirectory);
 

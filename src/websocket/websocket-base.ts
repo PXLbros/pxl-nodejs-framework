@@ -1,13 +1,9 @@
 import { existsSync } from 'fs';
-import {
-  WebSocketRoute,
-  WebSocketMessageHandler,
-  WebSocketType,
-} from './websocket.interface.js';
-import { log, getRouteKey, parseServerMessage } from './utils.js';
-import { WebSocketServerBaseControllerType } from './controller/server/base.interface.js';
-import { WebSocketClientBaseControllerType } from './controller/client/base.interface.js';
-import WebSocket from 'ws';
+import type { WebSocketMessageHandler, WebSocketRoute, WebSocketType } from './websocket.interface.js';
+import { getRouteKey, log, parseServerMessage } from './utils.js';
+import type { WebSocketServerBaseControllerType } from './controller/server/base.interface.js';
+import type { WebSocketClientBaseControllerType } from './controller/client/base.interface.js';
+import type WebSocket from 'ws';
 import { Helper, Loader } from '../util/index.js';
 
 export default abstract class WebSocketBase {
@@ -22,10 +18,7 @@ export default abstract class WebSocketBase {
   protected abstract shouldPrintRoutes(): boolean;
   protected abstract handleMessageError(clientId: string, error: string): void;
 
-  protected async configureRoutes(
-    routes: WebSocketRoute[],
-    controllersDirectory: string,
-  ): Promise<void> {
+  protected async configureRoutes(routes: WebSocketRoute[], controllersDirectory: string): Promise<void> {
     // log ('Configuring routes', { Type: this.type, 'Controllers Directory': controllersDirectory });
 
     const controllersDirectoryExists = await existsSync(controllersDirectory);
@@ -51,9 +44,7 @@ export default abstract class WebSocketBase {
     });
 
     for (const route of routes) {
-      let ControllerClass:
-        | WebSocketServerBaseControllerType
-        | WebSocketClientBaseControllerType;
+      let ControllerClass: WebSocketServerBaseControllerType | WebSocketClientBaseControllerType;
 
       // log('Registering route', {
       //   Type: route.type,
@@ -97,11 +88,7 @@ export default abstract class WebSocketBase {
     }
   }
 
-  protected async handleServerMessage(
-    ws: WebSocket,
-    message: WebSocket.Data,
-    clientId: string,
-  ): Promise<void | any> {
+  protected async handleServerMessage(ws: WebSocket, message: WebSocket.Data, clientId: string): Promise<void | any> {
     try {
       const parsedMessage = parseServerMessage(message);
       const type = parsedMessage.type;
@@ -113,34 +100,26 @@ export default abstract class WebSocketBase {
         Action: action ?? '-',
       });
 
-      const routeKey = getRouteKey(
-        parsedMessage.type as string,
-        parsedMessage.action as string,
-      );
+      const routeKey = getRouteKey(parsedMessage.type as string, parsedMessage.action as string);
 
       const messageHandler = this.routeHandlers.get(routeKey);
 
       if (messageHandler) {
-        const messageResponse = await messageHandler(
-          ws,
-          clientId,
-          parsedMessage.data,
-        );
+        const messageResponse = await messageHandler(ws, clientId, parsedMessage.data);
 
         return {
           type,
           action,
           response: messageResponse,
         };
-      } else {
-        // throw new Error(`Route handler not found (Route Key: ${routeKey} | Type: ${type} | Action: ${action})`);
-
-        log('Route handler not found', {
-          RouteKey: routeKey,
-          Type: type,
-          Action: action,
-        });
       }
+      // throw new Error(`Route handler not found (Route Key: ${routeKey} | Type: ${type} | Action: ${action})`);
+
+      log('Route handler not found', {
+        RouteKey: routeKey,
+        Type: type,
+        Action: action,
+      });
 
       // if (
       //   typeof this.applicationConfig.webSocket
@@ -156,8 +135,7 @@ export default abstract class WebSocketBase {
       //   );
       // }
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
       log(errorMessage);
 

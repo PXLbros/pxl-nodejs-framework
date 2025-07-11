@@ -1,5 +1,5 @@
-import WebSocketServer from './websocket-server.js';
-import RedisInstance from '../redis/instance.js';
+import type WebSocketServer from './websocket-server.js';
+import type RedisInstance from '../redis/instance.js';
 import { WebSocketRedisSubscriberEvent } from './websocket.interface.js';
 
 export interface WebSocketMessage {
@@ -44,9 +44,7 @@ export class WebSocketService {
         }),
       );
     } else {
-      throw new Error(
-        'WebSocket service requires either webSocketServer or redisInstance',
-      );
+      throw new Error('WebSocket service requires either webSocketServer or redisInstance');
     }
   }
 
@@ -54,10 +52,7 @@ export class WebSocketService {
    * Send a message to specific clients by their IDs
    * Note: This requires direct access to WebSocket server and room functionality
    */
-  async sendToClients(
-    clientIds: string[],
-    message: WebSocketMessage,
-  ): Promise<void> {
+  async sendToClients(clientIds: string[], message: WebSocketMessage): Promise<void> {
     // Currently not implemented in the framework
     // For now, we'll broadcast to all clients
     await this.broadcast(message);
@@ -66,14 +61,9 @@ export class WebSocketService {
   /**
    * Send a message to all clients in specific rooms
    */
-  async sendToRooms(
-    roomNames: string[],
-    message: WebSocketMessage,
-  ): Promise<void> {
+  async sendToRooms(roomNames: string[], message: WebSocketMessage): Promise<void> {
     if (!this.webSocketServer) {
-      throw new Error(
-        'Sending to specific rooms requires direct access to WebSocket server',
-      );
+      throw new Error('Sending to specific rooms requires direct access to WebSocket server');
     }
 
     const clientIds: string[] = [];
@@ -121,7 +111,7 @@ export class WebSocketService {
       type: 'error',
       action,
       data: {
-        message: error.message || 'An error occurred',
+        message: error.message ?? 'An error occurred',
         code: error.code,
         details: error.details,
       },

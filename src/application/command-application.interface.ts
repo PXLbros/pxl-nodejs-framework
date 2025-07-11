@@ -1,22 +1,10 @@
-import CommandManager from '../command/command-manager.js';
-import { ApplicationConfig } from './base-application.interface.js';
-import CommandApplication from './command-application.js';
+import type CommandManager from '../command/command-manager.js';
+import type { ApplicationConfig } from './base-application.interface.js';
+import type CommandApplication from './command-application.js';
 
 export interface CommandApplicationEventsConfig {
-  onStarted?: ({
-    app,
-    startupTime,
-  }: {
-    app: CommandApplication;
-    startupTime: number;
-  }) => void;
-  onStopped?: ({
-    app,
-    runtime,
-  }: {
-    app: CommandApplication;
-    runtime: number;
-  }) => void;
+  onStarted?: ({ app, startupTime }: { app: CommandApplication; startupTime: number }) => void;
+  onStopped?: ({ app, runtime }: { app: CommandApplication; runtime: number }) => void;
 }
 
 export interface CommandApplicationConfig extends ApplicationConfig {

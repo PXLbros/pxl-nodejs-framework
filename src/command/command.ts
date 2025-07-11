@@ -1,8 +1,8 @@
-import { ApplicationConfig } from '../application/base-application.interface.js';
-import DatabaseInstance from '../database/instance.js';
-import { QueueManager } from '../queue/index.js';
-import RedisInstance from '../redis/instance.js';
-import { CommandConstructorParams } from './command.interface.js';
+import type { ApplicationConfig } from '../application/base-application.interface.js';
+import type DatabaseInstance from '../database/instance.js';
+import type { QueueManager } from '../queue/index.js';
+import type RedisInstance from '../redis/instance.js';
+import type { CommandConstructorParams } from './command.interface.js';
 import { Logger } from '../logger/index.js';
 
 export default abstract class Command {
@@ -20,12 +20,7 @@ export default abstract class Command {
 
   protected logger: typeof Logger;
 
-  constructor({
-    applicationConfig,
-    redisInstance,
-    queueManager,
-    databaseInstance,
-  }: CommandConstructorParams) {
+  constructor({ applicationConfig, redisInstance, queueManager, databaseInstance }: CommandConstructorParams) {
     this.applicationConfig = applicationConfig;
 
     this.redisInstance = redisInstance;

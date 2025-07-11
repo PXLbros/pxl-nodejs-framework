@@ -1,4 +1,4 @@
-import Emailer, { EmailerProps } from '../emailer.js';
+import Emailer, { type EmailerProps } from '../emailer.js';
 import nodemailer from 'nodemailer';
 
 interface GmailEmailerProps extends EmailerProps {
@@ -21,12 +21,7 @@ export default class GmailEmailer extends Emailer {
     });
   }
 
-  async sendMail(mailOptions: {
-    from: string;
-    to: string;
-    subject: string;
-    text: string;
-  }) {
+  async sendMail(mailOptions: { from: string; to: string; subject: string; text: string }) {
     // Send the email
     this.transporter.sendMail(mailOptions, (error: any, info: any) => {
       if (error) {

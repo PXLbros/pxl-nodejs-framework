@@ -3,12 +3,7 @@
   "out": "docs",
   "entryPoints": ["src/index.ts"],
   "entryPointStrategy": "expand",
-  "exclude": [
-    "**/node_modules/**",
-    "**/dist/**",
-    "**/*.test.ts",
-    "**/*.spec.ts"
-  ],
+  "exclude": ["**/node_modules/**", "**/dist/**", "**/*.test.ts", "**/*.spec.ts"],
   "theme": "default",
   "readme": "README.md",
   "includeVersion": true,

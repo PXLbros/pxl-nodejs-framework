@@ -1,25 +1,13 @@
-import {
+import type {
   ApplicationConfig,
   ApplicationWebServerConfig,
   ApplicationWebSocketConfig,
 } from './base-application.interface.js';
-import WebApplication from './web-application.js';
+import type WebApplication from './web-application.js';
 
 export interface WebApplicationEventsConfig {
-  onStarted?: ({
-    app,
-    startupTime,
-  }: {
-    app: WebApplication;
-    startupTime: number;
-  }) => void;
-  onStopped?: ({
-    app,
-    runtime,
-  }: {
-    app: WebApplication;
-    runtime: number;
-  }) => void;
+  onStarted?: ({ app, startupTime }: { app: WebApplication; startupTime: number }) => void;
+  onStopped?: ({ app, runtime }: { app: WebApplication; runtime: number }) => void;
 }
 
 export interface WebApplicationConfig extends ApplicationConfig {

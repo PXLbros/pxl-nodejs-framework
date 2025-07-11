@@ -23,10 +23,7 @@ function defaultsDeep(target: any, ...sources: any[]): any {
           Reflect.set(target, key, {});
         }
         defaultsDeep(Reflect.get(target, key), sourceValue);
-      } else if (
-        Array.isArray(sourceValue) &&
-        Array.isArray(Reflect.get(target, key))
-      ) {
+      } else if (Array.isArray(sourceValue) && Array.isArray(Reflect.get(target, key))) {
         const sourceArray = sourceValue;
         const targetArray = Reflect.get(target, key);
         for (let i = 0; i < sourceArray.length; i++) {
@@ -68,17 +65,11 @@ type AnyObject = { [key: string]: any };
 function getValueFromObject(obj: AnyObject, path: string): any {
   return path.split('.').reduce((acc, part) => {
     // Skip prototype pollution attempts
-    if (
-      part === '__proto__' ||
-      part === 'constructor' ||
-      part === 'prototype'
-    ) {
+    if (part === '__proto__' || part === 'constructor' || part === 'prototype') {
       return undefined;
     }
     // Only access own properties
-    return acc && Object.prototype.hasOwnProperty.call(acc, part)
-      ? Reflect.get(acc, part)
-      : undefined;
+    return acc && Object.prototype.hasOwnProperty.call(acc, part) ? Reflect.get(acc, part) : undefined;
   }, obj);
 }
 

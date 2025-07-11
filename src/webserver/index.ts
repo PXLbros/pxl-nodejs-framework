@@ -1,9 +1,5 @@
 export { default as WebServer } from './webserver.js';
-export type {
-  WebServerConstructorParams,
-  WebServerOptions,
-  WebServerRoute,
-} from './webserver.interface.js';
+export type { WebServerConstructorParams, WebServerOptions, WebServerRoute } from './webserver.interface.js';
 export { WebServerRouteType } from './webserver.interface.js';
 export { default as WebServerBaseController } from './controller/base.js';
 export type { WebServerBaseControllerConstructorParams } from './controller/base.interface.js';

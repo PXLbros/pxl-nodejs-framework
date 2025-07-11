@@ -1,5 +1,5 @@
-import { Redis, RedisOptions } from 'ioredis';
-import { RedisManagerConfig as RedisManagerOptions } from './manager.interface.js';
+import { Redis, type RedisOptions } from 'ioredis';
+import type { RedisManagerConfig as RedisManagerOptions } from './manager.interface.js';
 import RedisInstance from './instance.js';
 import { Logger } from '../logger/index.js';
 

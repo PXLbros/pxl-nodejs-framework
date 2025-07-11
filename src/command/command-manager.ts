@@ -1,4 +1,4 @@
-import yargs, { Argv } from 'yargs';
+import yargs, { type Argv } from 'yargs';
 import { hideBin } from 'yargs/helpers';
 
 class CommandManager {

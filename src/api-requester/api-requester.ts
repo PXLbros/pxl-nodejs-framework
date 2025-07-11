@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosResponse } from 'axios';
 
 export default class ApiRequester {
   private axiosInstance: AxiosInstance;
@@ -10,10 +10,7 @@ export default class ApiRequester {
     });
   }
 
-  public async get<T>(
-    url: string,
-    config?: AxiosRequestConfig,
-  ): Promise<AxiosResponse<T> | undefined> {
+  public async get<T>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T> | undefined> {
     try {
       const response = await this.axiosInstance.get<T>(url, config);
       return response;
@@ -22,11 +19,7 @@ export default class ApiRequester {
     }
   }
 
-  public async post<T, R>(
-    url: string,
-    data: T,
-    config?: AxiosRequestConfig,
-  ): Promise<AxiosResponse<R> | undefined> {
+  public async post<T, R>(url: string, data: T, config?: AxiosRequestConfig): Promise<AxiosResponse<R> | undefined> {
     try {
       const response = await this.axiosInstance.post<R>(url, data, config);
       return response;
@@ -35,11 +28,7 @@ export default class ApiRequester {
     }
   }
 
-  public async put<T, R>(
-    url: string,
-    data: T,
-    config?: AxiosRequestConfig,
-  ): Promise<AxiosResponse<R> | undefined> {
+  public async put<T, R>(url: string, data: T, config?: AxiosRequestConfig): Promise<AxiosResponse<R> | undefined> {
     try {
       const response = await this.axiosInstance.put<R>(url, data, config);
       return response;
@@ -48,10 +37,7 @@ export default class ApiRequester {
     }
   }
 
-  public async delete<T>(
-    url: string,
-    config?: AxiosRequestConfig,
-  ): Promise<AxiosResponse<T> | undefined> {
+  public async delete<T>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T> | undefined> {
     try {
       const response = await this.axiosInstance.delete<T>(url, config);
       return response;

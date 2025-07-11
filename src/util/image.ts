@@ -3,16 +3,11 @@ function extractMimeType({ base64 }: { base64: string }): string | undefined {
 
   if (match && match.length > 1) {
     return match[1];
-  } else {
-    return undefined;
   }
+  return undefined;
 }
 
-function mimeTypeToExtension({
-  mimeType,
-}: {
-  mimeType: string;
-}): string | undefined {
+function mimeTypeToExtension({ mimeType }: { mimeType: string }): string | undefined {
   switch (mimeType) {
     case 'image/jpeg': {
       return 'jpg';

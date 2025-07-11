@@ -1,18 +1,18 @@
 import {
   CompleteMultipartUploadCommand,
   CreateMultipartUploadCommand,
-  S3Client,
   GetObjectCommand,
-  UploadPartCommand,
   PutObjectCommand,
-  PutObjectCommandInput,
-  S3ClientConfig,
+  type PutObjectCommandInput,
+  S3Client,
+  type S3ClientConfig,
+  UploadPartCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Helper } from '../../util/index.js';
-import { AwsS3ConstructorOptions } from './s3.interface.js';
+import type { AwsS3ConstructorOptions } from './s3.interface.js';
 import { createWriteStream, existsSync, mkdirSync } from 'fs';
-import { pipeline, Readable } from 'stream';
+import { Readable, pipeline } from 'stream';
 import { promisify } from 'util';
 import { Logger } from '../../logger/index.js';
 import { dirname } from 'path';
@@ -63,10 +63,7 @@ export default class AwsS3 {
         secretAccessKey: 'test',
       };
     } else {
-      if (
-        this.options.credentials?.accessKeyId &&
-        this.options.credentials?.secretAccessKey
-      ) {
+      if (this.options.credentials?.accessKeyId && this.options.credentials?.secretAccessKey) {
         s3ClientConfig.credentials = {
           accessKeyId: this.options.credentials.accessKeyId,
           secretAccessKey: this.options.credentials.secretAccessKey,
@@ -77,13 +74,7 @@ export default class AwsS3 {
     this.client = new S3Client(s3ClientConfig);
   }
 
-  private getBucketUrl({
-    bucketName,
-    path,
-  }: {
-    bucketName: string;
-    path: string;
-  }) {
+  private getBucketUrl({ bucketName, path }: { bucketName: string; path: string }) {
     let url;
 
     if (this.options.localstack.enabled) {
@@ -261,7 +252,7 @@ export default class AwsS3 {
       }
 
       const fileStream = createWriteStream(destinationFilePath);
-      const totalSize = parseInt(response.ContentLength?.toString() || '0', 10);
+      const totalSize = parseInt(response.ContentLength?.toString() ?? '0', 10);
 
       let bytesRead = 0;
 
@@ -279,9 +270,7 @@ export default class AwsS3 {
       await asyncPipeline(response.Body, fileStream);
 
       if (!existsSync(destinationFilePath)) {
-        throw new Error(
-          `Could not find downloaded file at ${destinationFilePath}`,
-        );
+        throw new Error(`Could not find downloaded file at ${destinationFilePath}`);
       }
 
       Logger.info('File successfully downloaded', {
@@ -302,13 +291,7 @@ export default class AwsS3 {
     }
   }
 
-  public async generateSignedUrl({
-    bucket,
-    key,
-  }: {
-    bucket: string;
-    key: string;
-  }): Promise<string> {
+  public async generateSignedUrl({ bucket, key }: { bucket: string; key: string }): Promise<string> {
     try {
       const command = new GetObjectCommand({
         Bucket: bucket,

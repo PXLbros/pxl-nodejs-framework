@@ -1,9 +1,9 @@
-import QueueManager from '../manager.js';
-import { ApplicationConfig } from '../../application/base-application.interface.js';
-import { RedisInstance } from '../../redis/index.js';
-import { DatabaseInstance } from '../../database/index.js';
-import EventManager from '../../event/manager.js';
-import BaseProcessor from './base.js';
+import type QueueManager from '../manager.js';
+import type { ApplicationConfig } from '../../application/base-application.interface.js';
+import type { RedisInstance } from '../../redis/index.js';
+import type { DatabaseInstance } from '../../database/index.js';
+import type EventManager from '../../event/manager.js';
+import type BaseProcessor from './base.js';
 
 export interface ProcessorConstructorParams {
   queueManager: QueueManager;

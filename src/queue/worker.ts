@@ -1,10 +1,10 @@
-import { Job, Worker, Processor } from 'bullmq';
-import { QueueWorkerConstructorParams } from './worker.interface.js';
-import { RedisInstance } from '../redis/index.js';
+import { type Job, type Processor, Worker } from 'bullmq';
+import type { QueueWorkerConstructorParams } from './worker.interface.js';
+import type { RedisInstance } from '../redis/index.js';
 import { Logger } from '../logger/index.js';
 import { WebSocketRedisSubscriberEvent } from '../websocket/websocket.interface.js';
-import { ApplicationConfig } from '../application/base-application.interface.js';
-import QueueManager from './manager.js';
+import type { ApplicationConfig } from '../application/base-application.interface.js';
+import type QueueManager from './manager.js';
 
 export default class QueueWorker extends Worker {
   private applicationConfig: ApplicationConfig;
@@ -46,10 +46,7 @@ export default class QueueWorker extends Worker {
     Logger.error(error);
   };
 
-  private onWorkerFailed = (
-    job: Job<any, Processor<any, any, string>, string> | undefined,
-    error: Error,
-  ): void => {
+  private onWorkerFailed = (job: Job<any, Processor<any, any, string>, string> | undefined, error: Error): void => {
     // // Send job failed message to client
     // if (job && job.data.webSocketClientId) {
     //   const errorMessage = {
@@ -72,7 +69,7 @@ export default class QueueWorker extends Worker {
   private onWorkerCompleted = (job: Job): void => {
     const jobData = job.data;
 
-    if (job.returnvalue && job.returnvalue.webSocketClientId) {
+    if (job.returnvalue?.webSocketClientId) {
       // Send job completed message to client
       this.redisInstance.publisherClient.publish(
         WebSocketRedisSubscriberEvent.QueueJobCompleted,

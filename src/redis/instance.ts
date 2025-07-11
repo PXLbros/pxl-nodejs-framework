@@ -1,7 +1,7 @@
-import { Redis } from 'ioredis';
+import type { Redis } from 'ioredis';
 import { Logger } from '../logger/index.js';
-import { RedisInstanceProps } from './instance.interface.js';
-import RedisManager from './manager.js';
+import type { RedisInstanceProps } from './instance.interface.js';
+import type RedisManager from './manager.js';
 
 export default class RedisInstance {
   private redisManager: RedisManager;
@@ -10,12 +10,7 @@ export default class RedisInstance {
   public publisherClient: Redis;
   public subscriberClient: Redis;
 
-  constructor({
-    redisManager,
-    client,
-    publisherClient,
-    subscriberClient,
-  }: RedisInstanceProps) {
+  constructor({ redisManager, client, publisherClient, subscriberClient }: RedisInstanceProps) {
     this.redisManager = redisManager;
 
     this.client = client;
@@ -25,19 +20,9 @@ export default class RedisInstance {
 
   public async disconnect(): Promise<void> {
     const disconnectPromises = [
-      this.subscriberClient
-        .quit()
-        .catch(() =>
-          Logger.error('Could not disconnect Redis subscriber client'),
-        ),
-      this.publisherClient
-        .quit()
-        .catch(() =>
-          Logger.error('Could not disconnect Redis publisherClient'),
-        ),
-      this.client
-        .quit()
-        .catch(() => Logger.error('Could not disconnect Redis client')),
+      this.subscriberClient.quit().catch(() => Logger.error('Could not disconnect Redis subscriber client')),
+      this.publisherClient.quit().catch(() => Logger.error('Could not disconnect Redis publisherClient')),
+      this.client.quit().catch(() => Logger.error('Could not disconnect Redis client')),
     ];
 
     await Promise.all(disconnectPromises);
