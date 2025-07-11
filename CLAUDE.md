@@ -10,7 +10,8 @@ This is the PXL Node.js Framework - a comprehensive framework for building Node.
 
 ### Development
 
-- `npm run dev` - Start development server with nodemon
+- `npm run dev` - Start development server with HMR watcher
+- `npm run dev:hmr` - Start development server with HMR watcher (alternative)
 - `npm run dev:new` - Start development server using the CLI (`node pxl serve`)
 
 ### Building

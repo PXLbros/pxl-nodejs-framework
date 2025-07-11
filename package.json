@@ -61,8 +61,7 @@
     "dist"
   ],
   "scripts": {
-    "dev": "nodemon",
-    "dev:new": "node pxl serve",
+    "dev": "node scripts/hmr-watcher.js",
     "dev:import-map": "node --experimental-import-map=import-map.json --loader ts-node/esm src/index.ts",
     "clean": "del-cli dist",
     "build": "npm run clean && node esbuild.config.js",
@@ -106,7 +105,6 @@
     "glob": "^11.0.3",
     "husky": "^9.1.7",
     "lint-staged": "^16.1.2",
-    "nodemon": "^3.0.2",
     "prettier": "^3.1.1",
     "redis-memory-server": "^0.12.1",
     "ts-node": "^10.9.2",
