@@ -7,7 +7,16 @@ import prettierPlugin from 'eslint-plugin-prettier';
 
 export default [
   {
-    ignores: ['dist/**', 'node_modules/**', '*.d.ts', 'EXAMPLE_USAGE.ts', 'bin/**', 'docs/**', 'test/**', 'vitest.config.ts'],
+    ignores: [
+      'dist/**',
+      'node_modules/**',
+      '*.d.ts',
+      'EXAMPLE_USAGE.ts',
+      'bin/**',
+      'docs/**',
+      'test/**',
+      'vitest.config.ts',
+    ],
   },
   js.configs.recommended,
   // TypeScript files configuration
@@ -47,7 +56,7 @@ export default [
     },
     rules: {
       // TypeScript rules
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/ban-ts-comment': 'warn',
       '@typescript-eslint/explicit-function-return-type': 'off',

@@ -9,6 +9,9 @@ dist/
 *.config.js
 *.config.js.map
 
+# Allow essential config files
+!esbuild.config.js
+
 # Test coverage
 coverage/
 
