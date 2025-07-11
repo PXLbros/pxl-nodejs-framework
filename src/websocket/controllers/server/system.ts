@@ -5,9 +5,18 @@ import { Logger } from '../../../logger/index.js';
 
 export default class SystemController extends WebSocketServerBaseController {
   public joinRoom = (clientWebSocket: WebSocket, webSocketClientId: string, data: any): any => {
-    const userId = data.userId ?? null;
-    const userType = data.userType ?? null;
-    const username = data.username ?? null;
+    const userId = data.userId ?? webSocketClientId;
+    const userType = data.userType ?? 'user';
+    const username = data.username ?? `user_${webSocketClientId.substring(0, 8)}`;
+    const roomName = data.roomName;
+
+    if (!roomName) {
+      return {
+        success: false,
+        error: 'Room name is required',
+        clientId: webSocketClientId,
+      };
+    }
 
     try {
       // Join room
@@ -16,38 +25,68 @@ export default class SystemController extends WebSocketServerBaseController {
         userId,
         userType,
         username,
-        roomName: data.roomName,
+        roomName,
       });
 
       return {
         success: true,
+        message: `Successfully joined room: ${roomName}`,
         data: {
           userId,
           userType,
           username,
-          roomName: data.roomName,
+          roomName,
+          joinedAt: new Date().toISOString(),
         },
       };
     } catch (error) {
-      Logger.error({ error });
+      Logger.error({ error, message: 'Failed to join room via system controller' });
 
       return {
-        error,
+        success: false,
+        error: 'Failed to join room',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        clientId: webSocketClientId,
       };
     }
   };
 
   public leaveRoom = (clientWebSocket: WebSocket, webSocketClientId: string, data: any): any => {
-    if (!data?.userId) {
-      logger.warn({ message: 'Missing user ID when leaving room' });
+    const roomName = data.roomName;
 
-      return { error: 'No user ID provided' };
+    if (!roomName) {
+      return {
+        success: false,
+        error: 'Room name is required',
+        clientId: webSocketClientId,
+      };
     }
 
-    // Leave room
-    this.webSocketServer.leaveRoom({
-      ws: clientWebSocket,
-      roomName: data.roomName,
-    });
+    try {
+      // Leave room
+      this.webSocketServer.leaveRoom({
+        ws: clientWebSocket,
+        roomName,
+      });
+
+      return {
+        success: true,
+        message: `Successfully left room: ${roomName}`,
+        data: {
+          roomName,
+          leftAt: new Date().toISOString(),
+        },
+        clientId: webSocketClientId,
+      };
+    } catch (error) {
+      Logger.error({ error, message: 'Failed to leave room via system controller' });
+
+      return {
+        success: false,
+        error: 'Failed to leave room',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        clientId: webSocketClientId,
+      };
+    }
   };
 }

@@ -174,6 +174,11 @@ export default class WebSocketRoomManager {
     log(logOutput);
   }
 
+  public getRoomClients({ roomName }: { roomName: string }): string[] {
+    const room = this.rooms.get(roomName);
+    return room ? Array.from(room) : [];
+  }
+
   public cleanup(): void {
     // Clear all rooms
     this.rooms.clear();

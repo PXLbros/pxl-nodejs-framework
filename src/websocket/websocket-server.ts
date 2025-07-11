@@ -835,7 +835,17 @@ export default class WebSocketServer extends WebSocketBase {
     const clientId = this.clientManager.getClientId({ ws });
 
     if (!clientId) {
-      throw new Error('Client ID not found when joining room');
+      // throw new Error('Client ID not found when joining room');
+
+      logger.warn({
+        message: 'Client ID not found when joining room',
+        meta: {
+          // 'WebSocket ID': ws?.id || '-',
+          'Room Name': roomName,
+        },
+      });
+
+      return;
     }
 
     // Check if client is already in room
@@ -845,7 +855,18 @@ export default class WebSocketServer extends WebSocketBase {
     });
 
     if (isClientInRoom) {
-      throw new Error('Client already in room when joining');
+      // throw new Error('Client already in room when joining');
+
+      logger.warn({
+        message: 'Client already in room when joining',
+        meta: {
+          // 'WebSocket ID': ws?. || '-',
+          'Room Name': roomName,
+          'Client ID': clientId,
+        },
+      });
+
+      return;
     }
 
     let userData: any = {};
