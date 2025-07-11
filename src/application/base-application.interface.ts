@@ -1,6 +1,7 @@
 import type { ClusterManagerConfig } from '../cluster/cluster-manager.interface.js';
 import type DatabaseInstance from '../database/instance.js';
 import type { EventDefinition } from '../event/manager.interface.js';
+import type { PerformanceMonitorOptions, PerformanceThresholds } from '../performance/performance-monitor.js';
 import type { QueueItem } from '../queue/index.interface.js';
 import type {
   WebServerDebugOptions,
@@ -157,6 +158,32 @@ export interface ApplicationLogConfig {
   shutdown?: boolean;
 }
 
+export interface ApplicationPerformanceConfig extends PerformanceMonitorOptions {
+  /** Whether to enable performance monitoring */
+  enabled?: boolean;
+
+  /** Performance thresholds for different operations */
+  thresholds?: Partial<PerformanceThresholds>;
+
+  /** Whether to monitor HTTP requests */
+  monitorHttpRequests?: boolean;
+
+  /** Whether to monitor database operations */
+  monitorDatabaseOperations?: boolean;
+
+  /** Whether to monitor WebSocket operations */
+  monitorWebSocketOperations?: boolean;
+
+  /** Whether to monitor queue operations */
+  monitorQueueOperations?: boolean;
+
+  /** Whether to monitor cache operations */
+  monitorCacheOperations?: boolean;
+
+  /** Performance report generation interval in milliseconds */
+  reportInterval?: number;
+}
+
 export interface ApplicationConfig {
   /** Application name */
   name: string;
@@ -187,6 +214,9 @@ export interface ApplicationConfig {
 
   /** Log configuration */
   log?: ApplicationLogConfig;
+
+  /** Performance monitoring configuration */
+  performance?: ApplicationPerformanceConfig;
 
   /** Email configuration */
   email?: ApplicationEmailConfig;

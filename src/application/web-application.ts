@@ -9,6 +9,7 @@ import { Logger } from '../logger/index.js';
 import WebSocketServer from '../websocket/websocket-server.js';
 import WebSocketClient from '../websocket/websocket-client.js';
 import type EventManager from '../event/manager.js';
+import { WebServerPerformanceWrapper, WebSocketPerformanceWrapper } from '../performance/index.js';
 
 /**
  * Application
@@ -74,6 +75,11 @@ export default class WebApplication extends BaseApplication {
         eventManager,
       });
 
+      // Set up performance monitoring for web server
+      if (this.performanceMonitor && this.config.performance?.monitorHttpRequests !== false) {
+        WebServerPerformanceWrapper.setPerformanceMonitor(this.performanceMonitor);
+      }
+
       // Load web server
       await this.webServer.load();
 
@@ -103,6 +109,11 @@ export default class WebApplication extends BaseApplication {
             routes: this.config.webSocket.routes,
             workerId: this.workerId,
           });
+
+          // Set up performance monitoring for WebSocket
+          if (this.performanceMonitor && this.config.performance?.monitorWebSocketOperations !== false) {
+            WebSocketPerformanceWrapper.setPerformanceMonitor(this.performanceMonitor);
+          }
 
           // Load WebSocket client
           await webSocketServer.load();

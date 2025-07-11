@@ -15,6 +15,7 @@ export * from './database/index.js';
 export * from './event/index.js';
 export * from './redis/index.js';
 export * from './logger/index.js';
+export * from './performance/index.js';
 export * from './queue/index.js';
 export * from './services/index.js';
 export * from './util/index.js';

@@ -17,6 +17,8 @@ import CacheManager from '../cache/manager.js';
 import os from 'os';
 import EventManager from '../event/manager.js';
 import Logger from '../logger/logger.js';
+import { PerformanceMonitor } from '../performance/performance-monitor.js';
+import { CachePerformanceWrapper, DatabasePerformanceWrapper, QueuePerformanceWrapper } from '../performance/index.js';
 
 // Re-export types for external use
 export type { ApplicationConfig } from './base-application.interface.js';
@@ -63,6 +65,9 @@ export default abstract class BaseApplication {
 
   /** Event manager */
   public eventManager?: EventManager;
+
+  /** Performance monitor */
+  public performanceMonitor?: PerformanceMonitor;
 
   public get Name() {
     return this.config.name;
@@ -116,6 +121,9 @@ export default abstract class BaseApplication {
       applicationConfig: this.config,
       redisManager: this.redisManager,
     });
+
+    // Initialize performance monitor
+    this.initializePerformanceMonitor();
 
     // Set up global error handlers
     this.setupGlobalErrorHandlers();
@@ -365,6 +373,48 @@ export default abstract class BaseApplication {
   /**
    * Set up global error handlers
    */
+  /**
+   * Initialize performance monitor
+   */
+  private initializePerformanceMonitor(): void {
+    // Check if performance monitoring is enabled
+    if (!this.config.performance?.enabled) {
+      return;
+    }
+
+    // Initialize performance monitor with configuration
+    this.performanceMonitor = PerformanceMonitor.initialize({
+      enabled: true,
+      thresholds: this.config.performance.thresholds,
+      maxMetricsHistory: this.config.performance.maxMetricsHistory,
+      logSlowOperations: this.config.performance.logSlowOperations,
+      logAllOperations: this.config.performance.logAllOperations,
+    });
+
+    // Set up performance monitoring for different components
+    if (this.config.performance.monitorDatabaseOperations !== false) {
+      DatabasePerformanceWrapper.setPerformanceMonitor(this.performanceMonitor);
+    }
+
+    if (this.config.performance.monitorQueueOperations !== false) {
+      QueuePerformanceWrapper.setPerformanceMonitor(this.performanceMonitor);
+    }
+
+    if (this.config.performance.monitorCacheOperations !== false) {
+      CachePerformanceWrapper.setPerformanceMonitor(this.performanceMonitor);
+    }
+
+    // Set up periodic performance reports if configured
+    if (this.config.performance.reportInterval && this.config.performance.reportInterval > 0) {
+      setInterval(() => {
+        const report = this.performanceMonitor?.generateReport();
+        if (report) {
+          Logger.info('Performance Report', report);
+        }
+      }, this.config.performance.reportInterval);
+    }
+  }
+
   private setupGlobalErrorHandlers(): void {
     // Handle uncaught exceptions
     process.on('uncaughtException', error => {
