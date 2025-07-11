@@ -7,7 +7,7 @@ import prettierPlugin from 'eslint-plugin-prettier';
 
 export default [
   {
-    ignores: ['dist/**', 'node_modules/**', '*.d.ts', 'EXAMPLE_USAGE.ts', 'bin/**'],
+    ignores: ['dist/**', 'node_modules/**', '*.d.ts', 'EXAMPLE_USAGE.ts', 'bin/**', 'docs/**', 'test/**', 'vitest.config.ts'],
   },
   js.configs.recommended,
   // TypeScript files configuration

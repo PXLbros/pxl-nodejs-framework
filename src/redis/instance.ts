@@ -19,13 +19,23 @@ export default class RedisInstance {
   }
 
   public async disconnect(): Promise<void> {
-    const disconnectPromises = [
-      this.subscriberClient.quit().catch(() => Logger.error('Could not disconnect Redis subscriber client')),
-      this.publisherClient.quit().catch(() => Logger.error('Could not disconnect Redis publisherClient')),
-      this.client.quit().catch(() => Logger.error('Could not disconnect Redis client')),
-    ];
+    try {
+      this.subscriberClient.disconnect();
+    } catch (error) {
+      Logger.error(error, 'Could not disconnect Redis subscriber client');
+    }
 
-    await Promise.all(disconnectPromises);
+    try {
+      this.publisherClient.disconnect();
+    } catch (error) {
+      Logger.error(error, 'Could not disconnect Redis publisherClient');
+    }
+
+    try {
+      this.client.disconnect();
+    } catch (error) {
+      Logger.error(error, 'Could not disconnect Redis client');
+    }
 
     this.redisManager.log('Disconnected');
   }

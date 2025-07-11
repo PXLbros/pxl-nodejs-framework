@@ -245,7 +245,6 @@ export default defineConfig({
 #### External Service Mocking
 
 - Mock AWS SDK for S3 operations
-- Mock email service APIs
 - Mock WebSocket connections
 
 ### Test Organization
@@ -283,7 +282,6 @@ test/
 │   ├── redis/
 │   ├── queue/
 │   ├── websocket/
-│   ├── email/
 │   └── aws/
 ├── e2e/
 │   ├── web-application.test.ts

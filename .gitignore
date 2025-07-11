@@ -2,3 +2,18 @@ node_modules/
 .env
 docs/
 dist/
+
+# Built test config files
+*.config.d.ts
+*.config.d.ts.map
+*.config.js
+*.config.js.map
+
+# Test coverage
+coverage/
+
+# Built test files
+test/**/*.d.ts
+test/**/*.d.ts.map
+test/**/*.js
+test/**/*.js.map

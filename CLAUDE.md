@@ -98,7 +98,6 @@ The framework supports three main application types:
 
 #### Additional Services
 
-- **Email** - Multiple providers (SendGrid, Gmail, SMTP)
 - **AWS S3** - File storage integration
 - **Authentication** - JWT-based auth system
 - **Logging** - Winston-based structured logging
