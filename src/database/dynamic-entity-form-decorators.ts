@@ -10,9 +10,16 @@ import 'reflect-metadata';
 
 export enum FormFieldType {
   Text = 'text',
+  Email = 'email',
+  Password = 'password',
+  Number = 'number',
+  Date = 'date',
   Select = 'select',
+  Checkbox = 'checkbox',
+  Textarea = 'textarea',
   Image = 'image',
   DynamicInput = 'dynamicInput',
+  ReadOnly = 'readonly',
 }
 
 export interface FormFieldOptions {

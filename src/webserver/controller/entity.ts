@@ -99,6 +99,29 @@ export default abstract class EntityController extends BaseController {
     }
   };
 
+  public metadata = async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const EntityClass = await this.getEntity();
+
+      if (!EntityClass) {
+        this.sendErrorResponse({ reply, error: 'Entity not found' });
+
+        return;
+      }
+
+      const formFields = generateFormFields({ model: EntityClass });
+
+      this.sendSuccessResponse({
+        reply,
+        data: {
+          formFields,
+        },
+      });
+    } catch (error) {
+      this.sendErrorResponse({ reply, error });
+    }
+  };
+
   // Pre-getMany hook (can be overridden in the child controller)
   protected async preGetMany(_: {
     entityManager: EntityManager;
