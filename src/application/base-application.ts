@@ -378,42 +378,42 @@ export default abstract class BaseApplication {
    */
   private initializePerformanceMonitor(): void {
     // Check if performance monitoring is enabled
-    if (!this.config.performance?.enabled) {
+    if (!this.config.performanceMonitoring?.enabled) {
       return;
     }
 
     // Initialize performance monitor with configuration
     this.performanceMonitor = PerformanceMonitor.initialize({
       enabled: true,
-      thresholds: this.config.performance.thresholds,
-      maxMetricsHistory: this.config.performance.maxMetricsHistory,
-      logSlowOperations: this.config.performance.logSlowOperations,
-      logAllOperations: this.config.performance.logAllOperations,
+      thresholds: this.config.performanceMonitoring.thresholds,
+      maxMetricsHistory: this.config.performanceMonitoring.maxMetricsHistory,
+      logSlowOperations: this.config.performanceMonitoring.logSlowOperations,
+      logAllOperations: this.config.performanceMonitoring.logAllOperations,
     });
 
     // Set up performance monitoring for different components
-    if (this.config.performance.monitorDatabaseOperations !== false) {
+    if (this.config.performanceMonitoring.monitorDatabaseOperations !== false) {
       DatabasePerformanceWrapper.setPerformanceMonitor(this.performanceMonitor);
     }
 
-    if (this.config.performance.monitorQueueOperations !== false) {
+    if (this.config.performanceMonitoring.monitorQueueOperations !== false) {
       QueuePerformanceWrapper.setPerformanceMonitor(this.performanceMonitor);
     }
 
-    if (this.config.performance.monitorCacheOperations !== false) {
+    if (this.config.performanceMonitoring.monitorCacheOperations !== false) {
       CachePerformanceWrapper.setPerformanceMonitor(this.performanceMonitor);
     }
 
     // Set up periodic performance reports if configured
-    if (this.config.performance.reportInterval && this.config.performance.reportInterval > 0) {
+    if (this.config.performanceMonitoring.reportInterval && this.config.performanceMonitoring.reportInterval > 0) {
       setInterval(() => {
-        const reportFormat = this.config.performance?.reportFormat ?? 'detailed';
+        const reportFormat = this.config.performanceMonitoring?.reportFormat ?? 'detailed';
         const report = this.performanceMonitor?.generateFormattedReport(reportFormat);
 
         if (report) {
           Logger.info({ message: report });
         }
-      }, this.config.performance.reportInterval);
+      }, this.config.performanceMonitoring.reportInterval);
     }
   }
 

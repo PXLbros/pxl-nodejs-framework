@@ -81,7 +81,10 @@
     "test:unit": "node --test --experimental-strip-types test/unit/**/*.test.ts",
     "test:integration": "node --test --experimental-strip-types test/integration/**/*.test.ts",
     "test:e2e": "node --test --experimental-strip-types test/e2e/**/*.test.ts",
-    "check-all": "npm run lint && npm run format && npm run typecheck"
+    "check-all": "npm run lint && npm run format && npm run typecheck",
+    "yalc:publish": "yalc publish",
+    "yalc:push": "yalc push",
+    "dev:yalc": "npm run build && npm run yalc:push"
   },
   "keywords": [],
   "author": "PXL <devops@pxlagency.com>",

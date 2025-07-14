@@ -76,7 +76,7 @@ export default class WebApplication extends BaseApplication {
       });
 
       // Set up performance monitoring for web server
-      if (this.performanceMonitor && this.config.performance?.monitorHttpRequests !== false) {
+      if (this.performanceMonitor && this.config.performanceMonitoring?.monitorHttpRequests !== false) {
         WebServerPerformanceWrapper.setPerformanceMonitor(this.performanceMonitor);
       }
 
@@ -111,7 +111,7 @@ export default class WebApplication extends BaseApplication {
           });
 
           // Set up performance monitoring for WebSocket
-          if (this.performanceMonitor && this.config.performance?.monitorWebSocketOperations !== false) {
+          if (this.performanceMonitor && this.config.performanceMonitoring?.monitorWebSocketOperations !== false) {
             WebSocketPerformanceWrapper.setPerformanceMonitor(this.performanceMonitor);
           }
 

@@ -219,7 +219,7 @@ export interface ApplicationConfig {
   log?: ApplicationLogConfig;
 
   /** Performance monitoring configuration */
-  performance?: ApplicationPerformanceConfig;
+  performanceMonitoring?: ApplicationPerformanceConfig;
 
   /** Email configuration */
   email?: ApplicationEmailConfig;
