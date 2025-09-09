@@ -58,7 +58,9 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "pxl.js",
+    "README.md"
   ],
   "scripts": {
     "dev": "node scripts/hmr-watcher.js",
@@ -73,6 +75,7 @@
     "docs:site:preview": "vitepress preview docs",
     "release": "node scripts/release.js",
     "prepare": "husky",
+    "postinstall": "npm run build || echo 'Build failed, dist files may be missing'",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --check .",

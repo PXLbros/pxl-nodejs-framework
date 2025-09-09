@@ -1,5 +1,7 @@
 # PXL Node.js Framework
 
+A comprehensive Node.js framework for building modern applications with support for web servers, databases, queues, caching, and more.
+
 Opinionated TypeScript framework combining Fastify, WebSockets, Redis, BullMQ, and MikroORM under a unified Application lifecycle.
 
 ## Install
