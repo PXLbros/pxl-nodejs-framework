@@ -135,7 +135,7 @@ export class Logger {
     level,
     message,
     meta,
-    options,
+    options: _options,
   }: {
     level: LoggerLevels;
     message: unknown;
@@ -163,8 +163,22 @@ export class Logger {
     message: unknown;
     meta?: Record<string, unknown>;
     options?: LogOptions;
-  }): void {
-    this.log({ level: 'debug', message, meta, options });
+  }): void;
+  public debug(message: unknown, meta?: Record<string, unknown>): void;
+  public debug(
+    messageOrOptions: unknown | { message: unknown; meta?: Record<string, unknown>; options?: LogOptions },
+    meta?: Record<string, unknown>,
+  ): void {
+    if (typeof messageOrOptions === 'object' && messageOrOptions !== null && 'message' in messageOrOptions) {
+      const {
+        message,
+        meta: optionsMeta,
+        options,
+      } = messageOrOptions as { message: unknown; meta?: Record<string, unknown>; options?: LogOptions };
+      this.log({ level: 'debug', message, meta: optionsMeta, options });
+    } else {
+      this.log({ level: 'debug', message: messageOrOptions, meta, options: undefined });
+    }
   }
 
   public info({
@@ -175,8 +189,22 @@ export class Logger {
     message: unknown;
     meta?: Record<string, unknown>;
     options?: LogOptions;
-  }): void {
-    this.log({ level: 'info', message, meta, options });
+  }): void;
+  public info(message: unknown, meta?: Record<string, unknown>): void;
+  public info(
+    messageOrOptions: unknown | { message: unknown; meta?: Record<string, unknown>; options?: LogOptions },
+    meta?: Record<string, unknown>,
+  ): void {
+    if (typeof messageOrOptions === 'object' && messageOrOptions !== null && 'message' in messageOrOptions) {
+      const {
+        message,
+        meta: optionsMeta,
+        options,
+      } = messageOrOptions as { message: unknown; meta?: Record<string, unknown>; options?: LogOptions };
+      this.log({ level: 'info', message, meta: optionsMeta, options });
+    } else {
+      this.log({ level: 'info', message: messageOrOptions, meta, options: undefined });
+    }
   }
 
   public warn({
@@ -187,8 +215,22 @@ export class Logger {
     message: unknown;
     meta?: Record<string, unknown>;
     options?: LogOptions;
-  }): void {
-    this.log({ level: 'warn', message, meta, options });
+  }): void;
+  public warn(message: unknown, meta?: Record<string, unknown>): void;
+  public warn(
+    messageOrOptions: unknown | { message: unknown; meta?: Record<string, unknown>; options?: LogOptions },
+    meta?: Record<string, unknown>,
+  ): void {
+    if (typeof messageOrOptions === 'object' && messageOrOptions !== null && 'message' in messageOrOptions) {
+      const {
+        message,
+        meta: optionsMeta,
+        options,
+      } = messageOrOptions as { message: unknown; meta?: Record<string, unknown>; options?: LogOptions };
+      this.log({ level: 'warn', message, meta: optionsMeta, options });
+    } else {
+      this.log({ level: 'warn', message: messageOrOptions, meta, options: undefined });
+    }
   }
 
   public error({
