@@ -1,155 +1,116 @@
 # PXL Node.js Framework
 
-## Installation
+Opinionated TypeScript framework combining Fastify, WebSockets, Redis, BullMQ, and MikroORM under a unified Application lifecycle.
 
-Clone this repository and switch to the project specific Node.js version:
+## Install
 
-```sh
-nvm use
+```bash
+npm install @scpxl/nodejs-framework
 ```
 
-## Use library in project
-
-### Publish using Yalc
-
-Use [Yalc](https://github.com/wclr/yalc) to publish the library for local usage using the following command:
-
-```sh
-yalc publish
-```
-
-### Import in project
-
-After the library has been published with **Yalc**, add it to a project with the following command:
-
-```sh
-yalc add @pxl/nodejs-framework
-```
-
-And start using in project:
+## Quick Start
 
 ```ts
-import { Application } from '@pxl/nodejs-framework';
+import { Application } from '@scpxl/nodejs-framework';
 
 const app = new Application({
-  // ...
+  webserver: { port: 3000 },
+  logger: { level: 'info' },
+});
+
+await app.start();
+
+app.webserver.route({
+  method: 'GET',
+  url: '/health',
+  handler: async () => ({ ok: true }),
 });
 ```
 
-## Development
+## Add WebSocket
 
-### Local Development
-
-For local development with automatic publishing through **Yalc**:
-
-```sh
-npm run dev
+```ts
+app.websocket.onConnection(client => {
+  client.sendJSON({ welcome: true });
+});
 ```
 
-For building locally with Yalc publishing:
+## Add Queue Job
 
-```sh
-npm run build:local
+```ts
+await app.queue.manager.add('email', { userId: 123 });
 ```
 
-For building without Yalc (CI/production build):
+## Configuration Example
 
-```sh
-npm run build
+```ts
+new Application({
+  webserver: { port: 3000 },
+  websocket: { enabled: true },
+  queue: { enabled: true },
+  redis: { host: '127.0.0.1', port: 6379 },
+  database: {
+    /* MikroORM config */
+  },
+  logger: { level: 'info' },
+});
 ```
 
-## CI/CD Pipeline
+## Features
 
-This project uses GitHub Actions for continuous integration and deployment:
-
-### Build and Test (CI)
-
-- Runs on all pull requests
-- Installs dependencies, runs linting, builds the project, and runs tests
-
-### Build and Publish
-
-- Runs on pushes to `main`/`master` branches and version tags
-- Builds the project and publishes to npm
-- Beta releases are published on pushes to main/master branches
-- Stable releases are published when version tags are created
-
-### Setup for Publishing
-
-To enable automatic publishing, configure the following repository secret:
-
-- `NPM_TOKEN`: Your npm authentication token
-
-> **Note**: The `dist/` folder is gitignored and automatically generated during the CI/CD process. Do not commit built files to the repository.
-
-## Releasing
-
-Use the built-in release script to create new versions:
-
-### Quick Release Commands
-
-```sh
-# Patch release (1.0.0 → 1.0.1)
-npm run release -- --patch
-
-# Minor release (1.0.0 → 1.1.0)
-npm run release -- --minor
-
-# Major release (1.0.0 → 2.0.0)
-npm run release -- --major
-
-# Specific version
-npm run release -- --version 2.1.3
-```
-
-### Release Process
-
-The release script will:
-
-1. Check that your working directory is clean
-2. Verify you're on the main/master branch
-3. Update the version in `package.json`
-4. Create a git commit and tag
-5. Push to origin, triggering GitHub Actions
-
-### Dry Run
-
-Preview what the release script will do without making changes:
-
-```sh
-npm run release -- --patch --dry-run
-```
-
-### Help
-
-For more information about the release script:
-
-```sh
-npm run release -- --help
-```
+- Unified lifecycle (start/stop all subsystems)
+- Fastify routing + raw access
+- WebSocket client + room management
+- BullMQ queue integration
+- MikroORM database integration
+- Redis cache + pub/sub
+- Structured logging
+- Utilities & services layer
 
 ## Documentation
 
-The API documentation is automatically generated using TypeDoc and deployed via GitHub Actions to GitHub Pages.
+Full docs & guides (VitePress) + API reference (TypeDoc).
 
-### Local Documentation Development
+- Getting Started, Concepts, Guides
+- API: https://pxlbros.github.io/pxl-nodejs-framework/
 
-To generate and view documentation locally:
+To run local docs site (once cloned):
 
-```sh
-npm run docs
+```bash
+npm run docs:site:dev
 ```
 
-This will generate the documentation in the `docs/` folder. You can then open `docs/index.html` in your browser.
+## Graceful Shutdown
 
-### Automated Documentation Deployment
+```ts
+process.on('SIGINT', () => app.stop());
+process.on('SIGTERM', () => app.stop());
+```
 
-Documentation is automatically built and deployed to GitHub Pages when:
+## Example Service Pattern
 
-- Code is pushed to the `main` or `master` branch
-- Pull requests are opened against `main` or `master` branch
-- Manual workflow dispatch is triggered
+```ts
+class UserService {
+  constructor(private app: Application) {}
+  async register(data: any) {
+    // use app.database / app.queue / app.logger
+  }
+}
+```
 
-The documentation will be available at: `https://[your-username].github.io/[repository-name]/`
+## When Not to Use
 
-> **Note**: The `docs/` folder is gitignored and should not be committed to the repository as it's automatically generated by the CI/CD pipeline.
+If you only need a single HTTP server or minimal script, this framework may be heavier than needed.
+
+## Contributing
+
+Issues and PRs welcome. Development scripts remain available:
+
+```bash
+npm run dev     # watch build
+npm run build   # production build
+```
+
+---
+
+Released under ISC License.

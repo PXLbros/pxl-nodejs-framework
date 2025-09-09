@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is the PXL Node.js Framework - a comprehensive framework for building Node.js applications with support for web servers, databases, queues, caching, and more. It's published as `@pxl/nodejs-framework` on npm.
+This is the PXL Node.js Framework - a comprehensive framework for building Node.js applications with support for web servers, databases, queues, caching, and more. It's published as `@scpxl/nodejs-framework` on npm.
 
 ## Build and Development Commands
 
@@ -37,7 +37,7 @@ This is the PXL Node.js Framework - a comprehensive framework for building Node.
 ### Local Development with Yalc
 
 - `yalc publish` - Publish library locally
-- `yalc add @pxl/nodejs-framework` - Add to consuming project
+- `yalc add @scpxl/nodejs-framework` - Add to consuming project
 
 ### Release Management
 

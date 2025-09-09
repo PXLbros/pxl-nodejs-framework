@@ -37,7 +37,7 @@ export default abstract class WebSocketBase {
     const controllers = await Loader.loadModulesInDirectory({
       directory: controllersDirectory,
       // NOTE:
-      // When getting "system", it gets /app/node_modules/@pxl/nodejs-framework/dist/websocket/controllers/server
+      // When getting "system", it gets /app/node_modules/@scpxl/nodejs-framework/dist/websocket/controllers/server
       // Therefor .js is needed also
       // Fix so only .ts vs .js is needed
       extensions: ['.ts', '.js'],
