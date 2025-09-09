@@ -1,39 +1,79 @@
 # PXL Node.js Framework
 
+A comprehensive Node.js framework for building modern applications with support for web servers, databases, queues, caching, and more.
+
 ## Installation
+
+Install the framework from NPM:
+
+```sh
+npm install @pxl/nodejs-framework
+```
+
+## Quick Start
+
+```ts
+import { WebApplication } from '@pxl/nodejs-framework/application';
+
+const app = new WebApplication({
+  webServer: {
+    port: 3000,
+    host: '0.0.0.0'
+  },
+  database: {
+    host: 'localhost',
+    port: 5432,
+    dbName: 'myapp',
+    user: 'user',
+    password: 'password'
+  }
+});
+
+await app.start();
+```
+
+## Features
+
+- 🚀 **FastAPI-powered Web Server** with auto-routing
+- 🗄️ **Database Integration** with MikroORM and PostgreSQL
+- 📦 **Queue System** using BullMQ and Redis
+- 🔄 **WebSocket Support** for real-time communication
+- 🗄️ **Caching Layer** with Redis integration
+- ☁️ **AWS S3 Integration** for file storage
+- 🔐 **Authentication System** with JWT
+- 📊 **Structured Logging** with Winston
+- 🧪 **Built-in Testing Utils**
+- ⚡ **Performance Monitoring**
+
+## Development (Framework Contributors)
+
+### Local Development
 
 Clone this repository and switch to the project specific Node.js version:
 
 ```sh
+git clone https://github.com/PXLbros/pxl-nodejs-framework.git
+cd pxl-nodejs-framework
 nvm use
+npm install
 ```
 
-## Use library in project
-
-### Publish using Yalc
-
-Use [Yalc](https://github.com/wclr/yalc) to publish the library for local usage using the following command:
+### Build
 
 ```sh
-yalc publish
+npm run build
 ```
 
-### Import in project
+### Testing with Yalc (Local Development)
 
-After the library has been published with **Yalc**, add it to a project with the following command:
+For local testing before publishing to NPM:
 
 ```sh
+# Build and publish locally
+npm run build:local
+
+# In your project
 yalc add @pxl/nodejs-framework
-```
-
-And start using in project:
-
-```ts
-import { Application } from '@pxl/nodejs-framework';
-
-const app = new Application({
-  // ...
-});
 ```
 
 ## Development
