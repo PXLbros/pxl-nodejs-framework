@@ -69,10 +69,9 @@
     "build": "npm run clean && node esbuild.config.js",
     "build:tsc": "npm run clean && tsc",
     "build:local": "npm run clean && node esbuild.config.js && yalc push",
-    "docs": "typedoc",
-    "docs:site:dev": "vitepress dev docs",
-    "docs:site:build": "vitepress build docs",
-    "docs:site:preview": "vitepress preview docs",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs",
     "release": "node scripts/release.js",
     "prepare": "husky",
     "postinstall": "npm run build || echo 'Build failed, dist files may be missing'",
@@ -119,7 +118,6 @@
     "ts-node": "^10.9.2",
     "tsc-alias": "^1.8.16",
     "tsconfig-paths": "^4.2.0",
-    "typedoc": "^0.28.7",
     "vitepress": "^1.6.4"
   },
   "dependencies": {

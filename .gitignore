@@ -1,6 +1,7 @@
 node_modules/
 .env
-docs/
+docs/.vitepress/cache
+docs/.vitepress/dist
 dist/
 
 # Built test config files
