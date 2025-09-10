@@ -79,6 +79,9 @@ export const PerformanceMonitoringSchema = z
   .object({
     enabled: z.boolean().default(false),
     thresholds: PerformanceThresholdsSchema.optional(),
+    maxMetricsHistory: z.number().int().positive().optional(),
+    logSlowOperations: z.boolean().optional(),
+    logAllOperations: z.boolean().optional(),
     monitorHttpRequests: z.boolean().default(true).optional(),
     monitorDatabaseOperations: z.boolean().default(true).optional(),
     monitorWebSocketOperations: z.boolean().default(true).optional(),

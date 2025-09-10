@@ -31,10 +31,16 @@ describe('BaseApplication Lifecycle Integration', () => {
     mockConfig = {
       name: 'test-app',
       instanceId: 'test-instance',
+      rootDirectory: process.cwd(),
       redis: {
         host: 'localhost',
         port: 6379,
-        password: '',
+        password: 'test-password',
+      },
+      queue: {
+        queues: [],
+        processorsDirectory: '/test/processors',
+        log: {},
       },
       performanceMonitoring: {
         enabled: false,

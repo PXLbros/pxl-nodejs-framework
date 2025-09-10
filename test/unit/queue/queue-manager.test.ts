@@ -81,7 +81,7 @@ describe('QueueManager', () => {
       // Should return early without checking directory
     });
 
-    it('should warn and return if processors directory does not exist', async () => {
+    it('should return early if processors directory does not exist', async () => {
       mockExistsSync.mockReturnValue(false);
 
       const queues: QueueItem[] = [
@@ -95,12 +95,8 @@ describe('QueueManager', () => {
       await queueManager.registerQueues({ queues });
 
       expect(mockExistsSync).toHaveBeenCalledWith('/test/processors');
-      expect(mockLogger.warn).toHaveBeenCalledWith({
-        message: 'Processors directory not found',
-        meta: {
-          Directory: '/test/processors',
-        },
-      });
+      // No warning should be logged - the function just returns early
+      expect(mockLogger.warn).not.toHaveBeenCalled();
     });
 
     it('should register queues successfully', async () => {

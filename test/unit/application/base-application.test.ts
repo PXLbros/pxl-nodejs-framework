@@ -322,7 +322,7 @@ describe('BaseApplication', () => {
     it('should start clustered application', async () => {
       const configWithCluster: any = {
         ...mockConfig,
-        cluster: { enabled: true, workerMode: 'manual', workerCount: 2 },
+        cluster: { enabled: true, workers: 2 },
       };
 
       application = new TestApplication(configWithCluster);
@@ -434,7 +434,7 @@ describe('BaseApplication', () => {
         ...mockConfig,
         performanceMonitoring: {
           enabled: true,
-          thresholds: { slow: 1000 },
+          thresholds: { httpMs: 1000 },
           maxMetricsHistory: 100,
           logSlowOperations: true,
           logAllOperations: false,
@@ -447,7 +447,7 @@ describe('BaseApplication', () => {
 
       expect(mockPerformanceMonitor.initialize).toHaveBeenCalledWith({
         enabled: true,
-        thresholds: { slow: 1000 },
+        thresholds: { httpMs: 1000 },
         maxMetricsHistory: 100,
         logSlowOperations: true,
         logAllOperations: false,
