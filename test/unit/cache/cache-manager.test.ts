@@ -1,128 +1,86 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// Mock redis module
-vi.mock('redis', () => ({
-  createClient: vi.fn(() => ({
-    connect: vi.fn().mockResolvedValue(undefined),
-    get: vi.fn(),
-    set: vi.fn(),
-    del: vi.fn(),
-    exists: vi.fn(),
-    expire: vi.fn(),
-  })),
-}));
+// Dynamically import built code (tests run against dist output as in existing pattern)
 
-// Mock application config and redis manager
-const mockApplicationConfig = {
-  redis: {
-    host: 'localhost',
-    port: 6379,
-  },
-};
+const buildRedisInstanceMock = () => ({
+  getCache: vi.fn(),
+  setCache: vi.fn(),
+  deleteCache: vi.fn(),
+});
 
-const mockRedisManager = {
-  instances: [],
-};
+describe('CacheManager (ioredis unified)', () => {
+  let CacheManager: any;
+  let mockRedisManager: any;
+  let mockRedisInstance: any;
 
-describe('CacheManager', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+  beforeEach(async () => {
+    vi.resetModules();
+    CacheManager = (await import('../../../dist/cache/manager.js')).default;
+    mockRedisInstance = buildRedisInstanceMock();
+    mockRedisManager = {
+      instances: [mockRedisInstance],
+      connect: vi.fn().mockImplementation(async () => mockRedisInstance),
+    };
   });
 
-  it('should create CacheManager instance', async () => {
-    const CacheManager = (await import('../../../dist/cache/manager.js')).default;
-
-    const manager = new CacheManager({
-      applicationConfig: mockApplicationConfig,
-      redisManager: mockRedisManager,
-    });
-
+  it('creates instance', () => {
+    const manager = new CacheManager({ redisManager: mockRedisManager });
     expect(manager).toBeDefined();
   });
 
-  it('should get item from cache', async () => {
-    const { createClient } = await import('redis');
-    const mockClient = {
-      connect: vi.fn().mockResolvedValue(undefined),
-      get: vi.fn().mockResolvedValue(JSON.stringify('test-value')),
-    };
-
-    vi.mocked(createClient).mockReturnValue(mockClient as any);
-
-    const CacheManager = (await import('../../../dist/cache/manager.js')).default;
-
-    const manager = new CacheManager({
-      applicationConfig: mockApplicationConfig,
-      redisManager: mockRedisManager,
-    });
-
-    const result = await manager.getItem({ key: 'test-key' });
-
-    expect(mockClient.get).toHaveBeenCalledWith('test-key');
-    expect(result).toBe('test-value');
+  it('reuses existing redis instance for getItem', async () => {
+    mockRedisInstance.getCache.mockResolvedValue(JSON.stringify('value'));
+    const manager = new CacheManager({ redisManager: mockRedisManager });
+    const val = await manager.getItem({ key: 'k1' });
+    expect(mockRedisInstance.getCache).toHaveBeenCalledWith({ key: 'k1' });
+    expect(val).toBe('value');
+    expect(mockRedisManager.connect).not.toHaveBeenCalled();
   });
 
-  it('should handle cache miss', async () => {
-    const { createClient } = await import('redis');
-    const mockClient = {
-      connect: vi.fn().mockResolvedValue(undefined),
-      get: vi.fn().mockResolvedValue(null),
-    };
-
-    vi.mocked(createClient).mockReturnValue(mockClient as any);
-
-    const CacheManager = (await import('../../../dist/cache/manager.js')).default;
-
-    const manager = new CacheManager({
-      applicationConfig: mockApplicationConfig,
-      redisManager: mockRedisManager,
-    });
-
-    const result = await manager.getItem({ key: 'nonexistent-key' });
-
-    expect(mockClient.get).toHaveBeenCalledWith('nonexistent-key');
-    expect(result).toBeNull();
+  it('falls back to raw string if JSON parse fails', async () => {
+    mockRedisInstance.getCache.mockResolvedValue('plain-string');
+    const manager = new CacheManager({ redisManager: mockRedisManager });
+    const val = await manager.getItem({ key: 'plain' });
+    expect(val).toBe('plain-string');
   });
 
-  it('should set item in cache with TTL', async () => {
-    const { createClient } = await import('redis');
-    const mockClient = {
-      connect: vi.fn().mockResolvedValue(undefined),
-      setEx: vi.fn().mockResolvedValue('OK'),
-    };
-
-    vi.mocked(createClient).mockReturnValue(mockClient as any);
-
-    const CacheManager = (await import('../../../dist/cache/manager.js')).default;
-
-    const manager = new CacheManager({
-      applicationConfig: mockApplicationConfig,
-      redisManager: mockRedisManager,
-    });
-
-    await manager.setItem({ key: 'test-key', value: 'test-value', lifetime: 60 });
-
-    expect(mockClient.setEx).toHaveBeenCalledWith('test-key', 60, JSON.stringify('test-value'));
+  it('returns null when key missing', async () => {
+    mockRedisInstance.getCache.mockResolvedValue(null);
+    const manager = new CacheManager({ redisManager: mockRedisManager });
+    const val = await manager.getItem({ key: 'missing' });
+    expect(val).toBeNull();
   });
 
-  it('should set item in cache without TTL', async () => {
-    const { createClient } = await import('redis');
-    const mockClient = {
-      connect: vi.fn().mockResolvedValue(undefined),
-      set: vi.fn().mockResolvedValue('OK'),
-    };
-
-    vi.mocked(createClient).mockReturnValue(mockClient as any);
-
-    const CacheManager = (await import('../../../dist/cache/manager.js')).default;
-
-    const manager = new CacheManager({
-      applicationConfig: mockApplicationConfig,
-      redisManager: mockRedisManager,
+  it('sets value with lifetime', async () => {
+    const manager = new CacheManager({ redisManager: mockRedisManager });
+    await manager.setItem({ key: 'a', value: { x: 1 }, lifetime: 30 });
+    expect(mockRedisInstance.setCache).toHaveBeenCalledWith({
+      key: 'a',
+      value: { x: 1 },
+      expiration: 30,
     });
+  });
 
-    await manager.setItem({ key: 'test-key', value: 'test-value' });
+  it('sets value without lifetime', async () => {
+    const manager = new CacheManager({ redisManager: mockRedisManager });
+    await manager.setItem({ key: 'b', value: 'hi' });
+    expect(mockRedisInstance.setCache).toHaveBeenCalledWith({
+      key: 'b',
+      value: 'hi',
+      expiration: undefined,
+    });
+  });
 
-    expect(mockClient.set).toHaveBeenCalledWith('test-key', JSON.stringify('test-value'));
+  it('clears value', async () => {
+    const manager = new CacheManager({ redisManager: mockRedisManager });
+    await manager.clearItem({ key: 'c' });
+    expect(mockRedisInstance.deleteCache).toHaveBeenCalledWith({ key: 'c' });
+  });
+
+  it('lazy connects when no instances exist', async () => {
+    mockRedisManager.instances = []; // no pre-existing
+    const manager = new CacheManager({ redisManager: mockRedisManager });
+    await manager.setItem({ key: 'z', value: 1 });
+    expect(mockRedisManager.connect).toHaveBeenCalledTimes(1);
   });
 });

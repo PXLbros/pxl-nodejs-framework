@@ -1,63 +1,83 @@
-import { type RedisClientType, createClient } from 'redis';
-import type { ApplicationConfig } from '../application/base-application.interface.js';
 import type RedisManager from '../redis/manager.js';
+import type RedisInstance from '../redis/instance.js';
+
+/**
+ * CacheManager
+ *
+ * Thin abstraction over Redis for basic JSON value caching. Unifies all Redis
+ * access through the framework RedisManager / RedisInstance (ioredis) so we
+ * avoid maintaining a second client implementation (node-redis).
+ *
+ * Lazy acquisition: the first call to any cache method will either reuse an
+ * existing connected RedisInstance (if already established by application
+ * startup) or trigger a connection via RedisManager.
+ */
 
 export interface CacheManagerProps {
-  applicationConfig: ApplicationConfig;
+  /** Redis manager (shared across the application) */
   redisManager: RedisManager;
 }
 
 export default class CacheManager {
-  private client?: RedisClientType;
-
-  private applicationConfig: ApplicationConfig;
   private redisManager: RedisManager;
+  private redisInstance?: RedisInstance;
 
-  constructor({ applicationConfig, redisManager }: CacheManagerProps) {
-    this.applicationConfig = applicationConfig;
+  constructor({ redisManager }: CacheManagerProps) {
     this.redisManager = redisManager;
   }
 
-  private async getClient(): Promise<RedisClientType> {
-    if (!this.client) {
-      this.client = createClient({
-        socket: {
-          host: this.applicationConfig.redis.host,
-          port: this.applicationConfig.redis.port,
-        },
-      });
+  /**
+   * Ensure we have a connected RedisInstance. Reuses the first existing
+   * instance if already connected by the application bootstrap.
+   */
+  private async getRedisInstance(): Promise<RedisInstance> {
+    if (this.redisInstance) return this.redisInstance;
 
-      await this.client.connect();
+    if (this.redisManager.instances.length > 0) {
+      this.redisInstance = this.redisManager.instances[0];
+      return this.redisInstance;
     }
-    return this.client;
+
+    // Lazily connect if no instances yet (e.g., used before app onBeforeStart)
+    this.redisInstance = await this.redisManager.connect();
+    return this.redisInstance;
   }
 
+  /**
+   * Get a cached JSON value (deserialized) or null if not present.
+   */
   public async getItem<T>({ key }: { key: string }): Promise<T | null> {
-    const client = await this.getClient();
-    const value = await client.get(key);
-
-    return value ? JSON.parse(value) : null;
+    const instance = await this.getRedisInstance();
+    const raw = await instance.getCache({ key });
+    if (raw === null) return null;
+    try {
+      return JSON.parse(raw) as T;
+    } catch {
+      // Fallback: return raw string if it wasn't JSON we produced
+      return raw as unknown as T;
+    }
   }
 
+  /**
+   * Set a JSON-serializable value. Optionally specify lifetime (seconds).
+   */
   public async setItem<T>({ key, value, lifetime }: { key: string; value: T; lifetime?: number }): Promise<void> {
-    const client = await this.getClient();
-    const stringValue = JSON.stringify(value);
-
-    if (lifetime) {
-      await client.setEx(key, lifetime, stringValue);
-    } else {
-      await client.set(key, stringValue);
-    }
+    const instance = await this.getRedisInstance();
+    await instance.setCache({ key, value, expiration: lifetime });
   }
 
+  /**
+   * Delete a cached value.
+   */
   public async clearItem({ key }: { key: string }): Promise<void> {
-    const client = await this.getClient();
-    await client.del(key);
+    const instance = await this.getRedisInstance();
+    await instance.deleteCache({ key });
   }
 
+  /**
+   * No-op: lifecycle handles Redis disconnection globally.
+   */
   public async close(): Promise<void> {
-    if (this.client) {
-      await this.client.quit();
-    }
+    // Intentionally empty; RedisManager handles disconnect.
   }
 }

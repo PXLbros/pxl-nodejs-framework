@@ -133,7 +133,6 @@ export default abstract class BaseApplication {
 
     // Initialize cache manager
     this.cacheManager = new CacheManager({
-      applicationConfig: this.config,
       redisManager: this.redisManager,
     });
 

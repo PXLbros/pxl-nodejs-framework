@@ -98,7 +98,7 @@ describe('BaseApplication', () => {
         databaseName: 'testdb',
         entitiesDirectory: '/test/entities',
       },
-    };
+    } as any; // cast for test flexibility
 
     // Mock OS functions
     mockOs.hostname.mockReturnValue('test-host');
@@ -162,7 +162,6 @@ describe('BaseApplication', () => {
         password: 'redis-pass',
       });
       expect(mockCacheManager).toHaveBeenCalledWith({
-        applicationConfig: mockConfig,
         redisManager: expect.any(Object),
       });
     });
@@ -182,13 +181,8 @@ describe('BaseApplication', () => {
     });
 
     it('should use default entities directory if not provided', () => {
-      const configWithoutEntities = {
-        ...mockConfig,
-        database: {
-          ...mockConfig.database!,
-          entitiesDirectory: undefined,
-        },
-      };
+      const configWithoutEntities: any = { ...mockConfig, database: { ...mockConfig.database } };
+      delete configWithoutEntities.database.entitiesDirectory;
 
       application = new TestApplication(configWithoutEntities);
 
@@ -209,13 +203,7 @@ describe('BaseApplication', () => {
     });
 
     it('should not initialize database manager when disabled', () => {
-      const configWithoutDb = {
-        ...mockConfig,
-        database: {
-          ...mockConfig.database!,
-          enabled: false,
-        },
-      };
+      const configWithoutDb: any = { ...mockConfig, database: { ...mockConfig.database, enabled: false } };
 
       application = new TestApplication(configWithoutDb);
 
@@ -223,8 +211,8 @@ describe('BaseApplication', () => {
     });
 
     it('should handle cluster worker ID', () => {
-      mockCluster.isWorker = true;
-      mockCluster.worker = { id: 5 } as any;
+      (mockCluster as any).isWorker = true;
+      (mockCluster as any).worker = { id: 5 };
 
       application = new TestApplication(mockConfig);
 
@@ -332,12 +320,9 @@ describe('BaseApplication', () => {
     });
 
     it('should start clustered application', async () => {
-      const configWithCluster = {
+      const configWithCluster: any = {
         ...mockConfig,
-        cluster: {
-          enabled: true,
-          workers: 2,
-        },
+        cluster: { enabled: true, workerMode: 'manual', workerCount: 2 },
       };
 
       application = new TestApplication(configWithCluster);
@@ -358,12 +343,9 @@ describe('BaseApplication', () => {
     });
 
     it('should initialize event manager when enabled', async () => {
-      const configWithEvents = {
+      const configWithEvents: any = {
         ...mockConfig,
-        event: {
-          enabled: true,
-          events: [],
-        },
+        event: { enabled: true, events: [], controllersDirectory: '/events' },
       };
 
       application = new TestApplication(configWithEvents);
@@ -448,7 +430,7 @@ describe('BaseApplication', () => {
 
   describe('performance monitoring', () => {
     it('should initialize performance monitor when enabled', () => {
-      const configWithPerformance = {
+      const configWithPerformance: any = {
         ...mockConfig,
         performanceMonitoring: {
           enabled: true,
@@ -457,7 +439,7 @@ describe('BaseApplication', () => {
           logSlowOperations: true,
           logAllOperations: false,
           reportInterval: 60000,
-          reportFormat: 'detailed' as const,
+          reportFormat: 'detailed',
         },
       };
 
