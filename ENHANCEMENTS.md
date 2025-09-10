@@ -129,12 +129,14 @@ Status Legend: ✅ Done | 🚧 In Progress | 📅 Planned / Not Started
 - Current Status: Routes dynamically load controllers without schema objects; no Fastify JSON schema integration yet.
 - Effort: L | Risk: Med
 
-### 7. Redis Client Duplication – 🚧 In Progress
+### 7. Redis Client Duplication – ✅ Done
 
 - Issue: Both `ioredis` and `redis` packages; operational & conceptual redundancy.
-- Action: Standardize (recommend `ioredis` for cluster + sentinel). Remove unused package, adjust typings.
-- Current Status: Both `ioredis` (for redis manager) and `redis` (inside cache manager) still present. Consolidation not yet completed; plan is to standardize on `ioredis` and adapt `CacheManager` to reuse `RedisManager` instance.
+- Action: Standardized on `ioredis` (better cluster/sentinel support, consistent pub/sub behavior). Removed `redis` (node-redis) dependency. Refactored `CacheManager` to reuse a shared `RedisInstance` (via `RedisManager`) with lazy connection fallback. Added unit tests for new cache behavior (JSON parsing fallback, lifetime support, lazy connect).
+- Current Status: `redis` package removed from `package.json`; no lingering imports or mocks of node-redis. Coverage retained; all tests passing.
 - Effort: S | Risk: Lo
+
+> Changelog: Removed duplicate Redis client. `CacheManager` now internally uses `RedisInstance` from `RedisManager` (ioredis). No public API change expected unless consumers relied on internal `redis` client specifics.
 
 ---
 
