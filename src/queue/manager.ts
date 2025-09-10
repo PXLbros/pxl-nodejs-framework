@@ -6,7 +6,7 @@ import type { DatabaseInstance } from '../database/index.js';
 import { Logger } from '../logger/index.js';
 import QueueWorker from './worker.js';
 import type BaseProcessor from './processor/base.js';
-import { Helper, Loader } from '../util/index.js';
+import { Helper, Loader, Time } from '../util/index.js';
 import type { QueueJob, QueueJobData } from './job.interface.js';
 import type { ProcessorConstructor } from './processor/processor.interface.js';
 import type { QueueItem } from './index.interface.js';
@@ -238,7 +238,7 @@ export default class QueueManager {
       return;
     }
 
-    const startTime = process.hrtime();
+    const startTime = Time.now();
 
     // Add start time to job data
     job.updateData({ ...job.data, startTime });

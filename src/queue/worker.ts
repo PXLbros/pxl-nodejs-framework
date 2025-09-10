@@ -2,6 +2,7 @@ import { type Job, type Processor, Worker } from 'bullmq';
 import type { QueueWorkerConstructorParams } from './worker.interface.js';
 import type { RedisInstance } from '../redis/index.js';
 import { Logger } from '../logger/index.js';
+import { Time } from '../util/index.js';
 import { WebSocketRedisSubscriberEvent } from '../websocket/websocket.interface.js';
 import type { ApplicationConfig } from '../application/base-application.interface.js';
 import type QueueManager from './manager.js';
@@ -79,8 +80,7 @@ export default class QueueWorker extends Worker {
 
     const startTime = jobData.startTime;
 
-    const [seconds, nanoseconds] = process.hrtime(startTime);
-    const executionTimeMs = seconds * 1000 + nanoseconds / 1e6;
+    const executionTimeMs = Time.calculateElapsedTimeMs({ startTime });
     const formattedExecutionTime = executionTimeMs.toFixed(2);
 
     if (this.applicationConfig.queue.log?.jobCompleted) {

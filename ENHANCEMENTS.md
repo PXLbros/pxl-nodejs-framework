@@ -230,10 +230,43 @@ ee
 - Action: Rename to `name`, align managers to `XService` where they encapsulate behavior; keep managers for pooling semantics only.
 - Effort: S | Risk: Med (breaking change)
 
-### 18. Time Utilities & High-Resolution Timers – 📅 Planned
+### 18. Time Utilities & High-Resolution Timers – ✅ Done
 
 - Issue: Manual `process.hrtime()` handling; Node 18+ `performance.now()` simpler.
 - Action: Create `Timing` utility exposing `measure(fn)` & durations returning ms with decimals.
+- Current Status: Implemented modern `Timing` class with `performance.now()` API. Added `measure()`, `measureSync()`, `start()`, `now()`, and `duration()` methods. Updated existing `Time` utility with new `calculateElapsedTimeMs()` method while maintaining backward compatibility. Migrated BaseApplication, WebServer, QueueManager, and Worker to use new timing utilities. Added comprehensive test coverage for both new Timing class and existing Time utility backward compatibility.
+- Implementation Details:
+  - New `src/util/timing.ts` with modern performance.now() based API
+  - New `src/util/timing.interface.ts` with Timer, TimingResult, and MeasureOptions interfaces
+  - Enhanced `src/util/time.ts` with new methods and backward compatibility
+  - Updated BaseApplication startup timing to use `Time.now()` and `calculateElapsedTimeMs()`
+  - Updated WebServer request timing to use `performance.now()` format
+  - Updated QueueManager and Worker job timing to use new utilities
+  - Added extensive test coverage in `test/unit/utils/timing.test.ts`
+  - Extended existing tests in `test/unit/utils/time.test.ts` for backward compatibility
+  - All timing now returns milliseconds with decimal precision
+  - Deprecated `calculateElapsedTime()` with hrtime but kept for compatibility
+  - Added migration helpers `hrtimeToMs()` and `msToHrtime()`
+- Usage Examples:
+
+  ```typescript
+  // Simple function measurement
+  const result = await Time.measure(async () => {
+    await someAsyncOperation();
+  });
+  console.log(`Took ${result.duration}ms`);
+
+  // Manual timing
+  const timer = Time.start();
+  // ... do work ...
+  const duration = timer.stop();
+
+  // Direct timing utility
+  const startTime = Time.now();
+  // ... do work ...
+  const elapsed = Time.calculateElapsedTimeMs({ startTime });
+  ```
+
 - Effort: S | Risk: Lo
 
 ### 19. Avoid Over-Broad Public Surface (Barrel Exports) – 📅 Planned

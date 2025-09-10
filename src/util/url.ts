@@ -1,7 +1,7 @@
 const buildQueryString = (params: { [key: string]: string | number | boolean }): string => {
-  return Object.keys(params)
-    .filter(key => params[key] !== undefined && params[key] !== '')
-    .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`)
+  return Object.entries(params)
+    .filter(([, value]) => value !== undefined && value !== '')
+    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`)
     .join('&');
 };
 

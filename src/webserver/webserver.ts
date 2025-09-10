@@ -22,7 +22,7 @@ import type EventManager from '../event/manager.js';
 
 declare module 'fastify' {
   interface FastifyRequest {
-    startTime?: [number, number];
+    startTime?: number;
   }
 }
 
@@ -154,7 +154,7 @@ class WebServer {
     if (pathsToIgnore.includes(request.url) || request.method === 'OPTIONS') {
       // ...
     } else {
-      request.startTime = process.hrtime();
+      request.startTime = Time.now();
     }
   }
 
@@ -163,7 +163,7 @@ class WebServer {
       return;
     }
 
-    const executionTime = Time.calculateElapsedTime({
+    const executionTime = Time.calculateElapsedTimeMs({
       startTime: request.startTime,
     });
     const formattedExecutionTime = Time.formatTime({
@@ -367,6 +367,8 @@ class WebServer {
                     ]),
                   ),
                   required: Object.keys(entityValidationSchema.keys).filter(
+                    // Dynamic schema inspection of joi describe output; keys are from trusted entity definitions
+                    // eslint-disable-next-line security/detect-object-injection
                     key => entityValidationSchema.keys[key].flags?.presence === 'required',
                   ),
                 }
@@ -420,6 +422,11 @@ class WebServer {
     };
   }): Promise<void> {
     // Get controller action handler
+    // Validate action name to avoid prototype access
+    if (!/^[A-Za-z0-9_]+$/.test(routeAction) || ['__proto__', 'prototype', 'constructor'].includes(routeAction)) {
+      throw new Error('Invalid controller action name');
+    }
+    // Dynamic access guarded by regex + deny list (keys validated above)
     const controllerHandler = controllerInstance[routeAction as keyof typeof controllerInstance];
 
     if (!controllerHandler) {
@@ -451,7 +458,23 @@ class WebServer {
 
         const validate = request.compileValidationSchema(routeValidation.schema);
 
-        if (!validate(request[routeValidation.type])) {
+        // Avoid dynamic request[...] access for security lint; map explicitly
+        let dataToValidate: any;
+        switch (routeValidation.type) {
+          case 'body':
+            dataToValidate = request.body;
+            break;
+          case 'query':
+            dataToValidate = request.query;
+            break;
+          case 'params':
+            dataToValidate = request.params;
+            break;
+          default:
+            dataToValidate = undefined;
+        }
+
+        if (!validate(dataToValidate)) {
           return reply.code(400).send({
             error: validate.errors,
           });

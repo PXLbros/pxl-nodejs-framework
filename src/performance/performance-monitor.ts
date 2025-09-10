@@ -110,7 +110,30 @@ export class PerformanceMonitor {
     if (!allowedTypes.includes(metricType)) {
       return;
     }
-    const threshold = this.thresholds[metricType];
+    // Access threshold via explicit switch to avoid dynamic key access warnings
+    let threshold: number;
+    switch (metricType) {
+      case 'http':
+        threshold = this.thresholds.http;
+        break;
+      case 'database':
+        threshold = this.thresholds.database;
+        break;
+      case 'cache':
+        threshold = this.thresholds.cache;
+        break;
+      case 'queue':
+        threshold = this.thresholds.queue;
+        break;
+      case 'websocket':
+        threshold = this.thresholds.websocket;
+        break;
+      case 'custom':
+        threshold = this.thresholds.custom;
+        break;
+      default:
+        threshold = 0; // Should not happen due to earlier filtering
+    }
     if (this.logSlowOperations && entry.duration > threshold) {
       Logger.warn({
         message: `Performance threshold exceeded`,

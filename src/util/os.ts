@@ -2,31 +2,18 @@ import os from 'os';
 import crypto from 'crypto';
 
 function getUniqueComputerId(): string {
-  const networkInterfaces = os.networkInterfaces();
-
+  const interfaces = Object.values(os.networkInterfaces()).filter(Boolean) as os.NetworkInterfaceInfo[][];
   let macAddress = '';
-
-  for (const key in networkInterfaces) {
-    const networkInterface = networkInterfaces[key];
-
-    if (networkInterface) {
-      for (const interfaceDetails of networkInterface) {
-        if (interfaceDetails.mac) {
-          macAddress = interfaceDetails.mac;
-
-          break;
-        }
+  for (const ifaceList of interfaces) {
+    for (const details of ifaceList) {
+      if (details.mac) {
+        macAddress = details.mac;
+        break;
       }
     }
-
-    if (macAddress) {
-      break;
-    }
+    if (macAddress) break;
   }
-
-  const uniqueComputerId = crypto.createHash('sha256').update(macAddress).digest('hex');
-
-  return uniqueComputerId;
+  return crypto.createHash('sha256').update(macAddress).digest('hex');
 }
 
 export default {

@@ -32,7 +32,7 @@ export default abstract class BaseApplication {
   public uniqueInstanceId: string;
 
   /** Application start time */
-  protected startTime: [number, number] = [0, 0];
+  protected startTime: number = 0;
 
   /** Shutdown timeout (30 seconds) */
   protected shutdownTimeout = 30000;
@@ -210,7 +210,7 @@ export default abstract class BaseApplication {
    */
   public async start(): Promise<void> {
     // Start application timer
-    this.startTime = process.hrtime();
+    this.startTime = Time.now();
 
     // Get application version`
     this.applicationVersion = await this.getApplicationVersion();
@@ -387,7 +387,7 @@ export default abstract class BaseApplication {
       }
 
       // Calculate application startup time
-      const startupTime = Time.calculateElapsedTime({
+      const startupTime = Time.calculateElapsedTimeMs({
         startTime: this.startTime,
       });
 

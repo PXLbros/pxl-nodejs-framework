@@ -1,4 +1,5 @@
 export { default as Time } from './time.js';
+export { default as Timing } from './timing.js';
 export { default as File } from './file.js';
 export { default as Helper } from './helper.js';
 export { default as Image } from './image.js';
