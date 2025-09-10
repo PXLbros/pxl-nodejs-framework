@@ -19,6 +19,8 @@ import EventManager from '../event/manager.js';
 import Logger from '../logger/logger.js';
 import { PerformanceMonitor } from '../performance/performance-monitor.js';
 import { CachePerformanceWrapper, DatabasePerformanceWrapper, QueuePerformanceWrapper } from '../performance/index.js';
+import { LifecycleManager } from '../lifecycle/lifecycle-manager.js';
+import { requestExit } from '../lifecycle/exit.js';
 
 // Re-export types for external use
 export type { ApplicationConfig } from './base-application.interface.js';
@@ -68,6 +70,9 @@ export default abstract class BaseApplication {
 
   /** Performance monitor */
   public performanceMonitor?: PerformanceMonitor;
+
+  /** Lifecycle manager */
+  protected lifecycle: LifecycleManager = new LifecycleManager();
 
   public get Name() {
     return this.config.name;
@@ -349,10 +354,11 @@ export default abstract class BaseApplication {
         await options.onStarted({ startupTime });
       }
     } catch (error) {
-      // Log error
-      console.error(error);
-
-      process.exit(1);
+      Logger.error({
+        error: error instanceof Error ? error : new Error(String(error)),
+        message: 'startInstance failure',
+      });
+      throw error;
     }
   }
 
@@ -405,15 +411,17 @@ export default abstract class BaseApplication {
     }
 
     // Set up periodic performance reports if configured
-    if (this.config.performanceMonitoring.reportInterval && this.config.performanceMonitoring.reportInterval > 0) {
-      setInterval(() => {
-        const reportFormat = this.config.performanceMonitoring?.reportFormat ?? 'detailed';
-        const report = this.performanceMonitor?.generateFormattedReport(reportFormat);
+    if (this.config.performanceMonitoring?.reportInterval && this.config.performanceMonitoring.reportInterval > 0) {
+      this.lifecycle.trackInterval(
+        setInterval(() => {
+          const reportFormat = this.config.performanceMonitoring?.reportFormat ?? 'detailed';
+          const report = this.performanceMonitor?.generateFormattedReport(reportFormat);
 
-        if (report) {
-          Logger.info({ message: report });
-        }
-      }, this.config.performanceMonitoring.reportInterval);
+          if (report) {
+            Logger.info({ message: report });
+          }
+        }, this.config.performanceMonitoring.reportInterval),
+      );
     }
   }
 
@@ -449,7 +457,7 @@ export default abstract class BaseApplication {
         error: error instanceof Error ? error : new Error(String(error)),
         message: 'Error during graceful shutdown',
       });
-      process.exit(1);
+      requestExit({ code: 1, reason: 'graceful-shutdown-error', error });
     });
   }
 
@@ -478,7 +486,7 @@ export default abstract class BaseApplication {
     // Set timeout for forced termination
     const forceExitTimeout = setTimeout(() => {
       Logger.warn({ message: 'Forced shutdown due to timeout' });
-      process.exit(1);
+      requestExit({ code: 1, reason: 'forced-timeout' });
     }, this.shutdownTimeout);
 
     try {
@@ -491,20 +499,19 @@ export default abstract class BaseApplication {
       if (onStopped) {
         // Calculate runtime
         const runtime = process.uptime() * 1000;
-
         // Emit stopped event
         await onStopped({ runtime });
       }
 
       clearTimeout(forceExitTimeout);
-      process.exit(0);
+      requestExit({ code: 0, reason: 'shutdown-complete' });
     } catch (error) {
       Logger.error({
         error: error instanceof Error ? error : new Error(String(error)),
         message: 'Error during shutdown',
       });
       clearTimeout(forceExitTimeout);
-      process.exit(1);
+      requestExit({ code: 1, reason: 'shutdown-error', error });
     }
   }
 }

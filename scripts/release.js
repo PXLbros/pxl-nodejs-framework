@@ -225,7 +225,8 @@ async function main() {
     console.log(`2. Git add package.json`);
     console.log(`3. Git commit -m "chore: release v${newVersion}"`);
     console.log(`4. Git tag v${newVersion}`);
-    console.log(`5. Git push origin ${currentBranch} --tags`);
+    console.log(`5. Git push origin ${currentBranch}`);
+    console.log(`6. Git push origin v${newVersion}`);
     return;
   }
 
@@ -238,7 +239,8 @@ async function main() {
     execCommand('git add package.json', 'Staging package.json');
     execCommand(`git commit -m "chore: release v${newVersion}"`, 'Creating release commit');
     execCommand(`git tag v${newVersion}`, 'Creating git tag');
-    execCommand(`git push origin ${currentBranch} --tags`, 'Pushing to origin');
+    execCommand(`git push origin ${currentBranch}`, 'Pushing branch to origin');
+    execCommand(`git push origin v${newVersion}`, 'Pushing tag to origin');
 
     success(`\n🎉 Release v${newVersion} created successfully!`);
     info(`GitHub Actions will now build and publish the release.`);

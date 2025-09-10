@@ -6,6 +6,7 @@ import type {
   ClusterManagerWorkerModeManualConfig,
 } from './cluster-manager.interface.js';
 import { Logger } from '../logger/index.js';
+import { requestExit } from '../lifecycle/exit.js';
 
 export default class ClusterManager {
   private readonly config: ClusterManagerConfig;
@@ -121,7 +122,7 @@ export default class ClusterManager {
         const numClusterWorkers = Object.keys(clusterWorkers).length;
 
         if (exitedWorkers === numClusterWorkers) {
-          process.exit();
+          requestExit({ code: 0, reason: 'cluster-workers-exited' });
         }
       });
     } else {
