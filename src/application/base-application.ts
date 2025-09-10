@@ -17,8 +17,9 @@ import CacheManager from '../cache/manager.js';
 import os from 'os';
 import EventManager from '../event/manager.js';
 import Logger from '../logger/logger.js';
-import { PerformanceMonitor } from '../performance/performance-monitor.js';
-import { CachePerformanceWrapper, DatabasePerformanceWrapper, QueuePerformanceWrapper } from '../performance/index.js';
+import type { PerformanceMonitor } from '../performance/performance-monitor.js';
+// Performance monitoring now pluginized
+import { PerformanceMonitorPlugin } from '../performance/performance-monitor.plugin.js';
 import { type LifecycleConfig, LifecycleManager, ShutdownController } from '../lifecycle/index.js';
 import { type ExitOutcome, requestExit } from '../lifecycle/exit.js';
 
@@ -136,8 +137,8 @@ export default abstract class BaseApplication {
       redisManager: this.redisManager,
     });
 
-    // Initialize performance monitor
-    this.initializePerformanceMonitor();
+    // Register performance monitor plugin (idempotent & opt-in)
+    PerformanceMonitorPlugin.register(this);
 
     // Set up global error handlers
     this.setupGlobalErrorHandlers();
@@ -386,48 +387,8 @@ export default abstract class BaseApplication {
   /**
    * Initialize performance monitor
    */
-  private initializePerformanceMonitor(): void {
-    // Check if performance monitoring is enabled
-    if (!this.config.performanceMonitoring?.enabled) {
-      return;
-    }
-
-    // Initialize performance monitor with configuration
-    this.performanceMonitor = PerformanceMonitor.initialize({
-      enabled: true,
-      thresholds: this.config.performanceMonitoring.thresholds,
-      maxMetricsHistory: this.config.performanceMonitoring.maxMetricsHistory,
-      logSlowOperations: this.config.performanceMonitoring.logSlowOperations,
-      logAllOperations: this.config.performanceMonitoring.logAllOperations,
-    });
-
-    // Set up performance monitoring for different components
-    if (this.config.performanceMonitoring.monitorDatabaseOperations !== false) {
-      DatabasePerformanceWrapper.setPerformanceMonitor(this.performanceMonitor);
-    }
-
-    if (this.config.performanceMonitoring.monitorQueueOperations !== false) {
-      QueuePerformanceWrapper.setPerformanceMonitor(this.performanceMonitor);
-    }
-
-    if (this.config.performanceMonitoring.monitorCacheOperations !== false) {
-      CachePerformanceWrapper.setPerformanceMonitor(this.performanceMonitor);
-    }
-
-    // Set up periodic performance reports if configured
-    if (this.config.performanceMonitoring?.reportInterval && this.config.performanceMonitoring.reportInterval > 0) {
-      this.lifecycle.trackInterval(
-        setInterval(() => {
-          const reportFormat = this.config.performanceMonitoring?.reportFormat ?? 'detailed';
-          const report = this.performanceMonitor?.generateFormattedReport(reportFormat);
-
-          if (report) {
-            Logger.info({ message: report });
-          }
-        }, this.config.performanceMonitoring.reportInterval),
-      );
-    }
-  }
+  // initializePerformanceMonitor deprecated in favor of PerformanceMonitorPlugin
+  // (left intentionally absent)
 
   private setupGlobalErrorHandlers(): void {
     // Handle uncaught exceptions

@@ -1,6 +1,6 @@
 # PXL Node.js Framework – Enhancement & Modernization Plan
 
-_Last reviewed: 2025-09-09_
+_Last reviewed: 2025-09-10_
 
 This document catalogs architectural, code-quality, performance, security, and DX (developer experience) improvement opportunities identified in the current codebase. Items are grouped by priority and theme. Each entry includes: Rationale, Recommended Action, Effort (S/M/L/XL), and Risk (Lo/Med/Hi). Where valuable, suggested implementation patterns are included.
 
@@ -35,7 +35,9 @@ Focus areas:
 
 ## P0 / Critical
 
-### 1. Lifecycle & Shutdown Refactor
+Status Legend: ✅ Done | 🚧 In Progress | 📅 Planned / Not Started
+
+### 1. Lifecycle & Shutdown Refactor – ✅ Done (initial implementation)
 
 - Issue: `BaseApplication` directly calls `process.exit()` across multiple error and signal paths. This impairs testability (hard to assert soft-fail states), increases risk of partial shutdown (unflushed logs, hanging DB/Redis/queue connections, uncleared `setInterval`), and complicates embedding the framework inside larger hosts.
 - Action: Eliminate in-framework `process.exit()` calls. Application code returns an `ExitOutcome` (code + reason) to a single responsibility launcher (e.g. `bin/pxl`), which performs the actual `process.exit(code)` after a graceful, timeout‑bounded teardown. Introduce a `LifecycleManager` to register and orchestrate startup/shutdown hooks & disposables (timers, intervals, sockets, external clients). Provide structured phases and idempotent stop semantics.
@@ -89,97 +91,107 @@ Focus areas:
 
   (If scope grows, consider follow-up: a plugin API leveraging the same lifecycle hooks.)
 
+- Current Status: `LifecycleManager`, `ShutdownController`, exit handler utilities, hook phases, disposables tracking, timeout logic, and tests are implemented (`src/lifecycle/*`). Direct `process.exit` calls have been removed from core runtime except in launcher/test contexts. Further polish: aggregate error reporting formatting & documenting embedding pattern in docs (follow-up pending).
 - Effort: M | Risk: Med (behavioral change around shutdown ordering; requires thorough migration note)
 
-### 2. Configuration Validation & Type Safety
+### 2. Configuration Validation & Type Safety – 📅 Planned
 
 - Issue: Commented-out Joi schema; runtime assumptions; unvalidated nested options.
 - Action: Adopt Zod (better TS inference) or retain Joi with explicit schemas + `infer` types. Fail-fast at startup with aggregated error report.
+- Current Status: No Zod/Joi schema enforcement present yet (search shows only conceptual references). Needs schema module + startup fail-fast.
 - Effort: M | Risk: Lo
 
-### 3. Security Hardening (HTTP)
+### 3. Security Hardening (HTTP) – 📅 Planned
 
 - Issue: No rate limiting, missing security headers (helmet), permissive 5GB body limit, long 30m connection timeout, wildcard CORS pattern turning `*` into `true` (credential ambiguity).
 - Action: Add configurable sane defaults: bodyLimit <= 25MB (override via config), adopt `@fastify/helmet`, `@fastify/rate-limit`, expose security config section.
+- Current Status: Large defaults still present (5GB bodyLimit, 30m connectionTimeout). No `@fastify/helmet` or rate limiting integration detected. CORS wildcard logic remains simplistic.
 - Effort: M | Risk: Med
 
-### 4. Cluster Strategy Modernization
+### 4. Cluster Strategy Modernization – 📅 Planned
 
 - Issue: Depends on built‑in `cluster`; Node direction favors `worker_threads` or external process managers (e.g., systemd/PM2). Future deprecation risk.
 - Action: Abstract concurrency layer behind `ProcessStrategy` interface (e.g., `SingleProcessStrategy`, `WorkerPoolStrategy`). Allow pluggable scaling.
+- Current Status: Existing `cluster` usage and `ClusterManager` remain; no abstraction layer introduced yet.
 - Effort: L | Risk: Med
 
-### 5. Unified Error Handling & Logging
+### 5. Unified Error Handling & Logging – 🚧 In Progress
 
 - Issue: Mixed `console.error` vs `Logger.error`; double Sentry capture possible (`error()` + custom format). Incomplete context propagation.
 - Action: Central error pipeline -> `ErrorReporter` (normalizes shape: message, code, cause, severity, context). Single Sentry interface.
+- Current Status: Central logger abstraction in place, but mixed `console` vs `Logger` largely addressed; still lacks normalized error envelope & correlation. Work to introduce `ErrorReporter` pending.
 - Effort: M | Risk: Med
 
-### 6. Input Validation & Route Typing
+### 6. Input Validation & Route Typing – 📅 Planned
 
 - Issue: Dynamic controller/action resolution with `any`; validation uses `request.compileValidationSchema` (non-standard) => unclear integration with Fastify’s native AJV.
 - Action: Generate JSON Schemas (Zod -> JSON) for routes; use Fastify `schema` property (automatically validated). Use typed controller signature: `Controller<ActionParams, Body, Query, Reply>` generics.
+- Current Status: Routes dynamically load controllers without schema objects; no Fastify JSON schema integration yet.
 - Effort: L | Risk: Med
 
-### 7. Redis Client Duplication
+### 7. Redis Client Duplication – 🚧 In Progress
 
 - Issue: Both `ioredis` and `redis` packages; operational & conceptual redundancy.
 - Action: Standardize (recommend `ioredis` for cluster + sentinel). Remove unused package, adjust typings.
+- Current Status: Both `ioredis` (for redis manager) and `redis` (inside cache manager) still present. Consolidation not yet completed; plan is to standardize on `ioredis` and adapt `CacheManager` to reuse `RedisManager` instance.
 - Effort: S | Risk: Lo
 
 ---
 
 ## P1 / High
 
-### 8. Break Up `BaseApplication` God Object
+### 8. Break Up `BaseApplication` God Object – 📅 Planned
 
 - Issue: Orchestrates config, cache, database, queue, events, performance, signals.
 - Action: Introduce service registration container (DI light): `ApplicationContext` holding providers. Refactor into modules: `ConfigModule`, `CacheModule`, `DatabaseModule`, `MessagingModule`, `MetricsModule`.
 - Effort: L | Risk: Med
 
-### 9. Performance Monitor Pluginization
+### 9. Performance Monitor Pluginization – 📅 Planned
 
 - Issue: Side-effect initialization inside constructor; leakage risk (interval not cleared on stop).
 - Action: Convert to plugin with explicit `start()` / `stop()` and registration in lifecycle.
 - Effort: M | Risk: Lo
 
-### 10. Health & Readiness Probes
+### 10. Health & Readiness Probes – 📅 Planned
 
 - Issue: Single `/health` route; no readiness gate (e.g., DB connected, queues ready) vs liveness (process up).
 - Action: Add `/health/live` & `/health/ready` with pluggable probe functions.
+- Current Status: Single `/health` route implemented. No distinct liveness vs readiness endpoints or probe registry yet.
 - Effort: S | Risk: Lo
 
-### 11. Logging Correlation & Structured Metadata
+### 11. Logging Correlation & Structured Metadata – 📅 Planned
 
 - Issue: No request ID / trace correlation; log meta flattening to a string.
 - Action: Add request lifecycle hook injecting `request-id` (uuid v7) & propagate via async-local-storage. Use structured JSON logs (retain color for dev).
+- Current Status: No AsyncLocalStorage usage or request ID injection implemented yet.
 - Effort: M | Risk: Lo
 
-### 12. Replace Custom Deep Merge Utility
+### 12. Replace Custom Deep Merge Utility – 🚧 In Progress
 
 - Issue: `defaultsDeep` reinventing merge, partial array semantics, no type inference.
 - Action: Adopt `lodash.merge` or produce strongly typed recursive partial merge with tests. Remove exposure to prototype pollution through library choice.
+- Current Status: Custom `defaultsDeep` still used widely (`Helper.defaultsDeep`). Security guard clauses added; replacement with maintained library or typed merge pending.
 - Effort: S | Risk: Lo
 
-### 13. Route Definition DSL / File-System Routing Option
+### 13. Route Definition DSL / File-System Routing Option – 📅 Planned
 
 - Issue: Manual route arrays; risk of inconsistency.
 - Action: Optional convention-based routing: files under `controllers/{area}/{verb}.controller.ts` -> auto-scan. Provide explicit vs convention toggle.
 - Effort: M | Risk: Lo
 
-### 14. Database Entity Schema Alignment
+### 14. Database Entity Schema Alignment – 📅 Planned
 
 - Issue: Deriving validation from entity’s Joi schema manually; risk of drift.
 - Action: Code generation step: entity -> validation + OpenAPI schema. Or unify around a single source (Zod → MikroORM schema generation via metadata adapter).
 - Effort: L | Risk: Med
 
-### 15. OpenAPI / API Documentation Generation
+### 15. OpenAPI / API Documentation Generation – 📅 Planned
 
 - Issue: No machine-readable contract.
 - Action: Emit OpenAPI spec from Fastify route schemas; serve `/docs/json` + optional Swagger UI in non-production.
 - Effort: M | Risk: Lo
 
-### 16. Observability: Metrics & Tracing
+### 16. Observability: Metrics & Tracing – 📅 Planned
 
 - Issue: Only logging + internal performance monitor; no Prometheus metrics or distributed tracing.
 - Action: Add `@opentelemetry/api` instrumentation (Fastify, Redis, DB). Export metrics endpoint (`/metrics`).
@@ -189,43 +201,45 @@ Focus areas:
 
 ## P2 / Medium
 
-### 17. Consistent Naming & API Design
+### 17. Consistent Naming & API Design – 📅 Planned
 
 - Issue: Getter `Name` (PascalCase) vs lowerCamelCase norms; inconsistent `*Manager` patterns.
 - Action: Rename to `name`, align managers to `XService` where they encapsulate behavior; keep managers for pooling semantics only.
 - Effort: S | Risk: Med (breaking change)
 
-### 18. Time Utilities & High-Resolution Timers
+### 18. Time Utilities & High-Resolution Timers – 📅 Planned
 
 - Issue: Manual `process.hrtime()` handling; Node 18+ `performance.now()` simpler.
 - Action: Create `Timing` utility exposing `measure(fn)` & durations returning ms with decimals.
 - Effort: S | Risk: Lo
 
-### 19. Avoid Over-Broad Public Surface (Barrel Exports)
+### 19. Avoid Over-Broad Public Surface (Barrel Exports) – 📅 Planned
 
 - Issue: `export *` across many modules bloats consumer intellisense / potential accidental API guarantees.
 - Action: Curate explicit exports; add internal-only modules in `src/internal`.
 - Effort: M | Risk: Med
 
-### 20. Test Strategy & Coverage Gate
+### 20. Test Strategy & Coverage Gate – 🚧 In Progress
 
 - Issue: Using Node test runner with `--experimental-strip-types`; uncertain coverage enforcement.
 - Action: Add coverage threshold (nyc + source maps) or integrate `c8`. Provide unit vs integration separation + contract tests for plugin APIs.
+- Current Status: Extensive unit & integration tests exist (not yet enforcing coverage thresholds). Need coverage gate config & reporting improvements.
 - Effort: M | Risk: Lo
 
-### 21. Pluggable Queue / Job Middleware
+### 21. Pluggable Queue / Job Middleware – 📅 Planned
 
 - Issue: Queue jobs appear to lack cross-cutting decorators (logging, retry policy normalization, metrics).
 - Action: Introduce job pipeline: `before(job)`, `after(job)`, `onError(job, err)`.
 - Effort: M | Risk: Lo
 
-### 22. Graceful Startup Barrier
+### 22. Graceful Startup Barrier – 🚧 In Progress
 
 - Issue: `start()` proceeds after init; no aggregated readiness check to gate external traffic.
 - Action: Implement `Promise.allSettled` aggregator & readiness state machine.
+- Current Status: Lifecycle phases (`initialize` -> `start` -> `ready`) implemented; readiness gating not yet exposed to external health endpoint.
 - Effort: S | Risk: Lo
 
-### 23. Binary / CLI Ergonomics
+### 23. Binary / CLI Ergonomics – 📅 Planned
 
 - Issue: `pxl.js` likely bootstrap only; limited developer ergonomics.
 - Action: Add subcommands: `pxl dev`, `pxl routes`, `pxl doctor`, `pxl generate entity`.
@@ -235,31 +249,31 @@ Focus areas:
 
 ## P3 / Low / Polish
 
-### 24. Body Parsing & Streaming
+### 24. Body Parsing & Streaming – 📅 Planned
 
 - Lower body limits; encourage streaming for large uploads; add example.
 
-### 25. CORS Configuration Simplification
+### 25. CORS Configuration Simplification – 📅 Planned
 
 - Accept comma-separated env var; auto-trim; warn on wildcard in production.
 
-### 26. Modular Feature Flags
+### 26. Modular Feature Flags – 📅 Planned
 
 - Expose structured feature flags registry for conditional code paths (observability, heavy instrumentation).
 
-### 27. Developer Onboarding Docs
+### 27. Developer Onboarding Docs – 📅 Planned
 
 - Expand docs: architecture diagram, lifecycle phases, extension points.
 
-### 28. Release Automation
+### 28. Release Automation – 📅 Planned
 
 - Add conventional commits + changelog generation (`changesets` or `semantic-release`).
 
-### 29. Example Projects / Templates
+### 29. Example Projects / Templates – 📅 Planned
 
 - Provide minimal starter (API only), full stack, event-driven sample.
 
-### 30. Runtime Validation for Config Mutations
+### 30. Runtime Validation for Config Mutations – 📅 Planned
 
 - Freeze configuration object post-initialization to prevent accidental mutation.
 
