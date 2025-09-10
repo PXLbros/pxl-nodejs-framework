@@ -2,31 +2,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import Time from '../../../src/util/time.js';
 
 describe('Time', () => {
-  describe('calculateElapsedTime', () => {
-    it('should calculate elapsed time correctly', () => {
-      const startTime = process.hrtime();
-      const result = Time.calculateElapsedTime({ startTime });
-
-      expect(result).toBeGreaterThan(0);
-      expect(typeof result).toBe('number');
-    });
-
-    it('should calculate elapsed time with specific hrtime values', () => {
-      // Mock a start time of [1, 500000000] (1 second + 500ms)
-      const startTime: [number, number] = [1, 500000000];
-
-      // Mock process.hrtime to return [2, 0] (2 seconds elapsed from start)
-      vi.spyOn(process, 'hrtime').mockReturnValue([0, 500000000]);
-
-      const result = Time.calculateElapsedTime({ startTime });
-
-      // Should return 500ms (0.5 seconds * 1000)
-      expect(result).toBe(500);
-
-      vi.restoreAllMocks();
-    });
-  });
-
   describe('formatTime', () => {
     it('should format time in seconds by default for time < 60000ms', () => {
       const result = Time.formatTime({ time: 5000 });
@@ -256,58 +231,22 @@ describe('Time', () => {
         expect(result).toBe(99.75);
       });
     });
-
-    describe('hrtimeToMs (deprecated helper)', () => {
-      it('should convert hrtime tuple to milliseconds', () => {
-        const hrtime: [number, number] = [2, 500000000]; // 2.5 seconds
-
-        const result = Time.hrtimeToMs(hrtime);
-
-        expect(result).toBe(2500);
-      });
-    });
-
-    describe('msToHrtime (deprecated helper)', () => {
-      it('should convert milliseconds to hrtime format', () => {
-        const milliseconds = 1500; // 1.5 seconds
-
-        const result = Time.msToHrtime(milliseconds);
-
-        expect(result).toEqual([1, 500000000]);
-      });
-    });
   });
 
-  describe('Backward compatibility', () => {
-    it('should maintain existing calculateElapsedTime behavior', () => {
-      const startTime: [number, number] = [1, 500000000];
-
-      // Mock process.hrtime to return [2, 0] (1 second elapsed)
-      vi.spyOn(process, 'hrtime').mockReturnValue([0, 500000000]);
-
-      const result = Time.calculateElapsedTime({ startTime });
-
-      expect(result).toBe(500); // 0.5 seconds = 500ms
-
-      vi.restoreAllMocks();
-    });
-
-    it('should have all original methods available', () => {
-      expect(typeof Time.calculateElapsedTime).toBe('function');
+  describe('API availability', () => {
+    it('should have all core time utility methods available', () => {
+      expect(typeof Time.calculateElapsedTimeMs).toBe('function');
       expect(typeof Time.formatTime).toBe('function');
       expect(typeof Time.formatRelativeTime).toBe('function');
       expect(typeof Time.sleep).toBe('function');
     });
 
-    it('should have all new methods available', () => {
-      expect(typeof Time.calculateElapsedTimeMs).toBe('function');
+    it('should have all modern timing methods available', () => {
       expect(typeof Time.now).toBe('function');
       expect(typeof Time.start).toBe('function');
       expect(typeof Time.measure).toBe('function');
       expect(typeof Time.measureSync).toBe('function');
       expect(typeof Time.duration).toBe('function');
-      expect(typeof Time.hrtimeToMs).toBe('function');
-      expect(typeof Time.msToHrtime).toBe('function');
     });
   });
 });

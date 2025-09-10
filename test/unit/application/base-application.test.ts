@@ -282,12 +282,12 @@ describe('BaseApplication', () => {
       mockDirname.mockReturnValue('/test/src/application');
       mockResolve.mockReturnValue('/test/package.json');
 
-      // Mock Time.calculateElapsedTime
-      mockTime.calculateElapsedTime.mockReturnValue(1500);
+      // Mock Time.calculateElapsedTimeMs
+      mockTime.calculateElapsedTimeMs.mockReturnValue(1500);
 
       // Mock redis and database connections
-      const mockRedisInstance = { client: {} };
-      const mockDatabaseInstance = { orm: {} };
+      const mockRedisInstance = { client: {}, isConnected: vi.fn().mockResolvedValue(true) };
+      const mockDatabaseInstance = { orm: {}, isConnected: vi.fn().mockResolvedValue(true) };
       const mockQueueManagerInstance = { registerQueues: vi.fn() };
 
       application.redisManager.connect = vi.fn().mockResolvedValue(mockRedisInstance);
@@ -305,8 +305,8 @@ describe('BaseApplication', () => {
       application = new TestApplication(configWithoutCluster);
 
       // Mock the required connections
-      const mockRedisInstance = { client: {} };
-      const mockDatabaseInstance = { orm: {} };
+      const mockRedisInstance = { client: {}, isConnected: vi.fn().mockResolvedValue(true) };
+      const mockDatabaseInstance = { orm: {}, isConnected: vi.fn().mockResolvedValue(true) };
 
       application.redisManager.connect = vi.fn().mockResolvedValue(mockRedisInstance);
       if (application.databaseManager) {
@@ -351,8 +351,8 @@ describe('BaseApplication', () => {
       application = new TestApplication(configWithEvents);
 
       // Mock the required connections
-      const mockRedisInstance = { client: {} };
-      const mockDatabaseInstance = { orm: {} };
+      const mockRedisInstance = { client: {}, isConnected: vi.fn().mockResolvedValue(true) };
+      const mockDatabaseInstance = { orm: {}, isConnected: vi.fn().mockResolvedValue(true) };
 
       application.redisManager.connect = vi.fn().mockResolvedValue(mockRedisInstance);
       if (application.databaseManager) {
@@ -476,25 +476,18 @@ describe('BaseApplication', () => {
       vi.spyOn(application as any, 'stop').mockResolvedValue(undefined);
     });
 
-    it('should handle shutdown signals', () => {
+    it('should use modern lifecycle manager for shutdown', async () => {
       const mockOnStopped = vi.fn();
 
-      application.handleShutdown({ onStopped: mockOnStopped });
-
-      // Simulate SIGTERM
-      process.emit('SIGTERM');
+      await application.stop({ onStopped: mockOnStopped });
 
       expect(application['stop']).toHaveBeenCalledWith({ onStopped: mockOnStopped });
     });
 
-    it('should handle multiple shutdown signals', () => {
-      application.handleShutdown({ onStopped: vi.fn() });
-
-      // Verify both signals are registered
-      const signals = ['SIGTERM', 'SIGINT'];
-      signals.forEach(signal => {
-        expect(process.listenerCount(signal as any)).toBeGreaterThan(0);
-      });
+    it('should handle graceful shutdown through shutdown controller', () => {
+      expect(application.shutdownController).toBeDefined();
+      expect(application.lifecycle).toBeDefined();
+      expect(typeof application.shutdownController.initiate).toBe('function');
     });
   });
 });

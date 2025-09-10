@@ -246,68 +246,6 @@ describe('Timing', () => {
     });
   });
 
-  describe('hrtimeToMs (deprecated)', () => {
-    it('should convert hrtime tuple to milliseconds', () => {
-      const hrtime: [number, number] = [2, 500000000]; // 2.5 seconds
-
-      const result = Timing.hrtimeToMs(hrtime);
-
-      expect(result).toBe(2500);
-    });
-
-    it('should handle fractional nanoseconds correctly', () => {
-      const hrtime: [number, number] = [1, 123456789]; // 1.123456789 seconds
-
-      const result = Timing.hrtimeToMs(hrtime);
-
-      expect(result).toBeCloseTo(1123.456789);
-    });
-
-    it('should handle zero values', () => {
-      const hrtime: [number, number] = [0, 0];
-
-      const result = Timing.hrtimeToMs(hrtime);
-
-      expect(result).toBe(0);
-    });
-  });
-
-  describe('msToHrtime (deprecated)', () => {
-    it('should convert milliseconds to hrtime-like format', () => {
-      const milliseconds = 2500; // 2.5 seconds
-
-      const result = Timing.msToHrtime(milliseconds);
-
-      expect(result).toEqual([2, 500000000]);
-    });
-
-    it('should handle fractional milliseconds', () => {
-      const milliseconds = 1123.456789;
-
-      const result = Timing.msToHrtime(milliseconds);
-
-      expect(result[0]).toBe(1);
-      expect(result[1]).toBeCloseTo(123456789);
-    });
-
-    it('should handle zero milliseconds', () => {
-      const milliseconds = 0;
-
-      const result = Timing.msToHrtime(milliseconds);
-
-      expect(result).toEqual([0, 0]);
-    });
-
-    it('should handle small fractional values', () => {
-      const milliseconds = 0.123456;
-
-      const result = Timing.msToHrtime(milliseconds);
-
-      expect(result[0]).toBe(0);
-      expect(result[1]).toBeCloseTo(123456);
-    });
-  });
-
   describe('integration tests', () => {
     it('should work with real timing operations', async () => {
       // This test uses real timing, so we just check the structure

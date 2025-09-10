@@ -11,7 +11,6 @@ import cluster from 'cluster';
 import type { WebServerOptions } from '../webserver.interface.js';
 import type { LifecycleManager } from '../../lifecycle/lifecycle-manager.js';
 import Jwt from '../../auth/jwt.js';
-// import { env } from '../../env';
 
 export interface AuthenticatedUser {
   userId: number;

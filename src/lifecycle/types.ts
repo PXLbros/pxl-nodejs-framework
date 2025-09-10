@@ -13,8 +13,20 @@ export enum LifecyclePhase {
 
 export type LifecycleHook = () => Promise<void> | void;
 
+export type ReadinessCheck = () => Promise<boolean> | boolean;
+
+export interface ReadinessCheckResult {
+  name: string;
+  ready: boolean;
+  error?: Error;
+}
+
 export interface LifecycleConfig {
   gracefulShutdown: {
     timeoutMs: number;
+  };
+  readiness?: {
+    timeoutMs?: number;
+    checkIntervalMs?: number;
   };
 }

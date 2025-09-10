@@ -1,8 +1,7 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import BaseApplication from '../../../src/application/base-application.js';
 import type { ApplicationConfig } from '../../../src/application/base-application.interface.js';
 import { setExitHandler } from '../../../src/lifecycle/index.js';
-import Logger from '../../../src/logger/logger.js';
 
 // Create a concrete implementation for testing
 class TestApplication extends BaseApplication {
@@ -101,26 +100,6 @@ describe('BaseApplication Lifecycle Integration', () => {
     await app.stop();
 
     expect(app.shutdownController.initiate).toHaveBeenCalledWith('manual-stop');
-  });
-
-  it('should handle deprecated handleShutdown method', () => {
-    app = new TestApplication(mockConfig);
-
-    // Spy on Logger warn method
-    const loggerSpy = vi.spyOn(Logger, 'warn').mockImplementation(() => {});
-
-    app.handleShutdown({
-      onStopped: ({ runtime }) => {
-        expect(runtime).toBeGreaterThan(0);
-      },
-    });
-
-    // Should log deprecation warning
-    expect(loggerSpy).toHaveBeenCalledWith({
-      message: 'handleShutdown() is deprecated. Signal handling should be done in the application launcher.',
-    });
-
-    loggerSpy.mockRestore();
   });
 
   it('should expose lifecycle manager properties', () => {

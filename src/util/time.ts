@@ -2,18 +2,6 @@ import type { FormatRelativeTimeOptions, FormatTimeOptions } from './time.interf
 import Timing from './timing.js';
 
 /**
- * Calculate elapsed time in milliseconds using process.hrtime().
- *
- * @deprecated Use calculateElapsedTimeMs() or Timing utilities instead.
- */
-const calculateElapsedTime = ({ startTime }: { startTime: [number, number] }): number => {
-  const endTime = process.hrtime(startTime);
-  const elapsedTime = (endTime[0] * 1e9 + endTime[1]) / 1e6;
-
-  return elapsedTime;
-};
-
-/**
  * Calculate elapsed time in milliseconds using performance.now().
  * More accurate and simpler than hrtime-based timing.
  */
@@ -117,7 +105,6 @@ const formatRelativeTime = ({
 };
 
 export default {
-  calculateElapsedTime,
   calculateElapsedTimeMs,
   formatTime,
   formatRelativeTime,
@@ -128,6 +115,4 @@ export default {
   measure: Timing.measure,
   measureSync: Timing.measureSync,
   duration: Timing.duration,
-  hrtimeToMs: Timing.hrtimeToMs,
-  msToHrtime: Timing.msToHrtime,
 };

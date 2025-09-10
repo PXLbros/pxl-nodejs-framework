@@ -1,4 +1,11 @@
-import { type Disposable, type LifecycleConfig, type LifecycleHook, LifecyclePhase } from './types.js';
+import {
+  type Disposable,
+  type LifecycleConfig,
+  type LifecycleHook,
+  LifecyclePhase,
+  type ReadinessCheck,
+  type ReadinessCheckResult,
+} from './types.js';
 
 export class LifecycleManager {
   private _phase: LifecyclePhase = LifecyclePhase.CREATED;
@@ -14,10 +21,17 @@ export class LifecycleManager {
   private intervals = new Set<NodeJS.Timeout>();
   private timeouts = new Set<NodeJS.Timeout>();
 
+  private readinessChecks = new Map<string, ReadinessCheck>();
+  private _isReady = false;
+
   constructor(config: Partial<LifecycleConfig> = {}) {
     this.config = {
       gracefulShutdown: {
         timeoutMs: config.gracefulShutdown?.timeoutMs ?? 10000,
+      },
+      readiness: {
+        timeoutMs: config.readiness?.timeoutMs ?? 30000,
+        checkIntervalMs: config.readiness?.checkIntervalMs ?? 100,
       },
     };
   }
@@ -28,6 +42,10 @@ export class LifecycleManager {
 
   get isShuttingDown(): boolean {
     return this._phase === LifecyclePhase.STOPPING || this._phase === LifecyclePhase.STOPPED;
+  }
+
+  get isReady(): boolean {
+    return this._isReady && this._phase === LifecyclePhase.RUNNING;
   }
 
   onInit(fn: LifecycleHook): () => void {
@@ -67,6 +85,13 @@ export class LifecycleManager {
     return () => {
       const i = this.shutdownHooks.indexOf(fn);
       if (i >= 0) this.shutdownHooks.splice(i, 1);
+    };
+  }
+
+  addReadinessCheck(name: string, check: ReadinessCheck): () => void {
+    this.readinessChecks.set(name, check);
+    return () => {
+      this.readinessChecks.delete(name);
     };
   }
 
@@ -113,6 +138,14 @@ export class LifecycleManager {
     this._phase = LifecyclePhase.RUNNING;
 
     const errors = await this.executeHooks(this.readyHooks, 'ready');
+
+    // Wait for readiness checks to pass
+    const readinessResult = await this.waitForReadiness();
+    if (readinessResult.errors.length > 0) {
+      errors.push(...readinessResult.errors);
+    }
+    this._isReady = readinessResult.ready;
+
     return { errors };
   }
 
@@ -192,5 +225,79 @@ export class LifecycleManager {
       }
     }
     return errors;
+  }
+
+  private async waitForReadiness(): Promise<{ ready: boolean; errors: unknown[] }> {
+    if (this.readinessChecks.size === 0) {
+      return { ready: true, errors: [] };
+    }
+
+    const timeoutMs = this.config.readiness?.timeoutMs ?? 30000;
+    const checkIntervalMs = this.config.readiness?.checkIntervalMs ?? 100;
+    const startTime = Date.now();
+    const errors: unknown[] = [];
+
+    while (Date.now() - startTime < timeoutMs) {
+      const results = await this.executeReadinessChecks();
+      const allReady = results.every(r => r.ready);
+
+      if (allReady) {
+        return { ready: true, errors };
+      }
+
+      // Collect unique errors from failed checks
+      for (const result of results) {
+        if (!result.ready && result.error) {
+          const errorMessage = result.error.message;
+          if (!errors.some(e => (e as Error)?.message === errorMessage)) {
+            errors.push(result.error);
+          }
+        }
+      }
+
+      // Wait before next check
+      await new Promise(resolve => setTimeout(resolve, checkIntervalMs));
+    }
+
+    return { ready: false, errors: [...errors, new Error('Readiness check timeout exceeded')] };
+  }
+
+  private async executeReadinessChecks(): Promise<ReadinessCheckResult[]> {
+    const checkEntries = Array.from(this.readinessChecks.entries());
+
+    const settledResults = await Promise.allSettled(
+      checkEntries.map(async ([name, check]) => {
+        try {
+          const result = await check();
+          return { name, ready: result };
+        } catch (error) {
+          return { name, ready: false, error: error as Error };
+        }
+      }),
+    );
+
+    return settledResults.map((settledResult, index) => {
+      const checkEntry = checkEntries.at(index);
+      if (!checkEntry) {
+        throw new Error(`Missing check entry at index ${index}`);
+      }
+      const [name] = checkEntry;
+
+      if (settledResult.status === 'fulfilled') {
+        return settledResult.value;
+      }
+
+      return {
+        name,
+        ready: false,
+        error: settledResult.reason as Error,
+      };
+    });
+  }
+
+  async getReadinessStatus(): Promise<{ ready: boolean; checks: ReadinessCheckResult[] }> {
+    const checks = await this.executeReadinessChecks();
+    const ready = this._isReady && this._phase === LifecyclePhase.RUNNING && checks.every(c => c.ready);
+    return { ready, checks };
   }
 }

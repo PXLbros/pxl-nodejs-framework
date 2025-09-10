@@ -102,37 +102,16 @@ export default abstract class BaseApplication {
       gracefulShutdown: {
         timeoutMs: this.shutdownTimeout,
       },
+      readiness: {
+        timeoutMs: 30000,
+        checkIntervalMs: 100,
+      },
     };
     this.lifecycle = new LifecycleManager(lifecycleConfig);
     this.shutdownController = new ShutdownController(this.lifecycle);
 
     // Register shutdown hooks for cleanup
     this.registerShutdownHooks();
-
-    // const schema = Joi.object({
-    //   name: Joi.string().required(),
-
-    //   redis: {
-    //     host: Joi.string().required(),
-    //     port: Joi.number().required(),
-    //     password: Joi.string().allow('').optional(),
-    //   },
-
-    //   database: {
-    //     host: Joi.string().required(),
-    //     port: Joi.number().required(),
-    //     username: Joi.string().required(),
-    //     password: Joi.string().required(),
-    //     databaseName: Joi.string().required(),
-    //   },
-    // });
-
-    // // Validation application constructor props
-    // const validationResult = schema.validate(props);
-
-    // if (validationResult.error) {
-    //   throw new Error(validationResult.error.message);
-    // }
 
     // Initialize Redis manager
     this.redisManager = new RedisManager({
@@ -216,35 +195,10 @@ export default abstract class BaseApplication {
     this.applicationVersion = await this.getApplicationVersion();
 
     const startInstanceOptions: ApplicationStartInstanceOptions = {
-      // onStarted: ({ startupTime }) => {
-      //   if (this.config.log?.startUp) {
-      //     Logger.info('Application started', {
-      //       Name: this.config.name,
-      //       'PXL Framework Version': this.applicationVersion,
-      //       'Startup Time': Time.formatTime({ time: startupTime, format: 's', numDecimals: 2, showUnit: true }),
-      //     });
-      //   }
-
-      //   if (this.config.events?.onStarted) {
-      //     this.config.events.onStarted({ app: this, startupTime });
-      //   }
-      // },
       onStarted: this.onStarted.bind(this),
     };
 
     const stopInstanceOptions: ApplicationStopInstanceOptions = {
-      // onStopped: ({ runtime }) => {
-      //   if (this.config.log?.shutdown) {
-      //     Logger.info('Application stopped', {
-      //       Name: this.config.name,
-      //       'Runtime': Time.formatTime({ time: runtime, format: 's', numDecimals: 2, showUnit: true }),
-      //     });
-      //   }
-
-      //   if (this.config.events?.onStopped) {
-      //     this.config.events.onStopped({ app: this, runtime });
-      //   }
-      // },
       onStopped: this.onStopped.bind(this),
     };
 
@@ -263,10 +217,8 @@ export default abstract class BaseApplication {
       // Start standalone application
       await this.startInstance(startInstanceOptions);
 
-      // Handle standalone application shutdown
-      this.handleShutdown({
-        onStopped: stopInstanceOptions.onStopped,
-      });
+      // Note: Signal handling should be implemented at the application launcher level
+      // The lifecycle manager provides the stop() method for programmatic shutdown
     }
   }
 
@@ -317,6 +269,25 @@ export default abstract class BaseApplication {
       queues: this.config.queue.queues,
     });
 
+    // Register readiness checks for key services
+    this.lifecycle.addReadinessCheck('redis', async () => {
+      try {
+        return await redisInstance.isConnected();
+      } catch {
+        return false;
+      }
+    });
+
+    if (databaseInstance) {
+      this.lifecycle.addReadinessCheck('database', async () => {
+        try {
+          return await databaseInstance.isConnected();
+        } catch {
+          return false;
+        }
+      });
+    }
+
     return {
       redisInstance,
       databaseInstance,
@@ -334,14 +305,6 @@ export default abstract class BaseApplication {
    * Application stopped event
    */
   protected onStopped({ runtime: _runtime }: { runtime: number }): void {}
-
-  /**
-   * Before application stop event (deprecated - now handled by lifecycle hooks)
-   * @deprecated This method is no longer used. Cleanup is handled by registerShutdownHooks()
-   */
-  private async onBeforeStop(): Promise<void> {
-    // This method is deprecated - cleanup is now handled by lifecycle hooks in registerShutdownHooks()
-  }
 
   /**
    * Start application instance
@@ -501,43 +464,6 @@ export default abstract class BaseApplication {
         message: 'Error during graceful shutdown',
       });
       this.finalizeExit({ code: 1, reason: 'graceful-shutdown-error', error });
-    }
-  }
-
-  /**
-   * Handle shutdown - this method is deprecated in favor of proper launcher signal handling
-   * @deprecated Use proper launcher signal handling instead
-   */
-  public handleShutdown({ onStopped }: { onStopped?: ({ runtime }: { runtime: number }) => void }): void {
-    Logger.warn({
-      message: 'handleShutdown() is deprecated. Signal handling should be done in the application launcher.',
-    });
-
-    // Register the onStopped callback with lifecycle if provided
-    if (onStopped) {
-      this.lifecycle.onShutdown(() => {
-        const runtime = process.uptime() * 1000;
-        onStopped({ runtime });
-      });
-    }
-
-    // Backwards compatibility: register basic signal handlers expected by legacy tests
-    // Only register once per instance to avoid accumulating duplicate listeners
-    const signals: NodeJS.Signals[] = ['SIGTERM', 'SIGINT'];
-    if (!(this as any)._legacySignalHandlersAttached) {
-      (this as any)._legacySignalHandlersAttached = true;
-      const handler = (signal: NodeJS.Signals) => {
-        Logger.info({ message: `Received ${signal}, initiating shutdown (deprecated handleShutdown)` });
-        // Fire and forget; internal stop will manage idempotency via shutdownController
-        void this.stop({ onStopped });
-      };
-      for (const signal of signals) {
-        try {
-          process.on(signal, handler);
-        } catch {
-          // Ignore if environment does not support the signal (e.g., Windows SIGTERM behavior)
-        }
-      }
     }
   }
 

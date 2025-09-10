@@ -333,10 +333,6 @@ export default class WebSocketServer extends WebSocketBase {
             clientId: parsedMessage.clientId,
           });
 
-          // this.onClientDisconnect({
-          //   clientId: parsedMessage.clientId,
-          // });
-
           // Remove client from rooms
           this.roomManager.removeClientFromAllRooms({
             clientId: parsedMessage.clientId,
@@ -381,8 +377,6 @@ export default class WebSocketServer extends WebSocketBase {
       case WebSocketRedisSubscriberEvent.QueueJobCompleted: {
         // const parsedMessage = JSON.parse(message);
 
-        // this.sendJobDoneMessage({ type: 'jobCompleted', ...parsedMessage });
-
         break;
       }
       case WebSocketRedisSubscriberEvent.QueueJobError: {
@@ -391,8 +385,6 @@ export default class WebSocketServer extends WebSocketBase {
         // action and data is separate
         // TODO: Instead allow to pass anything
         parsedMessage.data = parsedMessage.error;
-
-        // this.sendJobDoneMessage({ type: 'jobError', ...parsedMessage });
 
         break;
       }
@@ -630,83 +622,7 @@ export default class WebSocketServer extends WebSocketBase {
     if (this.options.disconnectInactiveClients?.enabled && this.options.disconnectInactiveClients.log) {
       log('Checking inactive clients...');
     }
-
-    // const numInactiveClients = 0;
-
-    // this.connectedClients.forEach(
-    //   (clientInfo, clientId) => {
-    //     if (
-    //       this.options.disconnectInactiveClients?.enabled &&
-    //       typeof this.options.disconnectInactiveClients
-    //         .inactiveTime === 'number'
-    //     ) {
-    //       const timeUntilInactive = Math.max(
-    //         0,
-    //         this.options.disconnectInactiveClients
-    //           .inactiveTime -
-    //           (now - clientInfo.lastActivity),
-    //       );
-    //       const isClientInactive = timeUntilInactive <= 0;
-
-    //       if (this.options.disconnectInactiveClients.log) {
-    //         log('Checking client activity', {
-    //           ID: clientId,
-    //           'Time Until Inactive': Time.formatTime({
-    //             time: timeUntilInactive,
-    //             format: 'auto',
-    //           }),
-    //         });
-    //       }
-
-    //       if (isClientInactive) {
-    //         this.disconnectClient({ clientId });
-
-    //         numInactiveClients++;
-    //       }
-    //     }
-    //   },
-    // );
-
-    // if (
-    //   this.options.disconnectInactiveClients?.enabled &&
-    //   this.options.disconnectInactiveClients.log
-    // ) {
-    //   if (numInactiveClients > 0) {
-    //     log('Inactive clients disconnected', {
-    //       Count: numInactiveClients,
-    //     });
-    //   } else {
-    //     log('No inactive clients');
-    //   }
-    // }
   }
-
-  // private disconnectClient({
-  //   clientId,
-  // }: {
-  //   clientId: string;
-  // }) {
-  //   const clientInfo = this.connectedClients.get(clientId);
-
-  //   if (clientInfo?.ws) {
-  //     const connectedTime =
-  //       Date.now() - clientInfo.lastActivity;
-
-  //     clientInfo.ws.close();
-
-  //     Logger.info(
-  //       'WebSocket client was disconnected due to inactivity',
-  //       {
-  //         ID: clientId,
-  //         Worker: this.workerId,
-  //         'Time Connected': Time.formatTime({
-  //           time: connectedTime,
-  //           format: 's',
-  //         }),
-  //       },
-  //     );
-  //   }
-  // }
 
   public broadcastToAllClients({
     data,

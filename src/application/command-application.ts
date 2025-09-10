@@ -138,8 +138,8 @@ export default class CommandApplication extends BaseApplication {
   }
 
   private stopCommand(): void {
-    // Use existing graceful shutdown mechanism instead of self-termination
-    this.handleShutdown({ onStopped: this.onStopped.bind(this) });
+    // Use modern lifecycle management for graceful shutdown
+    void this.stop({ onStopped: this.onStopped.bind(this) });
   }
 
   protected stopCallback(): void {

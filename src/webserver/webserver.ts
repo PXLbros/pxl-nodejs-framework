@@ -42,6 +42,7 @@ class WebServer {
   public fastifyServer: FastifyInstance;
 
   private lifecycleManager: LifecycleManager;
+  private _isReady = false;
 
   constructor(params: WebServerConstructorParams & { lifecycleManager: LifecycleManager }) {
     // Define default options
@@ -149,7 +150,7 @@ class WebServer {
       await new Promise(resolve => setTimeout(resolve, this.options.debug?.simulateSlowConnection?.delay));
     }
 
-    const pathsToIgnore = ['/health', '/health/live', '/health/ready'];
+    const pathsToIgnore = ['/health/live', '/health/ready'];
 
     if (pathsToIgnore.includes(request.url) || request.method === 'OPTIONS') {
       // ...
@@ -258,15 +259,8 @@ class WebServer {
       extensions: ['.ts', '.js'],
     });
 
-    // Add health check route
+    // Add health check routes
     this.routes.push(
-      {
-        type: WebServerRouteType.Default,
-        method: 'GET',
-        path: '/health',
-        controller: WebServerHealthController,
-        action: 'health',
-      },
       {
         type: WebServerRouteType.Default,
         method: 'GET',
@@ -492,8 +486,10 @@ class WebServer {
         host: this.options.host,
         port: this.options.port,
       });
+      this._isReady = true;
     } catch (error) {
       Logger.error({ error });
+      throw error;
     }
   }
 
@@ -501,8 +497,16 @@ class WebServer {
    * Stop web server.
    */
   public async stop(): Promise<void> {
+    this._isReady = false;
     // Close Fastify server
     await this.fastifyServer.close();
+  }
+
+  /**
+   * Check if web server is ready to accept traffic.
+   */
+  public isReady(): boolean {
+    return this._isReady && this.fastifyServer.server?.listening === true;
   }
 
   /**

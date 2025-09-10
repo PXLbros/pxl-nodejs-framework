@@ -56,8 +56,6 @@ export default class WebApplication extends BaseApplication {
       // Initialize web server
       this.webServer = new WebServer({
         applicationConfig: this.config,
-
-        // config: this.config.webServer,
         options: {
           host: this.config.webServer.host,
           port: this.config.webServer.port,
@@ -85,8 +83,16 @@ export default class WebApplication extends BaseApplication {
       await this.webServer.load();
 
       // Start web server
-      // await this.webServer.start({ webSocketServer: this.webSocketServer?.server });
       await this.webServer.start();
+
+      // Register readiness check for web server
+      this.lifecycle.addReadinessCheck('webserver', async () => {
+        try {
+          return this.webServer?.isReady() ?? false;
+        } catch {
+          return false;
+        }
+      });
     }
 
     if (this.config.webSocket?.enabled) {

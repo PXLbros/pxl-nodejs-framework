@@ -105,28 +105,6 @@ class Timing {
   static duration(startTime: number, endTime: number): number {
     return endTime - startTime;
   }
-
-  /**
-   * Convert hrtime tuple to milliseconds with decimal precision.
-   * Utility for migrating from process.hrtime() usage.
-   *
-   * @deprecated Use performance.now() based methods instead
-   */
-  static hrtimeToMs(hrtime: [number, number]): number {
-    return hrtime[0] * 1000 + hrtime[1] / 1e6;
-  }
-
-  /**
-   * Convert milliseconds with decimal precision to hrtime-like format.
-   * Utility for backward compatibility.
-   *
-   * @deprecated Use performance.now() based methods instead
-   */
-  static msToHrtime(milliseconds: number): [number, number] {
-    const seconds = Math.floor(milliseconds / 1000);
-    const nanoseconds = Math.round((milliseconds % 1000) * 1e6);
-    return [seconds, nanoseconds];
-  }
 }
 
 export default Timing;
