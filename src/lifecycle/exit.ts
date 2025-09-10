@@ -9,6 +9,14 @@ export interface ExitOutcome {
 type ExitHandler = (outcome: ExitOutcome) => void;
 
 let handler: ExitHandler = outcome => {
+  process.exit(outcome.code);
+};
+
+export function setExitHandler(next: ExitHandler) {
+  handler = next;
+}
+
+export function requestExit(outcome: ExitOutcome) {
   const nodeEnv = process.env.NODE_ENV ?? '';
   const isTestEnv =
     nodeEnv.toLowerCase() === 'test' ||
@@ -22,14 +30,7 @@ let handler: ExitHandler = outcome => {
     console.info(`[exit] (test env) code=${outcome.code} reason=${outcome.reason}`);
     return;
   }
-  process.exit(outcome.code);
-};
 
-export function setExitHandler(next: ExitHandler) {
-  handler = next;
-}
-
-export function requestExit(outcome: ExitOutcome) {
   try {
     handler(outcome);
   } catch (err) {

@@ -144,6 +144,9 @@ describe('BaseApplication', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    // Clean up any event listeners that may have been added during tests
+    process.removeAllListeners('uncaughtException');
+    process.removeAllListeners('unhandledRejection');
   });
 
   describe('constructor', () => {
@@ -415,6 +418,7 @@ describe('BaseApplication', () => {
     it('should handle unhandled promise rejections', () => {
       const error = new Error('Unhandled rejection');
       const promise = Promise.reject(error);
+      promise.catch(() => {}); // Prevent actual unhandled rejection
 
       // Trigger the unhandled rejection handler
       process.emit('unhandledRejection', error, promise);
@@ -429,6 +433,7 @@ describe('BaseApplication', () => {
     it('should handle string rejections', () => {
       const reason = 'String error';
       const promise = Promise.reject(reason);
+      promise.catch(() => {}); // Prevent actual unhandled rejection
 
       // Trigger the unhandled rejection handler
       process.emit('unhandledRejection', reason, promise);

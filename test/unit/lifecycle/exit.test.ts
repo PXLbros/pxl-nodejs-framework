@@ -1,8 +1,10 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { requestExit, setExitHandler } from '../../../src/lifecycle/exit.js';
 
 describe('Exit Utilities', () => {
   const originalExit = process.exit;
+  const originalEnv = process.env;
+  const originalArgv = process.argv;
 
   beforeEach(() => {
     // Reset to default handler before each test
@@ -12,10 +14,24 @@ describe('Exit Utilities', () => {
 
     // Mock process.exit
     process.exit = vi.fn() as any;
+
+    // Mock environment to not be in test mode for these tests
+    process.env = { ...originalEnv };
+    delete process.env.NODE_ENV;
+    delete process.env.VITEST;
+    delete process.env.VITEST_WORKER_ID;
+
+    // Mock process.argv to not contain vitest
+    process.argv = ['node', 'test-script.js'];
+
+    // Mock globalThis to not have afterAll function
+    (globalThis as any).afterAll = undefined;
   });
 
   afterEach(() => {
     process.exit = originalExit;
+    process.env = originalEnv;
+    process.argv = originalArgv;
   });
 
   describe('requestExit', () => {

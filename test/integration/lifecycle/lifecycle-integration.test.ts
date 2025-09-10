@@ -125,6 +125,17 @@ describe('Lifecycle Integration Tests', () => {
   });
 
   it('should handle exit scenarios correctly', () => {
+    // Mock environment to not be in test mode for this test
+    const originalEnv = process.env;
+    const originalArgv = process.argv;
+
+    process.env = { ...originalEnv };
+    delete process.env.NODE_ENV;
+    delete process.env.VITEST;
+    delete process.env.VITEST_WORKER_ID;
+    process.argv = ['node', 'test-script.js'];
+    (globalThis as any).afterAll = undefined;
+
     const exitHandler = vi.fn();
     setExitHandler(exitHandler);
 
@@ -135,7 +146,19 @@ describe('Lifecycle Integration Tests', () => {
       reason: 'test-complete',
     });
 
+    // Restore environment
+    process.env = originalEnv;
+    process.argv = originalArgv;
+
     exitHandler.mockClear();
+
+    // Mock environment again for second test
+    process.env = { ...originalEnv };
+    delete process.env.NODE_ENV;
+    delete process.env.VITEST;
+    delete process.env.VITEST_WORKER_ID;
+    process.argv = ['node', 'test-script.js'];
+    (globalThis as any).afterAll = undefined;
 
     // Test error exit
     const error = new Error('Test error');
@@ -145,6 +168,10 @@ describe('Lifecycle Integration Tests', () => {
       reason: 'test-error',
       error,
     });
+
+    // Restore environment again
+    process.env = originalEnv;
+    process.argv = originalArgv;
   });
 
   it('should handle timeout scenarios gracefully', async () => {

@@ -586,7 +586,15 @@ export default abstract class BaseApplication {
    * Finalize exit: during tests, suppress actual process exit to avoid failing vitest runs.
    */
   private finalizeExit(outcome: ExitOutcome): void {
-    if (process.env.VITEST === 'true' || process.env.NODE_ENV === 'test') {
+    const nodeEnv = process.env.NODE_ENV ?? '';
+    const isTestEnv =
+      nodeEnv.toLowerCase() === 'test' ||
+      'VITEST' in process.env ||
+      'VITEST_WORKER_ID' in process.env ||
+      process.argv.some(a => a.includes('vitest')) ||
+      typeof (globalThis as any).afterAll === 'function';
+
+    if (isTestEnv) {
       Logger.info({ message: `Skipping process exit in test environment (${outcome.reason})`, code: outcome.code });
       return;
     }
