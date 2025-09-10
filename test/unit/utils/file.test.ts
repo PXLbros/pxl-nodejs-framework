@@ -81,8 +81,7 @@ describe('File', () => {
         .mockReturnValueOnce(fileStats as any) // file1.txt
         .mockReturnValueOnce(dirStats as any); // subdir
 
-      mockFs.readdirSync.mockReturnValueOnce(['file1.txt', 'subdir'] as any)
-        .mockReturnValueOnce([] as any); // Empty subdir
+      mockFs.readdirSync.mockReturnValueOnce(['file1.txt', 'subdir'] as any).mockReturnValueOnce([] as any); // Empty subdir
 
       File.copySync('/src', '/dest');
 

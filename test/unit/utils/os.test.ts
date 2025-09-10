@@ -19,15 +19,15 @@ describe('OS', () => {
             family: 'IPv4',
             mac: '00:11:22:33:44:55',
             internal: false,
-            cidr: '192.168.1.100/24'
-          }
-        ]
+            cidr: '192.168.1.100/24',
+          },
+        ],
       };
 
       // Mock crypto hash
       const mockHash = {
         update: vi.fn().mockReturnThis(),
-        digest: vi.fn().mockReturnValue('mocked-hash-value')
+        digest: vi.fn().mockReturnValue('mocked-hash-value'),
       };
 
       vi.mocked(os.networkInterfaces).mockReturnValue(mockNetworkInterfaces);
@@ -51,8 +51,8 @@ describe('OS', () => {
             family: 'IPv4',
             mac: '00:00:00:00:00:00',
             internal: true,
-            cidr: '127.0.0.1/8'
-          }
+            cidr: '127.0.0.1/8',
+          },
         ],
         eth0: [
           {
@@ -61,8 +61,8 @@ describe('OS', () => {
             family: 'IPv4',
             mac: 'aa:bb:cc:dd:ee:ff',
             internal: false,
-            cidr: '192.168.1.100/24'
-          }
+            cidr: '192.168.1.100/24',
+          },
         ],
         wlan0: [
           {
@@ -71,14 +71,14 @@ describe('OS', () => {
             family: 'IPv4',
             mac: '11:22:33:44:55:66',
             internal: false,
-            cidr: '192.168.1.101/24'
-          }
-        ]
+            cidr: '192.168.1.101/24',
+          },
+        ],
       };
 
       const mockHash = {
         update: vi.fn().mockReturnThis(),
-        digest: vi.fn().mockReturnValue('hash-from-first-mac')
+        digest: vi.fn().mockReturnValue('hash-from-first-mac'),
       };
 
       vi.mocked(os.networkInterfaces).mockReturnValue(mockNetworkInterfaces);
@@ -99,9 +99,9 @@ describe('OS', () => {
             netmask: '255.255.255.0',
             family: 'IPv4',
             internal: false,
-            cidr: '10.0.0.1/24'
+            cidr: '10.0.0.1/24',
             // No mac property
-          }
+          },
         ],
         eth0: [
           {
@@ -110,14 +110,14 @@ describe('OS', () => {
             family: 'IPv4',
             mac: 'valid-mac-address',
             internal: false,
-            cidr: '192.168.1.100/24'
-          }
-        ]
+            cidr: '192.168.1.100/24',
+          },
+        ],
       };
 
       const mockHash = {
         update: vi.fn().mockReturnThis(),
-        digest: vi.fn().mockReturnValue('hash-from-valid-mac')
+        digest: vi.fn().mockReturnValue('hash-from-valid-mac'),
       };
 
       vi.mocked(os.networkInterfaces).mockReturnValue(mockNetworkInterfaces);
@@ -135,7 +135,7 @@ describe('OS', () => {
 
       const mockHash = {
         update: vi.fn().mockReturnThis(),
-        digest: vi.fn().mockReturnValue('hash-from-empty-mac')
+        digest: vi.fn().mockReturnValue('hash-from-empty-mac'),
       };
 
       vi.mocked(os.networkInterfaces).mockReturnValue(mockNetworkInterfaces);
@@ -150,12 +150,12 @@ describe('OS', () => {
 
     it('should handle null network interface details', () => {
       const mockNetworkInterfaces = {
-        eth0: null
+        eth0: null,
       };
 
       const mockHash = {
         update: vi.fn().mockReturnThis(),
-        digest: vi.fn().mockReturnValue('hash-from-null-interface')
+        digest: vi.fn().mockReturnValue('hash-from-null-interface'),
       };
 
       vi.mocked(os.networkInterfaces).mockReturnValue(mockNetworkInterfaces as any);

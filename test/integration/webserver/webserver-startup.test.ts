@@ -39,13 +39,13 @@ describe('WebServer Startup Integration', () => {
         port: testPort,
         cors: { enabled: false },
         log: { startUp: false },
-        debug: { printRoutes: false }
+        debug: { printRoutes: false },
       },
       routes: [],
       redisInstance: mockRedisInstance,
       databaseInstance: mockDatabaseManager.getInstance(),
       queueManager: mockQueueManager,
-      eventManager: {} as any // Mock event manager
+      eventManager: {} as any, // Mock event manager
     });
 
     // Load and start the web server
@@ -57,7 +57,7 @@ describe('WebServer Startup Integration', () => {
 
     // Test that server is responding
     const response = await testServerRequest(testPort, '/');
-    
+
     // Server should respond (even if with 404, it means it's running)
     expect([200, 404]).toContain(response.status);
 
@@ -70,7 +70,7 @@ describe('WebServer Startup Integration', () => {
     if (!webServer) {
       // Create server if not already created in previous test
       testPort = getTestPort();
-      
+
       const applicationConfig = {
         name: 'test-web-app',
         instanceId: 'test-instance',
@@ -83,13 +83,13 @@ describe('WebServer Startup Integration', () => {
           host: '127.0.0.1',
           port: testPort,
           cors: { enabled: false },
-          log: { startUp: false }
+          log: { startUp: false },
         },
         routes: [],
         redisInstance: mockRedisInstance,
         databaseInstance: mockDatabaseManager.getInstance(),
         queueManager: mockQueueManager,
-        eventManager: {} as any
+        eventManager: {} as any,
       });
 
       await webServer.load();
@@ -106,7 +106,7 @@ describe('WebServer Startup Integration', () => {
 
   it('should handle multiple start/stop cycles', async () => {
     const port = getTestPort();
-    
+
     const applicationConfig = {
       name: 'test-web-app-cycles',
       instanceId: 'test-instance-cycles',
@@ -119,23 +119,23 @@ describe('WebServer Startup Integration', () => {
         host: '127.0.0.1',
         port: port,
         cors: { enabled: false },
-        log: { startUp: false }
+        log: { startUp: false },
       },
       routes: [],
       redisInstance: mockRedisInstance,
       databaseInstance: mockDatabaseManager.getInstance(),
       queueManager: mockQueueManager,
-      eventManager: {} as any
+      eventManager: {} as any,
     });
 
     // First cycle
     await testWebServer.load();
     await testWebServer.start();
     await waitForServer(port, 10000);
-    
+
     let response = await testServerRequest(port);
     expect([200, 404]).toContain(response.status);
-    
+
     await testWebServer.stop();
 
     // Verify stopped
@@ -148,22 +148,22 @@ describe('WebServer Startup Integration', () => {
         host: '127.0.0.1',
         port: port,
         cors: { enabled: false },
-        log: { startUp: false }
+        log: { startUp: false },
       },
       routes: [],
       redisInstance: mockRedisInstance,
       databaseInstance: mockDatabaseManager.getInstance(),
       queueManager: mockQueueManager,
-      eventManager: {} as any
+      eventManager: {} as any,
     });
 
     await testWebServer2.load();
     await testWebServer2.start();
     await waitForServer(port, 10000);
-    
+
     response = await testServerRequest(port);
     expect([200, 404]).toContain(response.status);
-    
+
     await testWebServer2.stop();
   }, 30000);
 });

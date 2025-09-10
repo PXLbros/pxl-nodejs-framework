@@ -6,7 +6,7 @@ describe('Time', () => {
     it('should calculate elapsed time correctly', () => {
       const startTime = process.hrtime();
       const result = Time.calculateElapsedTime({ startTime });
-      
+
       expect(result).toBeGreaterThan(0);
       expect(typeof result).toBe('number');
     });
@@ -14,15 +14,15 @@ describe('Time', () => {
     it('should calculate elapsed time with specific hrtime values', () => {
       // Mock a start time of [1, 500000000] (1 second + 500ms)
       const startTime: [number, number] = [1, 500000000];
-      
+
       // Mock process.hrtime to return [2, 0] (2 seconds elapsed from start)
       vi.spyOn(process, 'hrtime').mockReturnValue([0, 500000000]);
-      
+
       const result = Time.calculateElapsedTime({ startTime });
-      
+
       // Should return 500ms (0.5 seconds * 1000)
       expect(result).toBe(500);
-      
+
       vi.restoreAllMocks();
     });
   });
@@ -85,19 +85,19 @@ describe('Time', () => {
 
     it('should sleep for specified seconds', async () => {
       const sleepPromise = Time.sleep({ seconds: 2 });
-      
+
       // Fast-forward time by 2 seconds
       vi.advanceTimersByTime(2000);
-      
+
       await expect(sleepPromise).resolves.toBeUndefined();
     });
 
     it('should handle fractional seconds', async () => {
       const sleepPromise = Time.sleep({ seconds: 0.5 });
-      
+
       // Fast-forward time by 500ms
       vi.advanceTimersByTime(500);
-      
+
       await expect(sleepPromise).resolves.toBeUndefined();
     });
   });
@@ -162,7 +162,7 @@ describe('Time', () => {
     it('should use current date as default base', () => {
       const now = new Date();
       const pastDate = new Date(now.getTime() - 60000); // 1 minute ago
-      
+
       const result = Time.formatRelativeTime({ date: pastDate });
       expect(result).toBe('1 minute ago');
     });

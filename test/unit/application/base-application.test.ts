@@ -83,11 +83,11 @@ describe('BaseApplication', () => {
       redis: {
         host: 'localhost',
         port: 6379,
-        password: 'redis-pass'
+        password: 'redis-pass',
       },
       queue: {
         queues: [],
-        processorsDirectory: '/test/processors'
+        processorsDirectory: '/test/processors',
       },
       database: {
         enabled: true,
@@ -96,8 +96,8 @@ describe('BaseApplication', () => {
         username: 'dbuser',
         password: 'dbpass',
         databaseName: 'testdb',
-        entitiesDirectory: '/test/entities'
-      }
+        entitiesDirectory: '/test/entities',
+      },
     };
 
     // Mock OS functions
@@ -115,20 +115,29 @@ describe('BaseApplication', () => {
     mockExistsSync.mockReturnValue(true);
 
     // Mock managers
-    mockRedisManager.mockImplementation(() => ({
-      connect: vi.fn(),
-      disconnect: vi.fn()
-    }) as any);
+    mockRedisManager.mockImplementation(
+      () =>
+        ({
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        }) as any,
+    );
 
     mockCacheManager.mockImplementation(() => ({}) as any);
-    mockDatabaseManager.mockImplementation(() => ({
-      connect: vi.fn(),
-      disconnect: vi.fn()
-    }) as any);
+    mockDatabaseManager.mockImplementation(
+      () =>
+        ({
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        }) as any,
+    );
 
-    mockQueueManager.mockImplementation(() => ({
-      registerQueues: vi.fn()
-    }) as any);
+    mockQueueManager.mockImplementation(
+      () =>
+        ({
+          registerQueues: vi.fn(),
+        }) as any,
+    );
 
     mockPerformanceMonitor.initialize.mockReturnValue({} as any);
   });
@@ -147,11 +156,11 @@ describe('BaseApplication', () => {
         applicationConfig: mockConfig,
         host: 'localhost',
         port: 6379,
-        password: 'redis-pass'
+        password: 'redis-pass',
       });
       expect(mockCacheManager).toHaveBeenCalledWith({
         applicationConfig: mockConfig,
-        redisManager: expect.any(Object)
+        redisManager: expect.any(Object),
       });
     });
 
@@ -165,7 +174,7 @@ describe('BaseApplication', () => {
         username: 'dbuser',
         password: 'dbpass',
         databaseName: 'testdb',
-        entitiesDirectory: '/test/entities'
+        entitiesDirectory: '/test/entities',
       });
     });
 
@@ -174,8 +183,8 @@ describe('BaseApplication', () => {
         ...mockConfig,
         database: {
           ...mockConfig.database!,
-          entitiesDirectory: undefined
-        }
+          entitiesDirectory: undefined,
+        },
       };
 
       application = new TestApplication(configWithoutEntities);
@@ -183,8 +192,8 @@ describe('BaseApplication', () => {
       expect(mockJoin).toHaveBeenCalledWith('/test/root', 'src', 'database', 'entities');
       expect(mockDatabaseManager).toHaveBeenCalledWith(
         expect.objectContaining({
-          entitiesDirectory: '/test/root/src/database/entities'
-        })
+          entitiesDirectory: '/test/root/src/database/entities',
+        }),
       );
     });
 
@@ -192,7 +201,7 @@ describe('BaseApplication', () => {
       mockExistsSync.mockReturnValue(false);
 
       expect(() => new TestApplication(mockConfig)).toThrow(
-        'Database entities directory not found (Path: /test/entities)'
+        'Database entities directory not found (Path: /test/entities)',
       );
     });
 
@@ -201,8 +210,8 @@ describe('BaseApplication', () => {
         ...mockConfig,
         database: {
           ...mockConfig.database!,
-          enabled: false
-        }
+          enabled: false,
+        },
       };
 
       application = new TestApplication(configWithoutDb);
@@ -242,7 +251,7 @@ describe('BaseApplication', () => {
       mockReadFileSync.mockReturnValue('{"version": "1.2.3"}');
 
       application = new TestApplication(mockConfig);
-      
+
       // First call
       await application.getApplicationVersion();
       // Second call
@@ -257,9 +266,7 @@ describe('BaseApplication', () => {
 
       application = new TestApplication(mockConfig);
 
-      await expect(application.getApplicationVersion()).rejects.toThrow(
-        'Application version not found'
-      );
+      await expect(application.getApplicationVersion()).rejects.toThrow('Application version not found');
     });
 
     it('should throw error if package.json is invalid JSON', async () => {
@@ -274,10 +281,10 @@ describe('BaseApplication', () => {
   describe('start', () => {
     beforeEach(() => {
       application = new TestApplication(mockConfig);
-      
+
       // Mock process.hrtime
       vi.spyOn(process, 'hrtime').mockReturnValue([1, 500000000]);
-      
+
       // Mock version
       mockReadFileSync.mockReturnValue('{"version": "1.0.0"}');
       mockFileURLToPath.mockReturnValue('/test/src/application/base-application.js');
@@ -305,11 +312,11 @@ describe('BaseApplication', () => {
       delete configWithoutCluster.cluster;
 
       application = new TestApplication(configWithoutCluster);
-      
+
       // Mock the required connections
       const mockRedisInstance = { client: {} };
       const mockDatabaseInstance = { orm: {} };
-      
+
       application.redisManager.connect = vi.fn().mockResolvedValue(mockRedisInstance);
       if (application.databaseManager) {
         application.databaseManager.connect = vi.fn().mockResolvedValue(mockDatabaseInstance);
@@ -326,14 +333,14 @@ describe('BaseApplication', () => {
         ...mockConfig,
         cluster: {
           enabled: true,
-          workers: 2
-        }
+          workers: 2,
+        },
       };
 
       application = new TestApplication(configWithCluster);
 
       const mockClusterManagerInstance = {
-        start: vi.fn()
+        start: vi.fn(),
       };
       mockClusterManager.mockImplementation(() => mockClusterManagerInstance as any);
 
@@ -342,7 +349,7 @@ describe('BaseApplication', () => {
       expect(mockClusterManager).toHaveBeenCalledWith({
         config: configWithCluster.cluster,
         startApplicationCallback: expect.any(Function),
-        stopApplicationCallback: expect.any(Function)
+        stopApplicationCallback: expect.any(Function),
       });
       expect(mockClusterManagerInstance.start).toHaveBeenCalled();
     });
@@ -352,8 +359,8 @@ describe('BaseApplication', () => {
         ...mockConfig,
         event: {
           enabled: true,
-          events: []
-        }
+          events: [],
+        },
       };
 
       application = new TestApplication(configWithEvents);
@@ -361,14 +368,14 @@ describe('BaseApplication', () => {
       // Mock the required connections
       const mockRedisInstance = { client: {} };
       const mockDatabaseInstance = { orm: {} };
-      
+
       application.redisManager.connect = vi.fn().mockResolvedValue(mockRedisInstance);
       if (application.databaseManager) {
         application.databaseManager.connect = vi.fn().mockResolvedValue(mockDatabaseInstance);
       }
 
       const mockEventManagerInstance = {
-        load: vi.fn()
+        load: vi.fn(),
       };
       mockEventManager.mockImplementation(() => mockEventManagerInstance as any);
 
@@ -379,7 +386,7 @@ describe('BaseApplication', () => {
         options: configWithEvents.event,
         events: [],
         redisInstance: mockRedisInstance,
-        databaseInstance: mockDatabaseInstance
+        databaseInstance: mockDatabaseInstance,
       });
       expect(mockEventManagerInstance.load).toHaveBeenCalled();
     });
@@ -388,48 +395,48 @@ describe('BaseApplication', () => {
   describe('global error handlers', () => {
     beforeEach(() => {
       application = new TestApplication(mockConfig);
-      
+
       // Mock the stop method
       vi.spyOn(application as any, 'stop').mockResolvedValue(undefined);
     });
 
     it('should handle uncaught exceptions', () => {
       const error = new Error('Uncaught error');
-      
+
       // Trigger the uncaught exception handler
       process.emit('uncaughtException', error);
 
       expect(mockLogger.error).toHaveBeenCalledWith({
         error,
-        message: 'Uncaught Exception'
+        message: 'Uncaught Exception',
       });
     });
 
     it('should handle unhandled promise rejections', () => {
       const error = new Error('Unhandled rejection');
       const promise = Promise.reject(error);
-      
+
       // Trigger the unhandled rejection handler
       process.emit('unhandledRejection', error, promise);
 
       expect(mockLogger.error).toHaveBeenCalledWith({
         error,
         message: 'Unhandled Rejection',
-        meta: { promise }
+        meta: { promise },
       });
     });
 
     it('should handle string rejections', () => {
       const reason = 'String error';
       const promise = Promise.reject(reason);
-      
+
       // Trigger the unhandled rejection handler
       process.emit('unhandledRejection', reason, promise);
 
       expect(mockLogger.error).toHaveBeenCalledWith({
         error: expect.any(Error),
         message: 'Unhandled Rejection',
-        meta: { promise }
+        meta: { promise },
       });
     });
   });
@@ -445,8 +452,8 @@ describe('BaseApplication', () => {
           logSlowOperations: true,
           logAllOperations: false,
           reportInterval: 60000,
-          reportFormat: 'detailed' as const
-        }
+          reportFormat: 'detailed' as const,
+        },
       };
 
       application = new TestApplication(configWithPerformance);
@@ -456,7 +463,7 @@ describe('BaseApplication', () => {
         thresholds: { slow: 1000 },
         maxMetricsHistory: 100,
         logSlowOperations: true,
-        logAllOperations: false
+        logAllOperations: false,
       });
     });
 
@@ -464,8 +471,8 @@ describe('BaseApplication', () => {
       const configWithoutPerformance = {
         ...mockConfig,
         performanceMonitoring: {
-          enabled: false
-        }
+          enabled: false,
+        },
       };
 
       application = new TestApplication(configWithoutPerformance);
@@ -477,14 +484,14 @@ describe('BaseApplication', () => {
   describe('shutdown handling', () => {
     beforeEach(() => {
       application = new TestApplication(mockConfig);
-      
+
       // Mock the stop method
       vi.spyOn(application as any, 'stop').mockResolvedValue(undefined);
     });
 
     it('should handle shutdown signals', () => {
       const mockOnStopped = vi.fn();
-      
+
       application.handleShutdown({ onStopped: mockOnStopped });
 
       // Simulate SIGTERM

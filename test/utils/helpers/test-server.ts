@@ -10,45 +10,45 @@ export function createTestWebApplicationConfig(overrides: Partial<WebApplication
     name: 'test-web-app',
     instanceId: 'test-instance',
     rootDirectory: process.cwd(),
-    
+
     // Redis configuration (mocked)
-    redis: { 
-      host: 'localhost', 
-      port: 6379 
+    redis: {
+      host: 'localhost',
+      port: 6379,
     },
-    
+
     // Queue configuration (minimal)
-    queue: { 
+    queue: {
       processorsDirectory: '/tmp/test-processors',
       queues: [],
-      log: {}
+      log: {},
     },
-    
+
     // Logging configuration
-    log: { 
-      startUp: false, 
-      shutdown: false 
+    log: {
+      startUp: false,
+      shutdown: false,
     },
-    
+
     // Performance monitoring
-    performanceMonitoring: { 
-      enabled: false 
+    performanceMonitoring: {
+      enabled: false,
     },
-    
+
     // Web server configuration
     webServer: {
       enabled: true,
       port: testPort,
       host: '127.0.0.1',
-      cors: { 
-        enabled: false 
+      cors: {
+        enabled: false,
       },
       log: {
-        startUp: false
+        startUp: false,
       },
       debug: {
-        printRoutes: false
-      }
+        printRoutes: false,
+      },
     },
   };
 
@@ -63,7 +63,7 @@ export async function testServerRequest(port: number, path: string = '/'): Promi
     const response = await fetch(`http://127.0.0.1:${port}${path}`);
     return {
       status: response.status,
-      ok: response.ok
+      ok: response.ok,
     };
   } catch (error) {
     throw new Error(`Failed to connect to server on port ${port}: ${error}`);
@@ -75,7 +75,7 @@ export async function testServerRequest(port: number, path: string = '/'): Promi
  */
 export async function waitForServer(port: number, timeoutMs: number = 5000, intervalMs: number = 100): Promise<void> {
   const startTime = Date.now();
-  
+
   while (Date.now() - startTime < timeoutMs) {
     try {
       await testServerRequest(port);
@@ -85,7 +85,7 @@ export async function waitForServer(port: number, timeoutMs: number = 5000, inte
       await new Promise(resolve => setTimeout(resolve, intervalMs));
     }
   }
-  
+
   throw new Error(`Server on port ${port} did not become ready within ${timeoutMs}ms`);
 }
 

@@ -20,7 +20,7 @@ describe('DatabaseManager', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     mockOptions = {
       applicationConfig: {
         name: 'test-app',
@@ -29,19 +29,19 @@ describe('DatabaseManager', () => {
         redis: {
           host: 'localhost',
           port: 6379,
-          password: ''
+          password: '',
         },
         queue: {
           queues: [],
-          processorsDirectory: '/test/processors'
-        }
+          processorsDirectory: '/test/processors',
+        },
       },
       host: 'localhost',
       port: 5432,
       username: 'testuser',
       password: 'testpass',
       databaseName: 'testdb',
-      entitiesDirectory: '/test/entities'
+      entitiesDirectory: '/test/entities',
     };
 
     databaseManager = new DatabaseManager(mockOptions);
@@ -55,14 +55,14 @@ describe('DatabaseManager', () => {
 
   describe('connect', () => {
     it('should connect to database and return DatabaseInstance', async () => {
-      const mockOrm = { 
-        em: { 
-          fork: vi.fn() 
+      const mockOrm = {
+        em: {
+          fork: vi.fn(),
         },
-        close: vi.fn()
+        close: vi.fn(),
       };
       const mockInstance = {
-        disconnect: vi.fn()
+        disconnect: vi.fn(),
       };
 
       mockMikroORM.init.mockResolvedValue(mockOrm as any);
@@ -74,7 +74,7 @@ describe('DatabaseManager', () => {
       expect(mockDatabaseInstance).toHaveBeenCalledWith({
         databaseManager,
         applicationConfig: mockOptions.applicationConfig,
-        orm: mockOrm
+        orm: mockOrm,
       });
       expect(result).toBe(mockInstance);
     });
@@ -85,10 +85,8 @@ describe('DatabaseManager', () => {
       const mockInstance1 = { disconnect: vi.fn().mockResolvedValue(undefined) };
       const mockInstance2 = { disconnect: vi.fn().mockResolvedValue(undefined) };
 
-      mockMikroORM.init
-        .mockResolvedValueOnce(mockOrm1 as any)
-        .mockResolvedValueOnce(mockOrm2 as any);
-      
+      mockMikroORM.init.mockResolvedValueOnce(mockOrm1 as any).mockResolvedValueOnce(mockOrm2 as any);
+
       mockDatabaseInstance
         .mockImplementationOnce(() => mockInstance1 as any)
         .mockImplementationOnce(() => mockInstance2 as any);
@@ -166,7 +164,7 @@ describe('DatabaseManager', () => {
 
       // Should not throw even if one instance fails to disconnect
       await expect(databaseManager.disconnect()).rejects.toThrow('Disconnect error 1');
-      
+
       // But should still attempt to disconnect all instances
       expect(mockInstance1.disconnect).toHaveBeenCalled();
       expect(mockInstance2.disconnect).toHaveBeenCalled();
@@ -183,7 +181,7 @@ describe('DatabaseManager', () => {
       expect(mockLogger.custom).toHaveBeenCalledWith({
         level: 'database',
         message,
-        meta
+        meta,
       });
     });
 
@@ -195,7 +193,7 @@ describe('DatabaseManager', () => {
       expect(mockLogger.custom).toHaveBeenCalledWith({
         level: 'database',
         message,
-        meta: undefined
+        meta: undefined,
       });
     });
   });

@@ -45,30 +45,30 @@ describe('URL', () => {
     });
 
     it('should handle mixed types', () => {
-      const params = { 
+      const params = {
         name: 'John Doe',
         age: 25,
         active: true,
-        role: ''
+        role: '',
       };
       const result = URL.buildQueryString(params);
       expect(result).toBe('name=John%20Doe&age=25&active=true');
     });
 
     it('should handle special characters requiring encoding', () => {
-      const params = { 
+      const params = {
         query: '100% natural',
         category: 'food & beverages',
-        tags: 'organic,local'
+        tags: 'organic,local',
       };
       const result = URL.buildQueryString(params);
       expect(result).toBe('query=100%25%20natural&category=food%20%26%20beverages&tags=organic%2Clocal');
     });
 
     it('should handle unicode characters', () => {
-      const params = { 
+      const params = {
         title: 'café',
-        description: '测试'
+        description: '测试',
       };
       const result = URL.buildQueryString(params);
       expect(result).toBe('title=caf%C3%A9&description=%E6%B5%8B%E8%AF%95');

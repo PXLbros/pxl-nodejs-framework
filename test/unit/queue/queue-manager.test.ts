@@ -37,7 +37,7 @@ describe('QueueManager', () => {
         redis: {
           host: 'localhost',
           port: 6379,
-          password: ''
+          password: '',
         },
         queue: {
           queues: [],
@@ -47,20 +47,20 @@ describe('QueueManager', () => {
             queueRegistered: true,
             jobRegistered: true,
             queueWaiting: true,
-            jobAdded: true
-          }
-        }
+            jobAdded: true,
+          },
+        },
       },
       options: {
-        processorsDirectory: '/test/processors'
+        processorsDirectory: '/test/processors',
       },
       queues: [],
       redisInstance: {
         client: { mock: 'redis-client' },
-        disconnect: vi.fn()
+        disconnect: vi.fn(),
       } as any,
       databaseInstance: null,
-      eventManager: undefined
+      eventManager: undefined,
     };
 
     mockHelper.defaultsDeep.mockImplementation((target, ...sources) => ({ ...target, ...sources[0] }));
@@ -71,10 +71,7 @@ describe('QueueManager', () => {
   describe('constructor', () => {
     it('should initialize with provided parameters', () => {
       expect(queueManager).toBeInstanceOf(QueueManager);
-      expect(mockHelper.defaultsDeep).toHaveBeenCalledWith(
-        mockParams.options,
-        {}
-      );
+      expect(mockHelper.defaultsDeep).toHaveBeenCalledWith(mockParams.options, {});
     });
   });
 
@@ -91,8 +88,8 @@ describe('QueueManager', () => {
         {
           name: 'test-queue',
           jobs: [{ id: 'test-job' }],
-          isExternal: false
-        }
+          isExternal: false,
+        },
       ];
 
       await queueManager.registerQueues({ queues });
@@ -101,21 +98,21 @@ describe('QueueManager', () => {
       expect(mockLogger.warn).toHaveBeenCalledWith({
         message: 'Processors directory not found',
         meta: {
-          Directory: '/test/processors'
-        }
+          Directory: '/test/processors',
+        },
       });
     });
 
     it('should register queues successfully', async () => {
       mockExistsSync.mockReturnValue(true);
       mockLoader.loadModulesInDirectory.mockResolvedValue({
-        'test-job': class MockProcessor {}
+        'test-job': class MockProcessor {},
       });
 
       const mockQueueInstance = {
         on: vi.fn(),
         add: vi.fn(),
-        getJobs: vi.fn()
+        getJobs: vi.fn(),
       };
       mockQueue.mockImplementation(() => mockQueueInstance as any);
 
@@ -123,22 +120,22 @@ describe('QueueManager', () => {
         {
           name: 'test-queue',
           jobs: [{ id: 'test-job' }],
-          isExternal: false
-        }
+          isExternal: false,
+        },
       ];
 
       await queueManager.registerQueues({ queues });
 
       expect(mockLoader.loadModulesInDirectory).toHaveBeenCalledWith({
         directory: '/test/processors',
-        extensions: ['.ts', '.js']
+        extensions: ['.ts', '.js'],
       });
       expect(mockQueue).toHaveBeenCalledWith('test-queue', {
         connection: mockParams.redisInstance.client,
         defaultJobOptions: {
           removeOnComplete: true,
-          removeOnFail: true
-        }
+          removeOnFail: true,
+        },
       });
     });
 
@@ -150,14 +147,14 @@ describe('QueueManager', () => {
         {
           name: 'test-queue',
           jobs: [{ id: 'test-job' }],
-          isExternal: false
-        }
+          isExternal: false,
+        },
       ];
 
       await queueManager.registerQueues({ queues });
 
-      expect(mockLogger.error).toHaveBeenCalledWith({ 
-        error: expect.any(Error) 
+      expect(mockLogger.error).toHaveBeenCalledWith({
+        error: expect.any(Error),
       });
     });
   });
@@ -166,20 +163,20 @@ describe('QueueManager', () => {
     beforeEach(() => {
       // Setup a mock queue
       const mockQueueInstance = {
-        add: vi.fn().mockResolvedValue({ id: 'job-123' })
+        add: vi.fn().mockResolvedValue({ id: 'job-123' }),
       };
-      
+
       // @ts-ignore - accessing private property for testing
       queueManager['queues'].set('test-queue', mockQueueInstance as any);
     });
 
     it('should add job to queue successfully', async () => {
       const jobData = { userId: 123, action: 'process' };
-      
+
       const result = await queueManager.addJobToQueue({
         queueId: 'test-queue',
         jobId: 'test-job',
-        data: jobData
+        data: jobData,
       });
 
       expect(result).toEqual({ id: 'job-123' });
@@ -191,7 +188,7 @@ describe('QueueManager', () => {
       const result = await queueManager.addJobToQueue({
         queueId: 'non-existent-queue',
         jobId: 'test-job',
-        data: jobData
+        data: jobData,
       });
 
       expect(result).toBeUndefined();
@@ -199,11 +196,11 @@ describe('QueueManager', () => {
 
     it('should truncate long data in logs', async () => {
       const longData = { data: 'a'.repeat(100) };
-      
+
       const result = await queueManager.addJobToQueue({
         queueId: 'test-queue',
         jobId: 'test-job',
-        data: longData
+        data: longData,
       });
 
       // The function should handle long data internally
@@ -214,23 +211,23 @@ describe('QueueManager', () => {
   describe('listAllJobsWithStatus', () => {
     it('should list jobs from all queues', async () => {
       const mockQueue1 = {
-        getJobs: vi.fn().mockImplementation((states) => {
+        getJobs: vi.fn().mockImplementation(states => {
           if (states.includes('active')) {
             return Promise.resolve([
               {
                 id: 'job-1',
                 name: 'test-job',
                 attemptsMade: 1,
-                failedReason: null
-              }
+                failedReason: null,
+              },
             ]);
           }
           return Promise.resolve([]);
-        })
+        }),
       };
 
       const mockQueue2 = {
-        getJobs: vi.fn().mockResolvedValue([])
+        getJobs: vi.fn().mockResolvedValue([]),
       };
 
       // @ts-ignore - accessing private property for testing
@@ -247,7 +244,7 @@ describe('QueueManager', () => {
         queueName: 'queue1',
         state: 'active',
         attemptsMade: 1,
-        failedReason: null
+        failedReason: null,
       });
     });
 
@@ -264,7 +261,7 @@ describe('QueueManager', () => {
       expect(mockLogger.custom).toHaveBeenCalledWith({
         level: 'queue',
         message: 'Test message',
-        meta: { queueName: 'test-queue' }
+        meta: { queueName: 'test-queue' },
       });
     });
 
@@ -274,7 +271,7 @@ describe('QueueManager', () => {
       expect(mockLogger.custom).toHaveBeenCalledWith({
         level: 'queue',
         message: 'Simple message',
-        meta: undefined
+        meta: undefined,
       });
     });
   });
@@ -285,13 +282,13 @@ describe('QueueManager', () => {
     beforeEach(() => {
       mockExistsSync.mockReturnValue(true);
       mockLoader.loadModulesInDirectory.mockResolvedValue({
-        'test-job': class MockProcessor {}
+        'test-job': class MockProcessor {},
       });
 
       mockQueueInstance = {
         on: vi.fn(),
         add: vi.fn(),
-        getJobs: vi.fn()
+        getJobs: vi.fn(),
       };
       mockQueue.mockImplementation(() => mockQueueInstance);
 
@@ -304,19 +301,17 @@ describe('QueueManager', () => {
         {
           name: 'test-queue',
           jobs: [{ id: 'test-job' }],
-          isExternal: false
-        }
+          isExternal: false,
+        },
       ];
 
       await queueManager.registerQueues({ queues });
 
       // Get the error handler
-      const errorHandler = mockQueueInstance.on.mock.calls.find(
-        (call: any) => call[0] === 'error'
-      )?.[1];
+      const errorHandler = mockQueueInstance.on.mock.calls.find((call: any) => call[0] === 'error')?.[1];
 
       expect(errorHandler).toBeDefined();
-      
+
       // Simulate error
       const testError = new Error('Queue error');
       errorHandler(testError);
@@ -329,26 +324,24 @@ describe('QueueManager', () => {
         {
           name: 'test-queue',
           jobs: [{ id: 'test-job' }],
-          isExternal: false
-        }
+          isExternal: false,
+        },
       ];
 
       await queueManager.registerQueues({ queues });
 
       // Get the waiting handler
-      const waitingHandler = mockQueueInstance.on.mock.calls.find(
-        (call: any) => call[0] === 'waiting'
-      )?.[1];
+      const waitingHandler = mockQueueInstance.on.mock.calls.find((call: any) => call[0] === 'waiting')?.[1];
 
       expect(waitingHandler).toBeDefined();
-      
+
       // Simulate waiting job
       const mockJob = { queueName: 'test-queue', id: 'job-123' };
       waitingHandler(mockJob);
 
       expect(queueManager.log).toHaveBeenCalledWith('Waiting...', {
         Queue: 'test-queue',
-        Job: 'job-123'
+        Job: 'job-123',
       });
     });
   });
