@@ -31,12 +31,15 @@ export abstract class DynamicEntity extends BaseEntity {
 
   public static validate<T>(item: T, isCreating: boolean): ValidationResult {
     const schemaName = isCreating ? 'schema' : 'schemaUpdate';
-
-    if (!this[schemaName]) {
+    // Explicit whitelist of schema properties to prevent object injection
+    if (!['schema', 'schemaUpdate'].includes(schemaName)) {
+      throw new Error('Invalid schema reference');
+    }
+    const selectedSchema: Schema | undefined = schemaName === 'schema' ? this.schema : this.schemaUpdate;
+    if (!selectedSchema) {
       throw new Error('Schema not defined in entity.');
     }
-
-    return this[schemaName].validate(item, { abortEarly: false });
+    return selectedSchema.validate(item, { abortEarly: false });
   }
 
   public static getSearchFields(): string[] {

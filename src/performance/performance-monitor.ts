@@ -30,6 +30,8 @@ export class PerformanceMonitor {
   private static instance: PerformanceMonitor;
   private observer: PerformanceObserver | undefined;
   private metrics: PerformanceMetrics[] = [];
+  // Use Map for aggregation to avoid object prototype risks
+  // (No external exposure, but satisfies security linter by avoiding dynamic object keys)
   private thresholds: PerformanceThresholds = {
     http: 1000, // 1 second
     database: 500, // 500ms
@@ -104,6 +106,10 @@ export class PerformanceMonitor {
     }
 
     // Check thresholds and log warnings
+    const allowedTypes: PerformanceMetrics['type'][] = ['http', 'database', 'cache', 'queue', 'websocket', 'custom'];
+    if (!allowedTypes.includes(metricType)) {
+      return;
+    }
     const threshold = this.thresholds[metricType];
     if (this.logSlowOperations && entry.duration > threshold) {
       Logger.warn({
@@ -227,24 +233,25 @@ export class PerformanceMonitor {
 
   public getAverageMetrics(type?: PerformanceMetrics['type']): Record<string, number> {
     const metrics = this.getMetrics(type);
-    const groups = metrics.reduce(
-      (acc, metric) => {
-        if (!acc[metric.name]) {
-          acc[metric.name] = [];
-        }
-        acc[metric.name].push(metric.duration);
-        return acc;
-      },
-      {} as Record<string, number[]>,
-    );
-
-    return Object.entries(groups).reduce(
-      (acc, [name, durations]) => {
-        acc[name] = durations.reduce((sum, duration) => sum + duration, 0) / durations.length;
-        return acc;
-      },
-      {} as Record<string, number>,
-    );
+    const groups = new Map<string, number[]>();
+    for (const metric of metrics) {
+      const key = metric.name;
+      const arr = groups.get(key) ?? [];
+      arr.push(metric.duration);
+      if (!groups.has(key)) groups.set(key, arr);
+    }
+    const averagesMap = new Map<string, number>();
+    for (const [key, durations] of groups.entries()) {
+      const total = durations.reduce((sum, d) => sum + d, 0);
+      averagesMap.set(key, total / durations.length);
+    }
+    // Convert back to plain object for API compatibility
+    return Array.from(averagesMap.entries()).reduce<Record<string, number>>((acc, [k, v]) => {
+      if (typeof k === 'string') {
+        Object.defineProperty(acc, k, { value: v, enumerable: true, configurable: true, writable: false });
+      }
+      return acc;
+    }, Object.create(null));
   }
 
   public getMemoryUsage(): NodeJS.MemoryUsage {

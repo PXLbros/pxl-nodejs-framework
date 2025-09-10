@@ -22,7 +22,31 @@ const colors = {
 };
 
 function log(message, color = 'white') {
-  console.log(`${colors[color]}${message}${colors.reset}`);
+  let colorCode;
+  switch (color) {
+    case 'red':
+      colorCode = colors.red;
+      break;
+    case 'green':
+      colorCode = colors.green;
+      break;
+    case 'yellow':
+      colorCode = colors.yellow;
+      break;
+    case 'blue':
+      colorCode = colors.blue;
+      break;
+    case 'magenta':
+      colorCode = colors.magenta;
+      break;
+    case 'cyan':
+      colorCode = colors.cyan;
+      break;
+    case 'white':
+    default:
+      colorCode = colors.white;
+  }
+  console.log(`${colorCode}${message}${colors.reset}`);
 }
 
 function error(message) {

@@ -1,6 +1,5 @@
 import type { WebSocket } from 'ws';
 import WebSocketServerBaseController from '../../controller/server/base.js';
-import logger from '../../../logger/logger.js';
 import { Logger } from '../../../logger/index.js';
 
 export default class SystemController extends WebSocketServerBaseController {

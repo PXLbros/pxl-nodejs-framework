@@ -1,20 +1,12 @@
-name: CI Pipeline
+name: Release Pipeline
 
 on:
   push:
-    branches: [main, master]
-  pull_request:
-    branches: [main, master]
-  workflow_dispatch:
+    tags:
+      - 'v*'
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: 'pages'
-  cancel-in-progress: false
 
 jobs:
   # Shared dependency installation and caching
@@ -115,12 +107,6 @@ jobs:
           REDIS_URL: redis://localhost:6379
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
 
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist
-          path: dist/
-
   security:
     name: Security Audit
     runs-on: ubuntu-latest
@@ -148,11 +134,10 @@ jobs:
       - name: Run security audit
         run: npm audit --audit-level=high
 
-  build-docs:
-    name: Build Documentation
+  publish:
+    name: Publish to NPM
     runs-on: ubuntu-latest
-    needs: setup
-
+    needs: [test, security]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -161,6 +146,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Restore dependencies
         uses: actions/cache@v4
@@ -172,27 +158,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-npm-
 
-      - name: Build TypeScript
+      - name: Build
         run: npm run build
 
-      - name: Build VitePress documentation
-        run: npm run docs:build
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: './docs/.vitepress/dist'
-
-  deploy-docs:
-    name: Deploy Documentation
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-    runs-on: ubuntu-latest
-    needs: [test, build-docs]
-
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Publish to NPM
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

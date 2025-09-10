@@ -103,23 +103,18 @@ export default class ClusterManager {
     this.isShuttingDown = true;
 
     if (cluster.isPrimary) {
-      for (const id in cluster.workers) {
-        const worker = cluster.workers[id];
-
-        if (!worker) {
-          continue;
+      Object.values(cluster.workers ?? {}).forEach(worker => {
+        if (worker) {
+          worker.send('shutdown');
         }
-
-        worker.send('shutdown');
-      }
+      });
 
       let exitedWorkers = 0;
 
       cluster.on('exit', () => {
         exitedWorkers++;
 
-        const clusterWorkers = cluster.workers ?? {};
-        const numClusterWorkers = Object.keys(clusterWorkers).length;
+        const numClusterWorkers = Object.values(cluster.workers ?? {}).filter(Boolean).length;
 
         if (exitedWorkers === numClusterWorkers) {
           requestExit({ code: 0, reason: 'cluster-workers-exited' });

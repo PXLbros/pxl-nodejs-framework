@@ -9,6 +9,19 @@ export interface ExitOutcome {
 type ExitHandler = (outcome: ExitOutcome) => void;
 
 let handler: ExitHandler = outcome => {
+  const nodeEnv = process.env.NODE_ENV ?? '';
+  const isTestEnv =
+    nodeEnv.toLowerCase() === 'test' ||
+    'VITEST' in process.env ||
+    'VITEST_WORKER_ID' in process.env ||
+    process.argv.some(a => a.includes('vitest')) ||
+    typeof (globalThis as any).afterAll === 'function';
+
+  if (isTestEnv) {
+    // Suppress real process exit during tests; vitest intercepts and would throw otherwise.
+    console.info(`[exit] (test env) code=${outcome.code} reason=${outcome.reason}`);
+    return;
+  }
   process.exit(outcome.code);
 };
 

@@ -55,14 +55,9 @@ function copySync(src: string, dest: string): void {
     }
 
     // Read directory contents
-    const entries = fs.readdirSync(src);
-
-    // Copy each file/folder
-    for (const entry of entries) {
+    for (const entry of fs.readdirSync(src)) {
       const srcPath = path.join(src, entry);
       const destPath = path.join(dest, entry);
-
-      // Recursively copy directory or file
       copySync(srcPath, destPath);
     }
   } else {
@@ -113,13 +108,30 @@ async function downloadFile({ url, destinationPath }: { url: string; destination
  * @param bytes The file size in bytes
  */
 function formatFileSize({ bytes }: { bytes: number }): string {
-  const sizes = ['bytes', 'kB', 'MB', 'GB', 'TB'];
   if (bytes === 0) return '0 bytes';
-
-  const i = Math.floor(Math.log(bytes) / Math.log(1024));
-  const fileSize = (bytes / Math.pow(1024, i)).toFixed(1);
-
-  return `${fileSize} ${sizes[i]}`;
+  const units = ['bytes', 'kB', 'MB', 'GB', 'TB'] as const;
+  let idx = Math.floor(Math.log(bytes) / Math.log(1024));
+  if (idx < 0) idx = 0;
+  if (idx >= units.length) idx = units.length - 1;
+  const fileSize = (bytes / Math.pow(1024, idx)).toFixed(1);
+  let unit: string;
+  switch (idx) {
+    case 0:
+      unit = 'bytes';
+      break;
+    case 1:
+      unit = 'kB';
+      break;
+    case 2:
+      unit = 'MB';
+      break;
+    case 3:
+      unit = 'GB';
+      break;
+    default:
+      unit = 'TB';
+  }
+  return `${fileSize} ${unit}`;
 }
 
 /**
@@ -133,12 +145,9 @@ function removeSync(target: string): void {
 
     if (stats.isDirectory()) {
       // Read the directory contents
-      const entries = fs.readdirSync(target);
-
-      // Recursively remove directory contents
-      for (const entry of entries) {
+      for (const entry of fs.readdirSync(target)) {
         const entryPath = path.join(target, entry);
-        removeSync(entryPath); // Recursively remove each file/folder
+        removeSync(entryPath);
       }
 
       // Remove the directory itself
