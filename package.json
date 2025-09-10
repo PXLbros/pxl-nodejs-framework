@@ -87,7 +87,7 @@
     "test:integration": "vitest run test/integration",
     "test:e2e": "vitest run test/e2e",
     "test:ui": "vitest --ui",
-    "check-all": "npm run lint && npm run format && npm run typecheck",
+    "check-all": "npm run lint && npm run prettier && npm run typecheck",
     "yalc:publish": "yalc publish",
     "yalc:push": "yalc push",
     "dev:yalc": "npm run build && npm run yalc:push"

@@ -39,7 +39,7 @@ jobs:
         run: npm run lint --if-present
 
       - name: Format check
-        run: npm run format --if-present
+        run: npm run prettier --if-present
 
       - name: Build
         run: npm run build

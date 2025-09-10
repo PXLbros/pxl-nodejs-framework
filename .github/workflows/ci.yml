@@ -103,7 +103,7 @@ jobs:
         run: npm run typecheck
 
       - name: Run formatting check
-        run: npm run format
+        run: npm run prettier
 
       - name: Build TypeScript
         run: npm run build
