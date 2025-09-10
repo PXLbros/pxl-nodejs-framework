@@ -46,7 +46,7 @@ export class WebServerPerformanceWrapper {
       slowRequestThreshold: 1000, // 1 second
       includeHeaders: false,
       includeUserAgent: true,
-      skipRoutes: ['/health', '/metrics'],
+      skipRoutes: ['/health', '/health/live', '/health/ready', '/metrics'],
       skipMethods: [],
     };
 

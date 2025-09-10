@@ -5,6 +5,7 @@ import type { RedisInstance } from '../redis/index.js';
 import type { WebServerBaseControllerType } from './controller/base.interface.js';
 import type { ApplicationConfig } from '../application/base-application.interface.js';
 import type EventManager from '../event/manager.js';
+import type { LifecycleManager } from '../lifecycle/lifecycle-manager.js';
 
 export interface WebServerConstructorParams {
   /** Application configuration */
@@ -27,6 +28,9 @@ export interface WebServerConstructorParams {
 
   /** Database instance */
   databaseInstance: DatabaseInstance;
+
+  /** Lifecycle manager */
+  lifecycleManager: LifecycleManager;
 }
 
 export enum WebServerRouteType {

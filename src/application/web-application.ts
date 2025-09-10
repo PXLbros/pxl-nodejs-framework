@@ -73,6 +73,7 @@ export default class WebApplication extends BaseApplication {
         databaseInstance,
         queueManager,
         eventManager,
+        lifecycleManager: this.lifecycle,
       });
 
       // Set up performance monitoring for web server

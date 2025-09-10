@@ -5,6 +5,7 @@ import type { QueueManager } from '../../queue/index.js';
 import type { RedisInstance } from '../../redis/index.js';
 import type { WebServerOptions } from '../webserver.interface.js';
 import type WebServerBaseController from './base.js';
+import type { LifecycleManager } from '../../lifecycle/lifecycle-manager.js';
 
 export interface WebServerBaseControllerConstructorParams {
   applicationConfig: ApplicationConfig;
@@ -14,6 +15,7 @@ export interface WebServerBaseControllerConstructorParams {
   queueManager: QueueManager;
   eventManager: EventManager;
   databaseInstance: DatabaseInstance;
+  lifecycleManager: LifecycleManager;
 }
 
 export type WebServerBaseControllerType = new (

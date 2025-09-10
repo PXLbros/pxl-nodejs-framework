@@ -15,6 +15,7 @@ import type { DatabaseInstance } from '../database/index.js';
 import type { WebServerBaseControllerType } from './controller/base.interface.js';
 import type { QueueManager } from '../queue/index.js';
 import { WebServerHealthController } from '../index.js';
+import type { LifecycleManager } from '../lifecycle/lifecycle-manager.js';
 import type { ApplicationConfig } from '../application/base-application.interface.js';
 import { existsSync } from 'fs';
 import type EventManager from '../event/manager.js';
@@ -40,7 +41,9 @@ class WebServer {
 
   public fastifyServer: FastifyInstance;
 
-  constructor(params: WebServerConstructorParams) {
+  private lifecycleManager: LifecycleManager;
+
+  constructor(params: WebServerConstructorParams & { lifecycleManager: LifecycleManager }) {
     // Define default options
     const defaultOptions: Partial<WebServerOptions> = {
       host: '0.0.0.0',
@@ -75,6 +78,7 @@ class WebServer {
     this.queueManager = params.queueManager;
     this.eventManager = params.eventManager;
     this.databaseInstance = params.databaseInstance;
+    this.lifecycleManager = params.lifecycleManager;
 
     // Create Fastify server
     this.fastifyServer = Fastify({
@@ -145,7 +149,7 @@ class WebServer {
       await new Promise(resolve => setTimeout(resolve, this.options.debug?.simulateSlowConnection?.delay));
     }
 
-    const pathsToIgnore = ['/health'];
+    const pathsToIgnore = ['/health', '/health/live', '/health/ready'];
 
     if (pathsToIgnore.includes(request.url) || request.method === 'OPTIONS') {
       // ...
@@ -255,13 +259,29 @@ class WebServer {
     });
 
     // Add health check route
-    this.routes.push({
-      type: WebServerRouteType.Default,
-      method: 'GET',
-      path: '/health',
-      controller: WebServerHealthController,
-      action: 'health',
-    });
+    this.routes.push(
+      {
+        type: WebServerRouteType.Default,
+        method: 'GET',
+        path: '/health',
+        controller: WebServerHealthController,
+        action: 'health',
+      },
+      {
+        type: WebServerRouteType.Default,
+        method: 'GET',
+        path: '/health/live',
+        controller: WebServerHealthController,
+        action: 'live',
+      },
+      {
+        type: WebServerRouteType.Default,
+        method: 'GET',
+        path: '/health/ready',
+        controller: WebServerHealthController,
+        action: 'ready',
+      },
+    );
 
     // Go through each route
     for (const route of this.routes) {
@@ -304,6 +324,7 @@ class WebServer {
         queueManager: this.queueManager,
         eventManager: this.eventManager,
         databaseInstance: this.databaseInstance,
+        lifecycleManager: this.lifecycleManager,
       });
 
       let routeMethod;

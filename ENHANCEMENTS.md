@@ -152,11 +152,30 @@ Status Legend: ✅ Done | 🚧 In Progress | 📅 Planned / Not Started
 - Action: Convert to plugin with explicit `start()` / `stop()` and registration in lifecycle.
 - Effort: M | Risk: Lo
 
-### 10. Health & Readiness Probes – 📅 Planned
+### 10. Health & Readiness Probes – � In Progress
 
 - Issue: Single `/health` route; no readiness gate (e.g., DB connected, queues ready) vs liveness (process up).
 - Action: Add `/health/live` & `/health/ready` with pluggable probe functions.
-- Current Status: Single `/health` route implemented. No distinct liveness vs readiness endpoints or probe registry yet.
+- Implementation (In Progress):
+  - Introduced lifecycle awareness in web controllers (inject `LifecycleManager`).
+  - Added separate controller actions: `live` (always 200 if process not shutting down) and `ready` (aggregates probes: database, redis, queue, event manager; returns 503 until lifecycle phase RUNNING & all mandatory probes pass).
+  - Backwards compatibility: legacy `/health` retained (composite readiness style JSON) but will be deprecated in favor of explicit endpoints.
+  - Probe registry design: lightweight interface `HealthProbe { name: string; required: boolean; check(): Promise<boolean>; }` planned for next step so modules can self‑register via lifecycle `onInit`.
+  - Performance monitoring skip list updated to include new endpoints.
+  - Readiness JSON shape draft:
+    ```json
+    {
+      "ready": true,
+      "phase": "RUNNING",
+      "probes": {
+        "database": { "healthy": true, "required": true },
+        "redis": { "healthy": true, "required": true },
+        "queue": { "healthy": true, "required": false }
+      }
+    }
+    ```
+  - Failure returns 503 with `ready: false` and list of failing required probes.
+- Current Status: Controller & route refactor underway (code changes in this commit add endpoints & lifecycle injection; probe registry abstraction next).
 - Effort: S | Risk: Lo
 
 ### 11. Logging Correlation & Structured Metadata – 📅 Planned

@@ -338,8 +338,26 @@ export default abstract class BaseApplication {
    */
   private async startInstance(options: ApplicationStartInstanceOptions): Promise<void> {
     try {
+      // Phase 1: Initialize (resource setup)
+      const initResult = await this.lifecycle.initialize();
+      if (initResult.errors.length > 0) {
+        Logger.warn({
+          message: 'Lifecycle init phase encountered errors',
+          meta: { errors: initResult.errors.map(e => (e instanceof Error ? e.message : String(e))) },
+        });
+      }
+
       // Before application start
       const { redisInstance, databaseInstance, queueManager, eventManager } = await this.onBeforeStart();
+
+      // Phase 2: Start (component startup)
+      const startResult = await this.lifecycle.start();
+      if (startResult.errors.length > 0) {
+        Logger.warn({
+          message: 'Lifecycle start phase encountered errors',
+          meta: { errors: startResult.errors.map(e => (e instanceof Error ? e.message : String(e))) },
+        });
+      }
 
       // Start application
       await this.startHandler({
@@ -348,6 +366,15 @@ export default abstract class BaseApplication {
         queueManager,
         eventManager,
       });
+
+      // Phase 3: Ready (application accepting traffic)
+      const readyResult = await this.lifecycle.ready();
+      if (readyResult.errors.length > 0) {
+        Logger.warn({
+          message: 'Lifecycle ready phase encountered errors',
+          meta: { errors: readyResult.errors.map(e => (e instanceof Error ? e.message : String(e))) },
+        });
+      }
 
       // Calculate application startup time
       const startupTime = Time.calculateElapsedTime({

@@ -9,6 +9,7 @@ import type { ApplicationConfig } from '../../application/base-application.inter
 import type EventManager from '../../event/manager.js';
 import cluster from 'cluster';
 import type { WebServerOptions } from '../webserver.interface.js';
+import type { LifecycleManager } from '../../lifecycle/lifecycle-manager.js';
 import Jwt from '../../auth/jwt.js';
 // import { env } from '../../env';
 
@@ -27,6 +28,7 @@ export default abstract class BaseController {
   protected queueManager: QueueManager;
   protected eventManager: EventManager;
   protected databaseInstance: DatabaseInstance;
+  protected lifecycleManager: LifecycleManager;
 
   constructor({
     applicationConfig,
@@ -35,6 +37,7 @@ export default abstract class BaseController {
     queueManager,
     eventManager,
     databaseInstance,
+    lifecycleManager,
   }: WebServerBaseControllerConstructorParams) {
     this.workerId = cluster.worker?.id;
 
@@ -45,6 +48,7 @@ export default abstract class BaseController {
     this.queueManager = queueManager;
     this.eventManager = eventManager;
     this.databaseInstance = databaseInstance;
+    this.lifecycleManager = lifecycleManager;
   }
 
   protected sendSuccessResponse<T = any>({
