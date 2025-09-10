@@ -1,5 +1,5 @@
-import { LifecycleManager } from './lifecycle-manager.js';
-import { LifecycleHook, LifecyclePhase } from './types.js';
+import type { LifecycleManager } from './lifecycle-manager.js';
+import type { LifecycleHook } from './types.js';
 
 export class ShutdownController {
   private _isShuttingDown = false;
@@ -20,7 +20,7 @@ export class ShutdownController {
     return this.lifecycle.onShutdown(fn);
   }
 
-  async initiate(reason: string, signal?: string): Promise<{ errors: unknown[]; timedOut: boolean }> {
+  async initiate(_reason: string, _signal?: string): Promise<{ errors: unknown[]; timedOut: boolean }> {
     if (this._isShuttingDown) {
       return { errors: [], timedOut: false };
     }

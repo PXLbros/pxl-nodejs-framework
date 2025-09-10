@@ -19,7 +19,7 @@ import EventManager from '../event/manager.js';
 import Logger from '../logger/logger.js';
 import { PerformanceMonitor } from '../performance/performance-monitor.js';
 import { CachePerformanceWrapper, DatabasePerformanceWrapper, QueuePerformanceWrapper } from '../performance/index.js';
-import { LifecycleManager, ShutdownController, LifecycleConfig } from '../lifecycle/index.js';
+import { type LifecycleConfig, LifecycleManager, ShutdownController } from '../lifecycle/index.js';
 import { requestExit } from '../lifecycle/exit.js';
 
 // Re-export types for external use

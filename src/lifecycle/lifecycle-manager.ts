@@ -1,5 +1,4 @@
-import { LifecyclePhase } from './types.js';
-import type { Disposable, LifecycleConfig, LifecycleHook } from './types.js';
+import { type Disposable, type LifecycleConfig, type LifecycleHook, LifecyclePhase } from './types.js';
 
 export class LifecycleManager {
   private _phase: LifecyclePhase = LifecyclePhase.CREATED;
