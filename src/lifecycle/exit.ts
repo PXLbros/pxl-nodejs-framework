@@ -1,5 +1,7 @@
+export type ExitCode = 0 | 1 | 2 | 130 | 137 | 143;
+
 export interface ExitOutcome {
-  code: number;
+  code: ExitCode;
   reason: string;
   error?: unknown;
 }

@@ -233,30 +233,70 @@ export class Logger {
     }
   }
 
-  public error({
-    error,
-    message,
-    meta,
-    options,
-  }: {
+  // Overload 1: Object signature (existing usage)
+  public error(args: {
     error: Error | unknown;
     message?: string;
     meta?: Record<string, unknown>;
     options?: LogOptions;
-  }): void {
+  }): void;
+  // Overload 2: Positional signature (new usage)
+  public error(error: Error | unknown, message?: string, meta?: Record<string, unknown>, options?: LogOptions): void;
+  public error(
+    arg1:
+      | { error: Error | unknown; message?: string; meta?: Record<string, unknown>; options?: LogOptions }
+      | (Error | unknown),
+    message?: string,
+    meta?: Record<string, unknown>,
+    options?: LogOptions,
+  ): void {
+    // Support original object signature: Logger.error({ error, message?, meta?, options? })
+    if (
+      typeof arg1 === 'object' &&
+      arg1 !== null &&
+      'error' in arg1 &&
+      // If the caller passed a second positional arg, treat it as new signature
+      message === undefined
+    ) {
+      const {
+        error,
+        message: objMessage,
+        meta: objMeta,
+        options: objOptions,
+      } = arg1 as {
+        error: Error | unknown;
+        message?: string;
+        meta?: Record<string, unknown>;
+        options?: LogOptions;
+      };
+
+      if (objMessage) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        const combinedMessage = `${objMessage}: ${errorMessage}`;
+        this.log({ level: 'error', message: combinedMessage, meta: objMeta, options: objOptions });
+        if (error instanceof Error && this.isSentryInitialized) {
+          Sentry.captureException(error);
+        }
+      } else {
+        this.log({ level: 'error', message: error, meta: objMeta, options: objOptions });
+        if (error instanceof Error && this.isSentryInitialized) {
+          Sentry.captureException(error);
+        }
+      }
+      return;
+    }
+
+    // New positional signature: Logger.error(error, message?, meta?, options?)
+    const errorObj = arg1;
     if (message) {
-      // If a message is provided, combine it with the error for better context
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage = errorObj instanceof Error ? errorObj.message : String(errorObj);
       const combinedMessage = `${message}: ${errorMessage}`;
       this.log({ level: 'error', message: combinedMessage, meta, options });
-
-      // Also capture the original error for Sentry if it's an Error object
-      if (error instanceof Error && this.isSentryInitialized) {
-        Sentry.captureException(error);
-      }
     } else {
-      // Original behavior when no message is provided
-      this.log({ level: 'error', message: error, meta, options });
+      this.log({ level: 'error', message: errorObj, meta, options });
+    }
+    if (errorObj instanceof Error && this.isSentryInitialized) {
+      Sentry.captureException(errorObj);
     }
   }
 

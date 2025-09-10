@@ -13,6 +13,7 @@ export * from './cache/index.js';
 export * from './command/index.js';
 export * from './database/index.js';
 export * from './event/index.js';
+export * from './lifecycle/index.js';
 export * from './redis/index.js';
 export * from './logger/index.js';
 export * from './performance/index.js';

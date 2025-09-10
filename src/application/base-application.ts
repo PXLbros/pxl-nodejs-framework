@@ -19,7 +19,7 @@ import EventManager from '../event/manager.js';
 import Logger from '../logger/logger.js';
 import { PerformanceMonitor } from '../performance/performance-monitor.js';
 import { CachePerformanceWrapper, DatabasePerformanceWrapper, QueuePerformanceWrapper } from '../performance/index.js';
-import { LifecycleManager } from '../lifecycle/lifecycle-manager.js';
+import { LifecycleManager, ShutdownController, LifecycleConfig } from '../lifecycle/index.js';
 import { requestExit } from '../lifecycle/exit.js';
 
 // Re-export types for external use
@@ -29,14 +29,8 @@ export default abstract class BaseApplication {
   /** Unique instance ID */
   public uniqueInstanceId: string;
 
-  /** Shutdown signals */
-  protected shutdownSignals: NodeJS.Signals[] = ['SIGTERM', 'SIGINT'];
-
   /** Application start time */
   protected startTime: [number, number] = [0, 0];
-
-  /** Whether application is stopping */
-  protected isStopping = false;
 
   /** Shutdown timeout (30 seconds) */
   protected shutdownTimeout = 30000;
@@ -72,7 +66,10 @@ export default abstract class BaseApplication {
   public performanceMonitor?: PerformanceMonitor;
 
   /** Lifecycle manager */
-  protected lifecycle: LifecycleManager = new LifecycleManager();
+  public lifecycle: LifecycleManager;
+
+  /** Shutdown controller */
+  public shutdownController: ShutdownController;
 
   public get Name() {
     return this.config.name;
@@ -87,6 +84,18 @@ export default abstract class BaseApplication {
     this.uniqueInstanceId = `${config.instanceId}-${computerName}-${OS.getUniqueComputerId()}`;
 
     this.config = config;
+
+    // Initialize lifecycle management
+    const lifecycleConfig: Partial<LifecycleConfig> = {
+      gracefulShutdown: {
+        timeoutMs: this.shutdownTimeout,
+      },
+    };
+    this.lifecycle = new LifecycleManager(lifecycleConfig);
+    this.shutdownController = new ShutdownController(this.lifecycle);
+
+    // Register shutdown hooks for cleanup
+    this.registerShutdownHooks();
 
     // const schema = Joi.object({
     //   name: Joi.string().required(),
@@ -316,16 +325,11 @@ export default abstract class BaseApplication {
   protected onStopped({ runtime: _runtime }: { runtime: number }): void {}
 
   /**
-   * Before application stop event
+   * Before application stop event (deprecated - now handled by lifecycle hooks)
+   * @deprecated This method is no longer used. Cleanup is handled by registerShutdownHooks()
    */
   private async onBeforeStop(): Promise<void> {
-    // Disconnect from Redis
-    await this.redisManager.disconnect();
-
-    if (this.databaseManager) {
-      // Disconnect from database
-      await this.databaseManager.disconnect();
-    }
+    // This method is deprecated - cleanup is now handled by lifecycle hooks in registerShutdownHooks()
   }
 
   /**
@@ -444,73 +448,117 @@ export default abstract class BaseApplication {
   }
 
   /**
+   * Register shutdown hooks for proper cleanup
+   */
+  private registerShutdownHooks(): void {
+    // Register shutdown hooks in reverse dependency order
+    this.lifecycle.onShutdown(async () => {
+      Logger.info({ message: 'Executing custom stop callback' });
+      await this.stopCallback();
+    });
+
+    this.lifecycle.onShutdown(async () => {
+      if (this.redisManager) {
+        Logger.info({ message: 'Disconnecting from Redis' });
+        await this.redisManager.disconnect();
+      }
+    });
+
+    this.lifecycle.onShutdown(async () => {
+      if (this.databaseManager) {
+        Logger.info({ message: 'Disconnecting from database' });
+        await this.databaseManager.disconnect();
+      }
+    });
+
+    // Performance monitor is handled via trackInterval, so it will be cleaned up automatically
+  }
+
+  /**
    * Initiate graceful shutdown
    */
-  private initiateGracefulShutdown(): void {
-    if (this.isStopping) {
+  private async initiateGracefulShutdown(): Promise<void> {
+    if (this.shutdownController.isShuttingDown) {
       return;
     }
 
     Logger.info({ message: 'Initiating graceful shutdown due to error' });
-    this.stop().catch(error => {
+    try {
+      const result = await this.shutdownController.initiate('error-triggered');
+      if (result.errors.length > 0) {
+        Logger.error({
+          message: 'Errors during shutdown',
+          error: result.errors,
+        });
+        requestExit({ code: 1, reason: 'graceful-shutdown-error', error: result.errors });
+      } else if (result.timedOut) {
+        Logger.warn({ message: 'Shutdown timed out' });
+        requestExit({ code: 1, reason: 'shutdown-timeout' });
+      } else {
+        requestExit({ code: 0, reason: 'error-shutdown-complete' });
+      }
+    } catch (error) {
       Logger.error({
         error: error instanceof Error ? error : new Error(String(error)),
         message: 'Error during graceful shutdown',
       });
       requestExit({ code: 1, reason: 'graceful-shutdown-error', error });
-    });
+    }
   }
 
   /**
-   * Handle shutdown
+   * Handle shutdown - this method is deprecated in favor of proper launcher signal handling
+   * @deprecated Use proper launcher signal handling instead
    */
   public handleShutdown({ onStopped }: { onStopped?: ({ runtime }: { runtime: number }) => void }): void {
-    this.shutdownSignals.forEach(signal => {
-      process.on(signal, async () => {
-        // Stop application
-        await this.stop({ onStopped });
-      });
+    Logger.warn({
+      message: 'handleShutdown() is deprecated. Signal handling should be done in the application launcher.',
     });
+
+    // Register the onStopped callback with lifecycle if provided
+    if (onStopped) {
+      this.lifecycle.onShutdown(() => {
+        const runtime = process.uptime() * 1000;
+        onStopped({ runtime });
+      });
+    }
   }
 
   /**
-   * Stop application
+   * Stop application using lifecycle manager
    */
-  private async stop({ onStopped }: ApplicationStopInstanceOptions = {}): Promise<void> {
-    if (this.isStopping) {
+  public async stop({ onStopped }: ApplicationStopInstanceOptions = {}): Promise<void> {
+    if (this.shutdownController.isShuttingDown) {
       return;
     }
 
-    this.isStopping = true;
-
-    // Set timeout for forced termination
-    const forceExitTimeout = setTimeout(() => {
-      Logger.warn({ message: 'Forced shutdown due to timeout' });
-      requestExit({ code: 1, reason: 'forced-timeout' });
-    }, this.shutdownTimeout);
+    // Register the onStopped callback if provided
+    if (onStopped) {
+      this.lifecycle.onShutdown(() => {
+        const runtime = process.uptime() * 1000;
+        onStopped({ runtime });
+      });
+    }
 
     try {
-      // Stop callback
-      await this.stopCallback();
-
-      // Disconnect
-      await this.onBeforeStop();
-
-      if (onStopped) {
-        // Calculate runtime
-        const runtime = process.uptime() * 1000;
-        // Emit stopped event
-        await onStopped({ runtime });
+      const result = await this.shutdownController.initiate('manual-stop');
+      if (result.errors.length > 0) {
+        Logger.error({
+          message: 'Errors during shutdown',
+          error: result.errors,
+        });
+        requestExit({ code: 1, reason: 'shutdown-error', error: result.errors });
+      } else if (result.timedOut) {
+        Logger.warn({ message: 'Shutdown timed out' });
+        requestExit({ code: 1, reason: 'shutdown-timeout' });
+      } else {
+        requestExit({ code: 0, reason: 'shutdown-complete' });
       }
-
-      clearTimeout(forceExitTimeout);
-      requestExit({ code: 0, reason: 'shutdown-complete' });
     } catch (error) {
       Logger.error({
         error: error instanceof Error ? error : new Error(String(error)),
         message: 'Error during shutdown',
       });
-      clearTimeout(forceExitTimeout);
       requestExit({ code: 1, reason: 'shutdown-error', error });
     }
   }
