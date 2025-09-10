@@ -108,8 +108,8 @@ jobs:
       - name: Build TypeScript
         run: npm run build
 
-      - name: Run tests with coverage
-        run: npm run test:coverage
+      - name: Run tests
+        run: npm test
         env:
           NODE_ENV: test
           REDIS_URL: redis://localhost:6379
