@@ -22,3 +22,4 @@ export * from './services/index.js';
 export * from './util/index.js';
 export * from './webserver/index.js';
 export * from './websocket/index.js';
+export * from './config/index.js';

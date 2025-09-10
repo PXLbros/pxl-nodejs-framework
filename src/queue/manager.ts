@@ -59,13 +59,6 @@ export default class QueueManager {
     const processorsDirectoryExists = await existsSync(this.options.processorsDirectory);
 
     if (!processorsDirectoryExists) {
-      Logger.warn({
-        message: 'Processors directory not found',
-        meta: {
-          Directory: this.options.processorsDirectory,
-        },
-      });
-
       return;
     }
 

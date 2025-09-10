@@ -94,11 +94,11 @@ Status Legend: ✅ Done | 🚧 In Progress | 📅 Planned / Not Started
 - Current Status: `LifecycleManager`, `ShutdownController`, exit handler utilities, hook phases, disposables tracking, timeout logic, and tests are implemented (`src/lifecycle/*`). Direct `process.exit` calls have been removed from core runtime except in launcher/test contexts. Further polish: aggregate error reporting formatting & documenting embedding pattern in docs (follow-up pending).
 - Effort: M | Risk: Med (behavioral change around shutdown ordering; requires thorough migration note)
 
-### 2. Configuration Validation & Type Safety – 📅 Planned
+### 2. Configuration Validation & Type Safety – � In Progress
 
 - Issue: Commented-out Joi schema; runtime assumptions; unvalidated nested options.
 - Action: Adopt Zod (better TS inference) or retain Joi with explicit schemas + `infer` types. Fail-fast at startup with aggregated error report.
-- Current Status: No Zod/Joi schema enforcement present yet (search shows only conceptual references). Needs schema module + startup fail-fast.
+- Current Status: Initial Zod schema implemented (`src/config/schema.ts`) covering Redis, Database, Queue, Events, Performance Monitoring, Web/WebSocket, Cluster, Auth. Provides `validateFrameworkConfig()` + `ConfigValidationError` with formatted issues. Exported via root barrel. Not yet invoked inside `BaseApplication` (next step: call early in constructor before side-effects & add env var mapping helper). Also need docs page and migration note for consumers.
 - Effort: M | Risk: Lo
 
 ### 3. Security Hardening (HTTP) – 📅 Planned
@@ -143,6 +143,8 @@ Status Legend: ✅ Done | 🚧 In Progress | 📅 Planned / Not Started
 ## P1 / High
 
 ### 8. Break Up `BaseApplication` God Object – 📅 Planned
+
+ee
 
 - Issue: Orchestrates config, cache, database, queue, events, performance, signals.
 - Action: Introduce service registration container (DI light): `ApplicationContext` holding providers. Refactor into modules: `ConfigModule`, `CacheModule`, `DatabaseModule`, `MessagingModule`, `MetricsModule`.

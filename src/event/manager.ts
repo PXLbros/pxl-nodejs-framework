@@ -46,12 +46,6 @@ export default class EventManager {
     const controllersDirectoryExists = existsSync(this.options.controllersDirectory);
 
     if (!controllersDirectoryExists) {
-      this.logger.warn({
-        message: 'Event controllers directory not found',
-        meta: {
-          Directory: this.options.controllersDirectory,
-        },
-      });
       return;
     }
 

@@ -21,6 +21,7 @@ import type { PerformanceMonitor } from '../performance/performance-monitor.js';
 // Performance monitoring now pluginized
 import { PerformanceMonitorPlugin } from '../performance/performance-monitor.plugin.js';
 import { type LifecycleConfig, LifecycleManager, ShutdownController } from '../lifecycle/index.js';
+import { ConfigValidationError, formatConfigIssues, validateFrameworkConfig } from '../config/schema.js';
 import { type ExitOutcome, requestExit } from '../lifecycle/exit.js';
 
 // Re-export types for external use
@@ -80,10 +81,20 @@ export default abstract class BaseApplication {
    * Application constructor
    */
   constructor(config: ApplicationConfig) {
+    // Validate configuration early (fail-fast before side effects)
+    try {
+      const validated = validateFrameworkConfig(config as any);
+      config = validated as unknown as ApplicationConfig;
+    } catch (err) {
+      if (err instanceof ConfigValidationError) {
+        const formatted = formatConfigIssues(err.issues);
+        throw new Error(`Configuration validation failed:\n${formatted}`);
+      }
+      throw err;
+    }
     const computerName = os.hostname();
 
     this.uniqueInstanceId = `${config.instanceId}-${computerName}-${OS.getUniqueComputerId()}`;
-
     this.config = config;
 
     // Initialize lifecycle management
