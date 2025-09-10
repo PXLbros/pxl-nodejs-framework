@@ -27,7 +27,7 @@ If you only need a single Fastify server or a lightweight script, this may be mo
 ## Installation
 
 ```bash
-npm install @pxl/nodejs-framework
+npm install @scpxl/nodejs-framework
 ```
 
 (or `pnpm add` / `yarn add`).
@@ -37,7 +37,7 @@ npm install @pxl/nodejs-framework
 Create `app.ts`:
 
 ```ts
-import { Application } from '@pxl/nodejs-framework';
+import { Application } from '@scpxl/nodejs-framework';
 
 const app = new Application({
   webserver: {
@@ -71,6 +71,8 @@ app.webserver.route({
 
 - Read the [Getting Started guide](/getting-started)
 - Explore [Application concept](/concepts/application)
+- Learn about the [Lifecycle](/concepts/lifecycle) & [Performance](/concepts/performance)
+- Check out [Scaling](/guides/scaling) & [Testing](/guides/testing)
 - View the [API reference](https://pxlbros.github.io/pxl-nodejs-framework/)
 
 ---

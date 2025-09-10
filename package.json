@@ -48,6 +48,26 @@
       "import": "./dist/cache/index.js",
       "types": "./dist/cache/index.d.ts"
     },
+    "./performance": {
+      "import": "./dist/performance/index.js",
+      "types": "./dist/performance/index.d.ts"
+    },
+    "./command": {
+      "import": "./dist/command/index.js",
+      "types": "./dist/command/index.d.ts"
+    },
+    "./auth": {
+      "import": "./dist/auth/index.js",
+      "types": "./dist/auth/index.d.ts"
+    },
+    "./api-requester": {
+      "import": "./dist/api-requester/index.js",
+      "types": "./dist/api-requester/index.d.ts"
+    },
+    "./lifecycle": {
+      "import": "./dist/lifecycle/index.js",
+      "types": "./dist/lifecycle/index.d.ts"
+    },
     "./util": {
       "import": "./dist/util/index.js",
       "types": "./dist/util/index.d.ts"

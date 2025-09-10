@@ -5,7 +5,7 @@ This guide walks you through installing and bootstrapping a minimal application.
 ## 1. Install
 
 ```bash
-npm install @pxl/nodejs-framework
+npm install @scpxl/nodejs-framework
 ```
 
 ## 2. Basic App
@@ -13,7 +13,7 @@ npm install @pxl/nodejs-framework
 Create `app.ts`:
 
 ```ts
-import { Application } from '@pxl/nodejs-framework';
+import { Application } from '@scpxl/nodejs-framework';
 
 const app = new Application({
   webserver: { port: 3000 },
@@ -86,9 +86,14 @@ You can provide only what you need—omitted modules are skipped.
 Dive into core concepts:
 
 - [Application](/concepts/application)
+- [Lifecycle](/concepts/lifecycle)
+- [Cluster](/concepts/cluster)
 - [Web Server](/concepts/webserver)
 - [WebSocket](/concepts/websocket)
 - [Queue](/concepts/queue)
 - [Cache / Redis](/concepts/cache)
+- [Performance](/concepts/performance)
+- [Commands](/concepts/command)
+- [Auth / JWT](/concepts/auth)
 
 And browse the [full API reference](https://pxlbros.github.io/pxl-nodejs-framework/).
