@@ -1,10 +1,19 @@
 import fs from 'fs';
 import path from 'path';
+import { LRUCache } from 'lru-cache';
 import { Helper } from './index.js';
 
 // Cache for loaded modules to avoid repeated imports
-const moduleCache = new Map<string, { [key: string]: any }>();
-const entityCache = new Map<string, any>();
+// Using LRU cache to prevent unbounded memory growth in long-running processes
+const moduleCache = new LRUCache<string, { [key: string]: any }>({
+  max: 100, // Max 100 directories cached
+  ttl: 1000 * 60 * 10, // 10 minutes
+});
+
+const entityCache = new LRUCache<string, any>({
+  max: 500, // Max 500 entities cached (accessed more frequently than modules)
+  ttl: 1000 * 60 * 10, // 10 minutes
+});
 
 const loadModulesInDirectory = async ({
   directory,
