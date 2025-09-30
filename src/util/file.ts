@@ -1,4 +1,5 @@
 import * as fs from 'fs';
+import { access, mkdir } from 'fs/promises';
 import * as path from 'path';
 import * as https from 'https';
 import { pipeline } from 'stream';
@@ -6,6 +7,32 @@ import { promisify } from 'node:util';
 import ffmpeg from 'fluent-ffmpeg';
 
 const pipelineAsync = promisify(pipeline);
+
+/**
+ * Check if a file or directory exists asynchronously
+ * @param pathToCheck - Path to check
+ * @returns Promise<boolean> - true if exists, false otherwise
+ */
+async function pathExists(pathToCheck: string): Promise<boolean> {
+  try {
+    await access(pathToCheck);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Ensure directory exists, create if it doesn't
+ * @param dirPath - Directory path to ensure
+ */
+async function ensureDir(dirPath: string): Promise<void> {
+  try {
+    await access(dirPath);
+  } catch {
+    await mkdir(dirPath, { recursive: true });
+  }
+}
 
 async function convertFile({
   inputFilePath,
@@ -167,4 +194,6 @@ export default {
   downloadFile,
   formatFileSize,
   removeSync,
+  pathExists,
+  ensureDir,
 };

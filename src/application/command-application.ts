@@ -1,11 +1,10 @@
-import { existsSync } from 'fs';
 import type DatabaseInstance from '../database/instance.js';
 import { Logger } from '../logger/index.js';
 import type QueueManager from '../queue/manager.js';
 import type RedisInstance from '../redis/instance.js';
 import BaseApplication from './base-application.js';
 import type { CommandApplicationConfig } from './command-application.interface.js';
-import { Helper, Loader, Time } from '../util/index.js';
+import { File, Helper, Loader, Time } from '../util/index.js';
 
 export default class CommandApplication extends BaseApplication {
   /** Command application config */
@@ -63,7 +62,7 @@ export default class CommandApplication extends BaseApplication {
 
     const inputCommandName = parsedArgv._[0];
 
-    const commandsDirectoryExists = await existsSync(this.config.commandsDirectory);
+    const commandsDirectoryExists = await File.pathExists(this.config.commandsDirectory);
 
     if (!commandsDirectoryExists) {
       Logger.warn({

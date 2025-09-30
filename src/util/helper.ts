@@ -79,7 +79,7 @@ function getValueFromArray(arr: AnyObject[], path: string): any[] {
 }
 
 function getScriptFileExtension(): string {
-  return process.env.NODE_ENV === 'local' ? 'ts' : 'js';
+  return process.env.NODE_ENV === 'development' ? 'ts' : 'js';
 }
 
 export default {

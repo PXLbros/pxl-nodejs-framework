@@ -1,7 +1,6 @@
 // event-manager.ts
-import { existsSync } from 'fs';
 import { Logger } from '../logger/index.js';
-import { Helper, Loader } from '../util/index.js';
+import { File, Helper, Loader } from '../util/index.js';
 import type { EventDefinition, EventManagerConstructorParams, EventManagerOptions } from './manager.interface.js';
 import type { ApplicationConfig } from '../application/base-application.interface.js';
 import type DatabaseInstance from '../database/instance.js';
@@ -43,7 +42,7 @@ export default class EventManager {
 
   public async load(): Promise<void> {
     // Check if controllers directory exists
-    const controllersDirectoryExists = existsSync(this.options.controllersDirectory);
+    const controllersDirectoryExists = await File.pathExists(this.options.controllersDirectory);
 
     if (!controllersDirectoryExists) {
       return;

@@ -8,7 +8,7 @@ import {
   WebServerRouteType,
 } from './webserver.interface.js';
 import { Logger } from '../logger/index.js';
-import { Helper, Loader, Time } from '../util/index.js';
+import { File, Helper, Loader, Time } from '../util/index.js';
 import WebServerUtil from './util.js';
 import type { RedisInstance } from '../redis/index.js';
 import type { DatabaseInstance } from '../database/index.js';
@@ -17,7 +17,6 @@ import type { QueueManager } from '../queue/index.js';
 import { WebServerHealthController } from '../index.js';
 import type { LifecycleManager } from '../lifecycle/lifecycle-manager.js';
 import type { ApplicationConfig } from '../application/base-application.interface.js';
-import { existsSync } from 'fs';
 import type EventManager from '../event/manager.js';
 
 declare module 'fastify' {
@@ -82,12 +81,13 @@ class WebServer {
     this.lifecycleManager = params.lifecycleManager;
 
     // Create Fastify server
+    const defaultBodyLimit = 100 * 1024 * 1024; // 100MB
+    const defaultConnectionTimeout = 30 * 1000; // 30 seconds
+
     this.fastifyServer = Fastify({
       logger: false,
-      // body limit = 5gb
-      bodyLimit: 5 * 1024 * 1024 * 1024,
-      // 30 minutes
-      connectionTimeout: 30 * 60 * 1000,
+      bodyLimit: this.options.bodyLimit ?? defaultBodyLimit,
+      connectionTimeout: this.options.connectionTimeout ?? defaultConnectionTimeout,
     });
   }
 
@@ -180,7 +180,7 @@ class WebServer {
       Status: reply.statusCode,
     };
 
-    if (process.env.NODE_ENV !== 'local') {
+    if (process.env.NODE_ENV !== 'development') {
       logParams.IP = ip.toString();
     }
 
@@ -240,7 +240,7 @@ class WebServer {
    */
   private async configureRoutes(): Promise<void> {
     // Check if controllers directory exists
-    const controllersDirectoryExists = await existsSync(this.options.controllersDirectory);
+    const controllersDirectoryExists = await File.pathExists(this.options.controllersDirectory);
 
     if (!controllersDirectoryExists) {
       Logger.warn({
