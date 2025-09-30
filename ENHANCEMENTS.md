@@ -144,8 +144,6 @@ Status Legend: ✅ Done | 🚧 In Progress | 📅 Planned / Not Started
 
 ### 8. Break Up `BaseApplication` God Object – 📅 Planned
 
-ee
-
 - Issue: Orchestrates config, cache, database, queue, events, performance, signals.
 - Action: Introduce service registration container (DI light): `ApplicationContext` holding providers. Refactor into modules: `ConfigModule`, `CacheModule`, `DatabaseModule`, `MessagingModule`, `MetricsModule`.
 - Effort: L | Risk: Med
