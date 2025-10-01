@@ -31,16 +31,6 @@ export default class DatabaseInstance {
     this.databaseManager = databaseManager;
     this.applicationConfig = applicationConfig;
     this.orm = orm;
-
-    const config = orm.config.getAll();
-
-    if (this.applicationConfig.log?.startUp) {
-      this.databaseManager.log('Connected', {
-        Host: config.host,
-        User: config.user,
-        Database: config.dbName,
-      });
-    }
   }
 
   /**

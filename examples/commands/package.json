@@ -1,0 +1,32 @@
+{
+  "name": "pxl-commands-example",
+  "version": "1.0.0",
+  "description": "PXL Framework - Command Application Example",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "dev:watch": "tsx watch src/index.ts",
+    "start": "node --loader ts-node/esm src/index.ts",
+    "hello": "tsx src/index.ts hello",
+    "hello:name": "tsx src/index.ts hello --name",
+    "seed": "tsx src/index.ts database-seed",
+    "queue": "tsx src/index.ts queue-process"
+  },
+  "dependencies": {
+    "@scpxl/nodejs-framework": "file:../../",
+    "dotenv": "^17.2.0",
+    "picocolors": "^1.1.1",
+    "yargs": "^18.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "@types/yargs": "^17.0.33",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.8.3"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

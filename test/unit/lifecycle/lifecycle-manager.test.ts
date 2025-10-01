@@ -180,6 +180,31 @@ describe('LifecycleManager', () => {
       clearTimeoutSpy.mockRestore();
     });
 
+    it('should track and abort controllers', async () => {
+      const controller = new AbortController();
+      const abortSpy = vi.spyOn(controller, 'abort');
+
+      lifecycle.trackAbortController(controller);
+      expect(controller.signal.aborted).toBe(false);
+
+      await lifecycle.shutdown();
+
+      expect(abortSpy).toHaveBeenCalledTimes(1);
+      expect(controller.signal.aborted).toBe(true);
+      abortSpy.mockRestore();
+    });
+
+    it('should create tracked abort controllers', async () => {
+      const controller = lifecycle.createAbortController();
+      const abortSpy = vi.spyOn(controller, 'abort');
+
+      await lifecycle.shutdown();
+
+      expect(abortSpy).toHaveBeenCalledTimes(1);
+      expect(controller.signal.aborted).toBe(true);
+      abortSpy.mockRestore();
+    });
+
     it('should track and dispose of disposables', async () => {
       const dispose = vi.fn();
       const disposable = { dispose };

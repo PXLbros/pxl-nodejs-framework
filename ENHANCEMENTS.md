@@ -1,6 +1,6 @@
 # PXL Node.js Framework – Enhancement & Modernization Plan
 
-_Last reviewed: 2025-09-10_
+_Last reviewed: 2025-09-30_
 
 This document catalogs architectural, code-quality, performance, security, and DX (developer experience) improvement opportunities identified in the current codebase. Items are grouped by priority and theme. Each entry includes: Rationale, Recommended Action, Effort (S/M/L/XL), and Risk (Lo/Med/Hi). Where valuable, suggested implementation patterns are included.
 
@@ -30,6 +30,14 @@ Focus areas:
 5. Improve observability (structured logs, correlation IDs, metrics exposure)
 6. Reduce custom utilities where mature OSS solutions exist
 7. Prepare for future Node evolutions (workers vs cluster)
+
+### Recent Progress (Sep 2025)
+
+- Configuration validation now runs inside `BaseApplication`, surfacing aggregated `ConfigValidationError` details before any side effects.
+- Lifecycle readiness barrier and new `/health/live` + `/health/ready` endpoints shipped, powered by lifecycle-managed readiness checks.
+- Performance monitor moved behind `PerformanceMonitorPlugin`, wrapping Redis/Database connection monitoring and auto-cleaning via lifecycle hooks.
+- WebSocket example flow expanded with greetings demo plus Vue 3 + TypeScript frontend in `examples/hello-world`.
+- Vitest coverage thresholds (80% across metrics) enabled, ensuring test runs fail below baseline.
 
 ---
 
@@ -94,11 +102,11 @@ Status Legend: ✅ Done | 🚧 In Progress | 📅 Planned / Not Started
 - Current Status: `LifecycleManager`, `ShutdownController`, exit handler utilities, hook phases, disposables tracking, timeout logic, and tests are implemented (`src/lifecycle/*`). Direct `process.exit` calls have been removed from core runtime except in launcher/test contexts. Further polish: aggregate error reporting formatting & documenting embedding pattern in docs (follow-up pending).
 - Effort: M | Risk: Med (behavioral change around shutdown ordering; requires thorough migration note)
 
-### 2. Configuration Validation & Type Safety – � In Progress
+### 2. Configuration Validation & Type Safety – ✅ Done (bootstrap enforcement)
 
 - Issue: Commented-out Joi schema; runtime assumptions; unvalidated nested options.
 - Action: Adopt Zod (better TS inference) or retain Joi with explicit schemas + `infer` types. Fail-fast at startup with aggregated error report.
-- Current Status: Initial Zod schema implemented (`src/config/schema.ts`) covering Redis, Database, Queue, Events, Performance Monitoring, Web/WebSocket, Cluster, Auth. Provides `validateFrameworkConfig()` + `ConfigValidationError` with formatted issues. Exported via root barrel. Not yet invoked inside `BaseApplication` (next step: call early in constructor before side-effects & add env var mapping helper). Also need docs page and migration note for consumers.
+- Current Status: Zod-based schema (`src/config/schema.ts`) now enforced at `BaseApplication` construction time, returning typed config and surfacing aggregated issue messages. `ConfigValidationError` is wrapped with friendly output and `formatConfigIssues()` utilities for launchers. Follow-up: publish docs + migration guide and introduce optional env-var loader helpers.
 - Effort: M | Risk: Lo
 
 ### 3. Security Hardening (HTTP) – 📅 Planned
@@ -122,11 +130,11 @@ Status Legend: ✅ Done | 🚧 In Progress | 📅 Planned / Not Started
 - Current Status: Central logger abstraction in place, but mixed `console` vs `Logger` largely addressed; still lacks normalized error envelope & correlation. Work to introduce `ErrorReporter` pending.
 - Effort: M | Risk: Med
 
-### 6. Input Validation & Route Typing – 📅 Planned
+### 6. Input Validation & Route Typing – 🚧 In Progress
 
 - Issue: Dynamic controller/action resolution with `any`; validation uses `request.compileValidationSchema` (non-standard) => unclear integration with Fastify’s native AJV.
 - Action: Generate JSON Schemas (Zod -> JSON) for routes; use Fastify `schema` property (automatically validated). Use typed controller signature: `Controller<ActionParams, Body, Query, Reply>` generics.
-- Current Status: Routes dynamically load controllers without schema objects; no Fastify JSON schema integration yet.
+- Current Status: Config schemas cover Web/WebSocket routes with stricter typing—`WebSocketRouteSchema` now requires `type`, `controllerName`, and `action`, improving runtime safety. HTTP routes still lack Fastify JSON schema definitions; need conversion layer (Zod → JSON) and typed controller signatures.
 - Effort: L | Risk: Med
 
 ### 7. Redis Client Duplication – ✅ Done
@@ -148,36 +156,18 @@ Status Legend: ✅ Done | 🚧 In Progress | 📅 Planned / Not Started
 - Action: Introduce service registration container (DI light): `ApplicationContext` holding providers. Refactor into modules: `ConfigModule`, `CacheModule`, `DatabaseModule`, `MessagingModule`, `MetricsModule`.
 - Effort: L | Risk: Med
 
-### 9. Performance Monitor Pluginization – 📅 Planned
+### 9. Performance Monitor Pluginization – ✅ Done
 
 - Issue: Side-effect initialization inside constructor; leakage risk (interval not cleared on stop).
 - Action: Convert to plugin with explicit `start()` / `stop()` and registration in lifecycle.
+- Current Status: `PerformanceMonitorPlugin.register()` now runs from `BaseApplication`, conditionally enabling monitoring, wiring wrappers for DB/Queue/Cache, using tracked intervals via lifecycle, and disposing on shutdown. Redis/DB connection pathways instrumented through performance wrappers.
 - Effort: M | Risk: Lo
 
-### 10. Health & Readiness Probes – � In Progress
+### 10. Health & Readiness Probes – ✅ Done (with follow-up polish)
 
 - Issue: Single `/health` route; no readiness gate (e.g., DB connected, queues ready) vs liveness (process up).
 - Action: Add `/health/live` & `/health/ready` with pluggable probe functions.
-- Implementation (In Progress):
-  - Introduced lifecycle awareness in web controllers (inject `LifecycleManager`).
-  - Added separate controller actions: `live` (always 200 if process not shutting down) and `ready` (aggregates probes: database, redis, queue, event manager; returns 503 until lifecycle phase RUNNING & all mandatory probes pass).
-  - Backwards compatibility: legacy `/health` retained (composite readiness style JSON) but will be deprecated in favor of explicit endpoints.
-  - Probe registry design: lightweight interface `HealthProbe { name: string; required: boolean; check(): Promise<boolean>; }` planned for next step so modules can self‑register via lifecycle `onInit`.
-  - Performance monitoring skip list updated to include new endpoints.
-  - Readiness JSON shape draft:
-    ```json
-    {
-      "ready": true,
-      "phase": "RUNNING",
-      "probes": {
-        "database": { "healthy": true, "required": true },
-        "redis": { "healthy": true, "required": true },
-        "queue": { "healthy": true, "required": false }
-      }
-    }
-    ```
-  - Failure returns 503 with `ready: false` and list of failing required probes.
-- Current Status: Controller & route refactor underway (code changes in this commit add endpoints & lifecycle injection; probe registry abstraction next).
+- Current Status: Lifecycle-managed readiness barrier is live. `HealthController` now serves `/health/live` and `/health/ready`, with the latter aggregating lifecycle readiness checks (`redis`, `database`, `webserver`, etc.) and returning 503 until the app enters `RUNNING` with all probes healthy. Responses include probe status metadata for backward compatibility. Follow-up: optional probe registry for custom modules + deprecate legacy `/health` once consumers migrate.
 - Effort: S | Risk: Lo
 
 ### 11. Logging Correlation & Structured Metadata – 📅 Planned
@@ -273,11 +263,11 @@ Status Legend: ✅ Done | 🚧 In Progress | 📅 Planned / Not Started
 - Action: Curate explicit exports; add internal-only modules in `src/internal`.
 - Effort: M | Risk: Med
 
-### 20. Test Strategy & Coverage Gate – 🚧 In Progress
+### 20. Test Strategy & Coverage Gate – ✅ Done (baseline)
 
 - Issue: Using Node test runner with `--experimental-strip-types`; uncertain coverage enforcement.
 - Action: Add coverage threshold (nyc + source maps) or integrate `c8`. Provide unit vs integration separation + contract tests for plugin APIs.
-- Current Status: Extensive unit & integration tests exist (not yet enforcing coverage thresholds). Need coverage gate config & reporting improvements.
+- Current Status: Vitest config now enforces 80% thresholds across lines/branches/functions/statements, with `vitest run --coverage` wired via `npm run test:coverage`. Coverage reports emit text/json/html outputs; next step is CI integration + optional badge.
 - Effort: M | Risk: Lo
 
 ### 21. Pluggable Queue / Job Middleware – 📅 Planned
@@ -286,11 +276,11 @@ Status Legend: ✅ Done | 🚧 In Progress | 📅 Planned / Not Started
 - Action: Introduce job pipeline: `before(job)`, `after(job)`, `onError(job, err)`.
 - Effort: M | Risk: Lo
 
-### 22. Graceful Startup Barrier – 🚧 In Progress
+### 22. Graceful Startup Barrier – ✅ Done
 
 - Issue: `start()` proceeds after init; no aggregated readiness check to gate external traffic.
 - Action: Implement `Promise.allSettled` aggregator & readiness state machine.
-- Current Status: Lifecycle phases (`initialize` -> `start` -> `ready`) implemented; readiness gating not yet exposed to external health endpoint.
+- Current Status: Lifecycle `ready()` now blocks until readiness checks pass; `BaseApplication` registers Redis/Database probes and `WebApplication` adds `webserver` readiness. `/health/ready` consumes the same checks, ensuring traffic only flows after dependencies are up. Consider exposing per-module opt-in readiness registration helpers next.
 - Effort: S | Risk: Lo
 
 ### 23. Binary / CLI Ergonomics – 📅 Planned
@@ -323,9 +313,9 @@ Status Legend: ✅ Done | 🚧 In Progress | 📅 Planned / Not Started
 
 - Add conventional commits + changelog generation (`changesets` or `semantic-release`).
 
-### 29. Example Projects / Templates – 📅 Planned
+### 29. Example Projects / Templates – 🚧 In Progress
 
-- Provide minimal starter (API only), full stack, event-driven sample.
+- `examples/hello-world` now ships with backend + new Vue 3 + TypeScript frontend demonstrating WebSocket greetings flow and native fetch-based API usage. Next: document how to bootstrap custom services, add queue/event-driven sample, and provide TypeScript SDK scaffolding.
 
 ### 30. Runtime Validation for Config Mutations – 📅 Planned
 
@@ -348,22 +338,21 @@ Status Legend: ✅ Done | 🚧 In Progress | 📅 Planned / Not Started
 
 ## Suggested Implementation Sequencing (Roadmap)
 
-1. (Sprint 1) Config + lifecycle + logging baseline (Items 1,2,5,6 subset) → Establish stable core.
-2. (Sprint 2) Security + validation + health/readiness (Items 3,10,15).
-3. (Sprint 3) DI refactor + module extraction (Item 8) + performance monitor plugin (9).
-4. (Sprint 4) Observability (16,11) + metrics/tracing.
-5. (Sprint 5) Cluster strategy abstraction (4) + Redis consolidation (7) + route DSL (13).
-6. (Sprint 6+) Remaining medium polish (17–23) then low-priority backlog.
+1. Next Sprint: Harden HTTP surface + error pipeline (Items 3,5,11,12) while keeping shutdown/validation momentum.
+2. Following Sprint: Ship end-to-end request validation & documentation (Items 6,15) plus example/docs polish (29).
+3. Subsequent Sprint: Modularization + DI boundaries (8) coupled with expanded observability (16) and metrics pipelines.
+4. Later: Concurrency strategy abstraction (4), route DSL (13), and naming/API alignment (17) once core stability work lands.
+5. Backlog: Remaining medium polish (21–23,24–30) prioritized by developer feedback.
 
 ---
 
 ## Quick Wins (High ROI / Low Effort)
 
-- Remove duplicate Redis library (7)
-- Standardize logging calls (5)
-- Add Zod config schema (2)
-- Add basic security headers + reduce body limit (3)
-- Add request ID with ALS (11)
+- Ship secure HTTP defaults: rate limiting, helmet, right-sized body limits (3)
+- Introduce async-local request IDs + log propagation (11)
+- Replace `Helper.defaultsDeep` with vetted merge utility + tests (12)
+- Document config validation contract & env-loader guidance (2 follow-up)
+- Generate JSON schemas for HTTP routes (Zod → Fastify) to close validation gap (6)
 
 ---
 

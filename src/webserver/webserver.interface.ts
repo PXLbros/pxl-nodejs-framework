@@ -131,12 +131,49 @@ export interface WebServerErrorsOptions {
   verbose: boolean;
 }
 
+export interface WebServerSecurityHelmetOptions {
+  enabled?: boolean;
+  contentSecurityPolicy?: boolean;
+  crossOriginEmbedderPolicy?: boolean;
+  crossOriginOpenerPolicy?: boolean;
+  crossOriginResourcePolicy?: boolean;
+  dnsPrefetchControl?: boolean;
+  frameguard?: boolean;
+  hidePoweredBy?: boolean;
+  hsts?: boolean;
+  ieNoOpen?: boolean;
+  noSniff?: boolean;
+  originAgentCluster?: boolean;
+  permittedCrossDomainPolicies?: boolean;
+  referrerPolicy?: boolean;
+  xssFilter?: boolean;
+}
+
+export interface WebServerSecurityRateLimitOptions {
+  enabled?: boolean;
+  max?: number;
+  timeWindow?: string;
+  ban?: number;
+  cache?: number;
+}
+
+export interface WebServerSecurityOptions {
+  helmet?: WebServerSecurityHelmetOptions;
+  rateLimit?: WebServerSecurityRateLimitOptions;
+}
+
 export interface WebServerOptions {
   /** Web server host */
   host: string;
 
   /** Web server port */
   port: number;
+
+  /** Maximum request body size in bytes (default: 100MB) */
+  bodyLimit?: number;
+
+  /** Connection timeout in milliseconds (default: 30s) */
+  connectionTimeout?: number;
 
   /** Web server CORS options */
   cors?: WebServerCorsOptions;
@@ -148,6 +185,9 @@ export interface WebServerOptions {
   controllersDirectory: string;
 
   log?: WebServerLogConfig;
+
+  /** Web server security options (helmet, rate limiting) */
+  security?: WebServerSecurityOptions;
 
   /** Web server debug options */
   debug?: WebServerDebugOptions;

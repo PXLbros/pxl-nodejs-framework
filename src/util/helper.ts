@@ -1,42 +1,38 @@
+import lodashDefaultsDeep from 'lodash.defaultsdeep';
+
 /**
- * Deep merge two objects safely, preventing prototype pollution.
+ * Deep merge objects with defaults, preventing prototype pollution.
  *
- * Notes:
- * - Keys are enumerated via Object.keys(source) (no prototype chain traversal)
- * - Prototype pollution vectors (__proto__, constructor, prototype) are skipped
- * - All dynamic property writes are confined to caller-provided plain objects
- * - security/detect-object-injection warnings are suppressed for the controlled region
+ * This is a secure wrapper around lodash.defaultsdeep that:
+ * - Sanitizes sources to remove dangerous keys (__proto__, constructor, prototype)
+ * - Delegates to battle-tested lodash.defaultsdeep for merge logic
+ * - Maintains backward compatibility with existing usage
+ *
+ * @param target - The target object to merge into
+ * @param sources - Source objects providing default values
+ * @returns The merged target object (mutated)
+ *
+ * @example
+ * const userConfig = { host: 'localhost' };
+ * const defaults = { host: '0.0.0.0', port: 3001 };
+ * const merged = defaultsDeep(userConfig, defaults);
+ * // merged = { host: 'localhost', port: 3001 }
  */
-/* eslint-disable security/detect-object-injection */
 function defaultsDeep(target: any, ...sources: any[]): any {
-  if (!sources.length) return target;
-  const source = sources.shift();
-  if (isObject(target) && isObject(source)) {
-    for (const key of Object.keys(source)) {
-      if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
-      const sourceValue = (source as Record<string, any>)[key];
-      const existing = (target as Record<string, any>)[key];
-      if (isObject(sourceValue)) {
-        (target as Record<string, any>)[key] = isObject(existing) ? existing : {};
-        defaultsDeep((target as Record<string, any>)[key], sourceValue);
-      } else if (Array.isArray(sourceValue) && Array.isArray(existing)) {
-        for (let i = 0; i < sourceValue.length; i++) {
-          if (sourceValue[i] === undefined && existing[i] !== undefined) continue;
-          if (isObject(sourceValue[i])) {
-            existing[i] = isObject(existing[i]) ? existing[i] : {};
-            defaultsDeep(existing[i], sourceValue[i]);
-          } else {
-            existing[i] = sourceValue[i];
-          }
-        }
-      } else if (!(key in target)) {
-        (target as Record<string, any>)[key] = sourceValue;
-      }
-    }
-  }
-  return defaultsDeep(target, ...sources);
+  // Sanitize sources to prevent prototype pollution
+  const sanitizedSources = sources.map(source => {
+    if (!isObject(source)) return source;
+
+    const sanitized = { ...source };
+    delete sanitized['__proto__'];
+    delete sanitized['constructor'];
+    delete sanitized['prototype'];
+    return sanitized;
+  });
+
+  // Delegate to lodash.defaultsdeep with sanitized sources
+  return lodashDefaultsDeep(target, ...sanitizedSources);
 }
-/* eslint-enable security/detect-object-injection */
 
 /**
  * Check if a value is an object.
@@ -79,7 +75,7 @@ function getValueFromArray(arr: AnyObject[], path: string): any[] {
 }
 
 function getScriptFileExtension(): string {
-  return process.env.NODE_ENV === 'local' ? 'ts' : 'js';
+  return process.env.NODE_ENV === 'development' ? 'ts' : 'js';
 }
 
 export default {

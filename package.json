@@ -1,6 +1,6 @@
 {
   "name": "@scpxl/nodejs-framework",
-  "version": "1.0.18",
+  "version": "1.0.19",
   "description": "PXL Node.js Framework",
   "engines": {
     "node": ">=22.0.0"
@@ -28,6 +28,10 @@
       "import": "./dist/database/index.js",
       "types": "./dist/database/index.d.ts"
     },
+    "./error": {
+      "import": "./dist/error/index.js",
+      "types": "./dist/error/index.d.ts"
+    },
     "./webserver": {
       "import": "./dist/webserver/index.js",
       "types": "./dist/webserver/index.d.ts"
@@ -43,6 +47,10 @@
     "./redis": {
       "import": "./dist/redis/index.js",
       "types": "./dist/redis/index.d.ts"
+    },
+    "./request-context": {
+      "import": "./dist/request-context/index.js",
+      "types": "./dist/request-context/index.d.ts"
     },
     "./cache": {
       "import": "./dist/cache/index.js",
@@ -110,7 +118,16 @@
     "check-all": "npm run lint && npm run prettier && npm run typecheck",
     "yalc:publish": "yalc publish",
     "yalc:push": "yalc push",
-    "dev:yalc": "npm run build && npm run yalc:push"
+    "dev:yalc": "npm run build && npm run yalc:push",
+    "example:install": "npm install --prefix examples/hello-world/backend && npm install --prefix examples/hello-world/frontend && npm install --prefix examples/commands",
+    "example:hello-world": "concurrently -n backend,frontend -c blue,magenta \"npm run example:hello-world:backend\" \"npm run example:hello-world:frontend\"",
+    "example:hello-world:backend": "npm run dev --prefix examples/hello-world/backend",
+    "example:hello-world:frontend": "npm run dev --prefix examples/hello-world/frontend",
+    "example:commands:install": "npm install --prefix examples/commands",
+    "example:commands": "npm run dev --prefix examples/commands --",
+    "example:commands:hello": "npm run dev --prefix examples/commands -- hello",
+    "example:commands:seed": "npm run dev --prefix examples/commands -- database-seed",
+    "example:commands:queue": "npm run dev --prefix examples/commands -- queue-process"
   },
   "keywords": [],
   "author": "PXL <devops@pxlagency.com>",
@@ -118,6 +135,7 @@
   "devDependencies": {
     "@swc/core": "^1.4.1",
     "@types/fluent-ffmpeg": "^2.1.26",
+    "@types/lodash.defaultsdeep": "^4.6.9",
     "@types/node": "^24.0.13",
     "@types/uuid": "^10.0.0",
     "@types/ws": "^8.5.10",
@@ -126,7 +144,8 @@
     "@typescript-eslint/parser": "^8.1.0",
     "@vitest/coverage-v8": "^3.2.4",
     "@vitest/ui": "^3.2.4",
-    "del-cli": "^6.0.0",
+    "concurrently": "^9.1.2",
+    "del-cli": "^7.0.0",
     "esbuild": "^0.25.5",
     "eslint": "^9.9.0",
     "eslint-config-prettier": "^10.1.5",
@@ -137,7 +156,7 @@
     "husky": "^9.1.7",
     "lint-staged": "^16.1.2",
     "prettier": "^3.1.1",
-    "redis-memory-server": "^0.12.1",
+    "redis-memory-server": "^0.13.0",
     "ts-node": "^10.9.2",
     "tsc-alias": "^1.8.16",
     "tsconfig-paths": "^4.2.0",
@@ -148,7 +167,9 @@
     "@aws-sdk/client-s3": "^3.496.0",
     "@aws-sdk/s3-request-presigner": "^3.675.0",
     "@fastify/cors": "^11.0.0",
+    "@fastify/helmet": "^12.0.0",
     "@fastify/multipart": "^9.0.0",
+    "@fastify/rate-limit": "^10.0.0",
     "@mikro-orm/cli": "^6.0.5",
     "@mikro-orm/core": "^6.0.5",
     "@mikro-orm/migrations": "^6.0.5",
@@ -156,18 +177,18 @@
     "@mikro-orm/seeder": "^6.0.5",
     "@sentry/node": "^9.37.0",
     "@sentry/profiling-node": "^9.37.0",
-    "axios": "^1.6.2",
     "bullmq": "^5.1.3",
     "dotenv": "^17.2.0",
     "fastify": "^5.0.0",
     "fluent-ffmpeg": "^2.1.3",
     "http-status-codes": "^2.3.0",
     "ioredis": "^5.3.2",
-    "joi": "^17.12.1",
+    "joi": "^18.0.1",
     "jose": "^6.0.10",
-    "sharp": "^0.34.3",
+    "lodash.defaultsdeep": "^4.6.1",
+    "lru-cache": "^11.2.2",
     "typescript": "^5.8.3",
-    "uuid": "^11.0.2",
+    "uuid": "^13.0.0",
     "winston": "^3.11.0",
     "ws": "^8.15.1",
     "yalc": "^1.0.0-pre.53",

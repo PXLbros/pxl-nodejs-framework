@@ -1,0 +1,2 @@
+# This directory is required by the framework even when using inline controllers
+# The framework checks for this directory's existence before registering routes

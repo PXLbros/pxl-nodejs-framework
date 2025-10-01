@@ -1,26 +1,24 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Queue, type Job } from 'bullmq';
-import { existsSync } from 'fs';
 import QueueManager from '../../../src/queue/manager.js';
 import QueueWorker from '../../../src/queue/worker.js';
 import { Logger } from '../../../src/logger/index.js';
-import { Helper, Loader } from '../../../src/util/index.js';
+import { File, Helper, Loader } from '../../../src/util/index.js';
 import type { QueueManagerConstructorParams } from '../../../src/queue/manager.interface.js';
 import type { QueueItem } from '../../../src/queue/index.interface.js';
 
 // Mock dependencies
 vi.mock('bullmq');
-vi.mock('fs');
 vi.mock('../../../src/queue/worker.js');
 vi.mock('../../../src/logger/index.js');
 vi.mock('../../../src/util/index.js');
 
 const mockQueue = vi.mocked(Queue);
-const mockExistsSync = vi.mocked(existsSync);
 const mockQueueWorker = vi.mocked(QueueWorker);
 const mockLogger = vi.mocked(Logger);
 const mockHelper = vi.mocked(Helper);
 const mockLoader = vi.mocked(Loader);
+const mockFile = vi.mocked(File);
 
 describe('QueueManager', () => {
   let queueManager: QueueManager;
@@ -82,7 +80,7 @@ describe('QueueManager', () => {
     });
 
     it('should return early if processors directory does not exist', async () => {
-      mockExistsSync.mockReturnValue(false);
+      mockFile.pathExists.mockResolvedValue(false);
 
       const queues: QueueItem[] = [
         {
@@ -94,13 +92,13 @@ describe('QueueManager', () => {
 
       await queueManager.registerQueues({ queues });
 
-      expect(mockExistsSync).toHaveBeenCalledWith('/test/processors');
+      expect(mockFile.pathExists).toHaveBeenCalledWith('/test/processors');
       // No warning should be logged - the function just returns early
       expect(mockLogger.warn).not.toHaveBeenCalled();
     });
 
     it('should register queues successfully', async () => {
-      mockExistsSync.mockReturnValue(true);
+      mockFile.pathExists.mockResolvedValue(true);
       mockLoader.loadModulesInDirectory.mockResolvedValue({
         'test-job': class MockProcessor {},
       });
@@ -136,7 +134,7 @@ describe('QueueManager', () => {
     });
 
     it('should handle loader errors', async () => {
-      mockExistsSync.mockReturnValue(true);
+      mockFile.pathExists.mockResolvedValue(true);
       mockLoader.loadModulesInDirectory.mockRejectedValue(new Error('Load error'));
 
       const queues: QueueItem[] = [
@@ -276,7 +274,7 @@ describe('QueueManager', () => {
     let mockQueueInstance: any;
 
     beforeEach(() => {
-      mockExistsSync.mockReturnValue(true);
+      mockFile.pathExists.mockResolvedValue(true);
       mockLoader.loadModulesInDirectory.mockResolvedValue({
         'test-job': class MockProcessor {},
       });

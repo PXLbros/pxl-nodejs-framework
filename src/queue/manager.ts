@@ -6,11 +6,10 @@ import type { DatabaseInstance } from '../database/index.js';
 import { Logger } from '../logger/index.js';
 import QueueWorker from './worker.js';
 import type BaseProcessor from './processor/base.js';
-import { Helper, Loader, Time } from '../util/index.js';
+import { File, Helper, Loader, Time } from '../util/index.js';
 import type { QueueJob, QueueJobData } from './job.interface.js';
 import type { ProcessorConstructor } from './processor/processor.interface.js';
 import type { QueueItem } from './index.interface.js';
-import { existsSync } from 'fs';
 import type { ApplicationConfig } from '../application/base-application.interface.js';
 import type EventManager from '../event/manager.js';
 
@@ -56,7 +55,7 @@ export default class QueueManager {
     }
 
     // Check if processors directory exists
-    const processorsDirectoryExists = await existsSync(this.options.processorsDirectory);
+    const processorsDirectoryExists = await File.pathExists(this.options.processorsDirectory);
 
     if (!processorsDirectoryExists) {
       return;

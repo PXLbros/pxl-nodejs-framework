@@ -10,6 +10,8 @@ export interface CacheOperationMetadata {
   ttl?: number;
   error?: string;
   argumentCount?: number;
+  host?: string;
+  port?: number;
 }
 
 export class CachePerformanceWrapper {
@@ -24,6 +26,29 @@ export class CachePerformanceWrapper {
       CachePerformanceWrapper.performanceMonitor = PerformanceMonitor.getInstance();
     }
     return CachePerformanceWrapper.performanceMonitor;
+  }
+
+  /**
+   * Monitor cache connection operations (e.g., Redis connect/disconnect)
+   */
+  public static async monitorConnection<T>(
+    operationName: string,
+    operation: () => Promise<T>,
+    metadata?: Partial<CacheOperationMetadata>,
+  ): Promise<T> {
+    const monitor = CachePerformanceWrapper.getPerformanceMonitor();
+
+    const operationMetadata: CacheOperationMetadata = {
+      operation: operationName,
+      ...metadata,
+    };
+
+    return monitor.measureAsync({
+      name: `connection.${operationName}`,
+      type: 'cache',
+      fn: operation,
+      metadata: operationMetadata,
+    });
   }
 
   /**

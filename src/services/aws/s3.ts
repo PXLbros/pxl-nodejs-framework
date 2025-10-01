@@ -9,9 +9,9 @@ import {
   UploadPartCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { Helper } from '../../util/index.js';
+import { File, Helper } from '../../util/index.js';
 import type { AwsS3ConstructorOptions } from './s3.interface.js';
-import { createWriteStream, existsSync, mkdirSync } from 'fs';
+import { createWriteStream } from 'fs';
 import { Readable, pipeline } from 'stream';
 import { promisify } from 'node:util';
 import { Logger } from '../../logger/index.js';
@@ -250,9 +250,8 @@ export default class AwsS3 {
 
       const directoryPath = dirname(destinationFilePath);
 
-      if (!existsSync(directoryPath)) {
-        mkdirSync(directoryPath, { recursive: true });
-      }
+      // Ensure directory exists
+      await File.ensureDir(directoryPath);
 
       const fileStream = createWriteStream(destinationFilePath);
       const totalSize = parseInt(response.ContentLength?.toString() ?? '0', 10);
@@ -272,7 +271,8 @@ export default class AwsS3 {
 
       await asyncPipeline(response.Body, fileStream);
 
-      if (!existsSync(destinationFilePath)) {
+      // Verify file was written
+      if (!(await File.pathExists(destinationFilePath))) {
         throw new Error(`Could not find downloaded file at ${destinationFilePath}`);
       }
 

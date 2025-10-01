@@ -1,10 +1,9 @@
-import { existsSync } from 'fs';
 import type { WebSocketMessageHandler, WebSocketRoute, WebSocketType } from './websocket.interface.js';
 import { getRouteKey, log, parseServerMessage } from './utils.js';
 import type { WebSocketServerBaseControllerType } from './controller/server/base.interface.js';
 import type { WebSocketClientBaseControllerType } from './controller/client/base.interface.js';
 import type WebSocket from 'ws';
-import { Helper, Loader } from '../util/index.js';
+import { File, Helper, Loader } from '../util/index.js';
 
 export default abstract class WebSocketBase {
   protected routes: WebSocketRoute[] = [];
@@ -21,7 +20,7 @@ export default abstract class WebSocketBase {
   protected async configureRoutes(routes: WebSocketRoute[], controllersDirectory: string): Promise<void> {
     // log ('Configuring routes', { Type: this.type, 'Controllers Directory': controllersDirectory });
 
-    const controllersDirectoryExists = await existsSync(controllersDirectory);
+    const controllersDirectoryExists = await File.pathExists(controllersDirectory);
 
     if (!controllersDirectoryExists) {
       log('Controllers directory not found', {

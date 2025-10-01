@@ -1,0 +1,30 @@
+{
+  "name": "pxl-example-hello-world-frontend",
+  "version": "1.0.0",
+  "description": "Simple Vue 3 + TypeScript frontend for PXL Framework example",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc && vite build",
+    "preview": "vite preview",
+    "typecheck": "vue-tsc --noEmit"
+  },
+  "keywords": [
+    "pxl",
+    "example",
+    "vue",
+    "vite",
+    "typescript"
+  ],
+  "author": "PXL",
+  "license": "ISC",
+  "dependencies": {
+    "vue": "^3.4.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.0.0",
+    "typescript": "^5.8.3",
+    "vite": "^5.0.0",
+    "vue-tsc": "^2.0.0"
+  }
+}

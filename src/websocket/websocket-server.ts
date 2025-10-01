@@ -37,7 +37,7 @@ export default class WebSocketServer extends WebSocketBase {
 
   private server?: WS;
 
-  private checkConnectedClientsInterval?: ReturnType<typeof setInterval>;
+  private abortController = new AbortController();
   private workerId: number | null;
   private uniqueInstanceId: string;
   private applicationConfig: WebApplicationConfig;
@@ -177,10 +177,8 @@ export default class WebSocketServer extends WebSocketBase {
   }
 
   public async stop(): Promise<void> {
-    if (this.checkConnectedClientsInterval) {
-      clearInterval(this.checkConnectedClientsInterval);
-      this.checkConnectedClientsInterval = undefined;
-    }
+    // Abort all ongoing operations (intervals, etc.)
+    this.abortController.abort();
 
     // Clean up Redis subscriber listeners
     this.redisInstance.subscriberClient?.removeListener('message', this.handleSubscriberMessage);
@@ -211,6 +209,9 @@ export default class WebSocketServer extends WebSocketBase {
       clientManager: this.clientManager,
     });
 
+    // Create new AbortController for potential restart
+    this.abortController = new AbortController();
+
     log('Server stopped');
   }
 
@@ -237,10 +238,13 @@ export default class WebSocketServer extends WebSocketBase {
       throw new Error('WebSocket server not started');
     }
 
-    if (this.options.disconnectInactiveClients?.enabled) {
-      this.checkConnectedClientsInterval = setInterval(
+    if (this.options.disconnectInactiveClients?.enabled && this.options.disconnectInactiveClients.intervalCheckTime) {
+      // Note: setInterval with signal option requires Node.js 15+
+      // TypeScript types may not reflect this, so we use type assertion
+      (setInterval as (fn: () => void, ms: number, options?: { signal: AbortSignal }) => NodeJS.Timeout)(
         () => this.checkInactiveClients(),
         this.options.disconnectInactiveClients.intervalCheckTime,
+        { signal: this.abortController.signal },
       );
     }
 

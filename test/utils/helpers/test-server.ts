@@ -58,12 +58,46 @@ export function createTestWebApplicationConfig(overrides: Partial<WebApplication
 /**
  * Makes an HTTP request to test server availability
  */
-export async function testServerRequest(port: number, path: string = '/'): Promise<{ status: number; ok: boolean }> {
+export async function testServerRequest(
+  port: number,
+  path: string = '/',
+  options?: {
+    method?: string;
+    data?: any;
+    headers?: Record<string, string>;
+  },
+): Promise<{ status: number; ok: boolean; data?: any; headers?: any }> {
   try {
-    const response = await fetch(`http://127.0.0.1:${port}${path}`);
+    const url = `http://127.0.0.1:${port}${path}`;
+    const fetchOptions: RequestInit = {
+      method: options?.method || 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...options?.headers,
+      },
+    };
+
+    if (options?.data && (options?.method === 'POST' || options?.method === 'PUT' || options?.method === 'PATCH')) {
+      fetchOptions.body = JSON.stringify(options.data);
+    }
+
+    const response = await fetch(url, fetchOptions);
+    const contentType = response.headers.get('content-type');
+    let data;
+
+    if (contentType?.includes('application/json')) {
+      try {
+        data = await response.json();
+      } catch {
+        // Not valid JSON
+      }
+    }
+
     return {
       status: response.status,
       ok: response.ok,
+      data,
+      headers: Object.fromEntries(response.headers.entries()),
     };
   } catch (error) {
     throw new Error(`Failed to connect to server on port ${port}: ${error}`);

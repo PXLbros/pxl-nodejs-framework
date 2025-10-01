@@ -1,5 +1,8 @@
+import crypto from 'node:crypto';
 import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest, type HTTPMethods } from 'fastify';
 import cors from '@fastify/cors';
+import helmet from '@fastify/helmet';
+import rateLimit from '@fastify/rate-limit';
 import multipart from '@fastify/multipart';
 import {
   type WebServerConstructorParams,
@@ -8,7 +11,7 @@ import {
   WebServerRouteType,
 } from './webserver.interface.js';
 import { Logger } from '../logger/index.js';
-import { Helper, Loader, Time } from '../util/index.js';
+import { File, Helper, Loader, Time } from '../util/index.js';
 import WebServerUtil from './util.js';
 import type { RedisInstance } from '../redis/index.js';
 import type { DatabaseInstance } from '../database/index.js';
@@ -17,12 +20,13 @@ import type { QueueManager } from '../queue/index.js';
 import { WebServerHealthController } from '../index.js';
 import type { LifecycleManager } from '../lifecycle/lifecycle-manager.js';
 import type { ApplicationConfig } from '../application/base-application.interface.js';
-import { existsSync } from 'fs';
 import type EventManager from '../event/manager.js';
+import { enterRequestContext } from '../request-context/index.js';
 
 declare module 'fastify' {
   interface FastifyRequest {
     startTime?: number;
+    requestId?: string;
   }
 }
 
@@ -82,12 +86,13 @@ class WebServer {
     this.lifecycleManager = params.lifecycleManager;
 
     // Create Fastify server
+    const defaultBodyLimit = 25 * 1024 * 1024; // 25MB (safer default)
+    const defaultConnectionTimeout = 10 * 1000; // 10 seconds (safer default)
+
     this.fastifyServer = Fastify({
       logger: false,
-      // body limit = 5gb
-      bodyLimit: 5 * 1024 * 1024 * 1024,
-      // 30 minutes
-      connectionTimeout: 30 * 60 * 1000,
+      bodyLimit: this.options.bodyLimit ?? defaultBodyLimit,
+      connectionTimeout: this.options.connectionTimeout ?? defaultConnectionTimeout,
     });
   }
 
@@ -95,6 +100,9 @@ class WebServer {
    * Load web server.
    */
   public async load(): Promise<void> {
+    // Configure security (helmet, rate limiting)
+    await this.configureSecurity();
+
     // Configure hooks
     this.configureHooks();
 
@@ -106,6 +114,58 @@ class WebServer {
 
     // Configure routes
     await this.configureRoutes();
+  }
+
+  /**
+   * Configure security features (Helmet, Rate Limiting)
+   */
+  private async configureSecurity(): Promise<void> {
+    const security = this.options.security ?? {};
+
+    // Configure Helmet for security headers
+    const helmetConfig = security.helmet ?? { enabled: true };
+    if (helmetConfig.enabled !== false) {
+      await this.fastifyServer.register(helmet, {
+        contentSecurityPolicy: helmetConfig.contentSecurityPolicy !== false,
+        crossOriginEmbedderPolicy: helmetConfig.crossOriginEmbedderPolicy !== false,
+        crossOriginOpenerPolicy: helmetConfig.crossOriginOpenerPolicy !== false,
+        crossOriginResourcePolicy: helmetConfig.crossOriginResourcePolicy !== false,
+        dnsPrefetchControl: helmetConfig.dnsPrefetchControl !== false,
+        frameguard: helmetConfig.frameguard !== false,
+        hidePoweredBy: helmetConfig.hidePoweredBy !== false,
+        hsts: helmetConfig.hsts !== false,
+        ieNoOpen: helmetConfig.ieNoOpen !== false,
+        noSniff: helmetConfig.noSniff !== false,
+        originAgentCluster: helmetConfig.originAgentCluster !== false,
+        permittedCrossDomainPolicies: helmetConfig.permittedCrossDomainPolicies !== false,
+        referrerPolicy: helmetConfig.referrerPolicy !== false,
+        xssFilter: helmetConfig.xssFilter !== false,
+      });
+    }
+
+    // Configure rate limiting
+    const rateLimitConfig = security.rateLimit ?? { enabled: true };
+    if (rateLimitConfig.enabled !== false) {
+      await this.fastifyServer.register(rateLimit, {
+        max: rateLimitConfig.max ?? 1000,
+        timeWindow: rateLimitConfig.timeWindow ?? '1 minute',
+        ban: rateLimitConfig.ban,
+        cache: rateLimitConfig.cache ?? 5000,
+      });
+    }
+
+    // Warn about wildcard CORS in production
+    if (process.env.NODE_ENV === 'production' && this.options.cors?.enabled) {
+      const corsConfig = this.options.cors as { enabled: true; urls: string[] };
+      if (corsConfig.urls?.includes('*')) {
+        this.logger.warn({
+          message: 'Wildcard CORS (*) is enabled in production - this is a security risk',
+          meta: {
+            recommendation: 'Specify allowed origins explicitly',
+          },
+        });
+      }
+    }
   }
 
   /**
@@ -150,16 +210,30 @@ class WebServer {
       await new Promise(resolve => setTimeout(resolve, this.options.debug?.simulateSlowConnection?.delay));
     }
 
+    // Generate or use existing request ID for correlation
+    const requestId = (request.headers['x-request-id'] as string | undefined) ?? crypto.randomUUID();
+    request.requestId = requestId;
+
     const pathsToIgnore = ['/health/live', '/health/ready'];
 
     if (pathsToIgnore.includes(request.url) || request.method === 'OPTIONS') {
       // ...
     } else {
-      request.startTime = Time.now();
+      const startTime = Time.now();
+      request.startTime = startTime;
+
+      // Initialize AsyncLocalStorage context for this request
+      // Using enterWith() to set context for the current async execution
+      enterRequestContext({ requestId, startTime });
     }
   }
 
   private async onResponse(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    // Add request ID to response headers for client-side correlation
+    if (request.requestId) {
+      reply.header('X-Request-ID', request.requestId);
+    }
+
     if (!request.startTime) {
       return;
     }
@@ -180,7 +254,7 @@ class WebServer {
       Status: reply.statusCode,
     };
 
-    if (process.env.NODE_ENV !== 'local') {
+    if (process.env.NODE_ENV !== 'development') {
       logParams.IP = ip.toString();
     }
 
@@ -240,7 +314,7 @@ class WebServer {
    */
   private async configureRoutes(): Promise<void> {
     // Check if controllers directory exists
-    const controllersDirectoryExists = await existsSync(this.options.controllersDirectory);
+    const controllersDirectoryExists = await File.pathExists(this.options.controllersDirectory);
 
     if (!controllersDirectoryExists) {
       Logger.warn({

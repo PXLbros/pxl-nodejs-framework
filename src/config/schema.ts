@@ -99,11 +99,54 @@ export const AuthConfigSchema = z
   })
   .optional();
 
+// Security configuration schema
+export const SecurityConfigSchema = z
+  .object({
+    helmet: z
+      .object({
+        enabled: z.boolean().optional(),
+        contentSecurityPolicy: z.boolean().optional(),
+        crossOriginEmbedderPolicy: z.boolean().optional(),
+        crossOriginOpenerPolicy: z.boolean().optional(),
+        crossOriginResourcePolicy: z.boolean().optional(),
+        dnsPrefetchControl: z.boolean().optional(),
+        frameguard: z.boolean().optional(),
+        hidePoweredBy: z.boolean().optional(),
+        hsts: z.boolean().optional(),
+        ieNoOpen: z.boolean().optional(),
+        noSniff: z.boolean().optional(),
+        originAgentCluster: z.boolean().optional(),
+        permittedCrossDomainPolicies: z.boolean().optional(),
+        referrerPolicy: z.boolean().optional(),
+        xssFilter: z.boolean().optional(),
+      })
+      .optional(),
+    rateLimit: z
+      .object({
+        enabled: z.boolean().optional(),
+        max: z.number().int().positive().optional(),
+        timeWindow: z.string().optional(),
+        ban: z.number().int().optional(),
+        cache: z.number().int().optional(),
+      })
+      .optional(),
+  })
+  .optional();
+
 // Web server configuration schema
-export const WebServerRouteSchema = z.object({
-  method: z.union([z.string(), z.array(z.string())]),
-  url: z.string(),
-});
+export const WebServerRouteSchema = z
+  .object({
+    type: z.string().optional(),
+    method: z.union([z.string(), z.array(z.string())]).optional(),
+    path: z.string(),
+    url: z.string().optional(), // Keep for backwards compatibility
+    controller: z.any().optional(), // Controller class reference
+    controllerName: z.string().optional(),
+    action: z.string().optional(),
+    entityName: z.string().optional(),
+    validation: z.any().optional(),
+  })
+  .passthrough(); // Allow additional properties to pass through
 
 export const WebServerConfigSchema = z
   .object({
@@ -114,14 +157,21 @@ export const WebServerConfigSchema = z
       .number()
       .int()
       .positive()
-      .default(25 * 1024 * 1024), // 25MB default
+      .default(25 * 1024 * 1024), // 25MB default (was 100MB)
+    connectionTimeout: z
+      .number()
+      .int()
+      .positive()
+      .default(10 * 1000), // 10s default (was 30s)
     routes: z.array(WebServerRouteSchema).default([]),
+    controllersDirectory: z.string().optional(), // Controllers directory path
     cors: z
       .object({
         enabled: z.boolean().default(false),
         urls: z.array(z.string()).default([]),
       })
       .optional(),
+    security: SecurityConfigSchema.optional(),
     debug: z
       .object({
         logAllRegisteredRoutes: z.boolean().optional(),
@@ -129,11 +179,14 @@ export const WebServerConfigSchema = z
       .default({})
       .optional(),
   })
-  .partial({ cors: true, debug: true });
+  .partial({ cors: true, debug: true, controllersDirectory: true, security: true });
 
 // WebSocket configuration schema
 export const WebSocketRouteSchema = z.object({
-  path: z.string(),
+  type: z.string().min(1, 'webSocket.routes.type required'),
+  controllerName: z.string().min(1, 'webSocket.routes.controllerName required'),
+  action: z.string().min(1, 'webSocket.routes.action required'),
+  controller: z.any().optional(),
 });
 
 export const WebSocketConfigSchema = z
@@ -168,6 +221,7 @@ export const FrameworkConfigSchema = z.object({
   email: z.object({}).optional(),
   auth: AuthConfigSchema,
   web: WebServerConfigSchema.optional(),
+  webServer: WebServerConfigSchema.optional(), // Support both 'web' and 'webServer' for compatibility
   webSocket: WebSocketConfigSchema.optional(),
 });
 

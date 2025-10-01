@@ -535,3 +535,263 @@ createApp().catch(console.error);
 3. Extract first module (ConfigModule) as reference implementation
 4. Gather feedback and iterate
 5. Proceed with full implementation
+
+---
+
+# ANALYSIS & RECOMMENDATIONS
+
+## Assessment: Over-Engineered for Current Framework Size
+
+### Current Architecture Strengths
+
+The PXL framework **already has many of the desired qualities** without the complexity of a full DI container:
+
+1. **✅ Lifecycle Management** - Robust `LifecycleManager` with phases, hooks, and readiness checks
+2. **✅ Separation of Concerns** - Each manager class has clear responsibilities
+3. **✅ Configuration Validation** - Recently added Zod validation with fail-fast behavior
+4. **✅ Explicit Dependencies** - Clear dependency passing makes debugging straightforward
+5. **✅ Simple API** - `new WebApplication(config)` → `app.start()` is intuitive
+6. **✅ Testability** - Managers accept dependencies via constructors (easy to mock)
+7. **✅ Plugin System** - `PerformanceMonitorPlugin` shows existing extensibility pattern
+8. **✅ Modular Exports** - Package.json has granular exports for tree-shaking
+
+**Framework Scale:** ~15 core services, not 100+. The proposed DI container architecture shows diminishing returns at this scale.
+
+### Problems with Proposed Modularity Approach
+
+#### 1. **Excessive Abstraction Layers**
+
+- Adds 3 new concepts: ApplicationContext, ServiceProvider, ServiceModule
+- Requires learning dependency injection container patterns
+- Increases cognitive load for contributors
+
+#### 2. **Functionality Duplication**
+
+- Proposed lifecycle phases duplicate existing `LifecycleManager`
+- Both systems would need maintenance
+- Adds confusion: "Which lifecycle system do I use?"
+
+#### 3. **Breaking Changes Without Clear Path**
+
+```typescript
+// Current (simple, explicit)
+new WebApplication(config).start()
+
+// Proposed (more complex)
+await Application.create()
+  .withModule(ConfigModule, {...})
+  .withModule(DatabaseModule, {...})
+  .build()
+```
+
+All existing applications would need complete rewrites.
+
+#### 4. **Circular Dependency Workarounds**
+
+The proposed lazy resolution pattern indicates the abstraction may not fit naturally:
+
+```typescript
+class ServiceA {
+  constructor(private readonly context: ApplicationContext) {}
+  get serviceB(): ServiceB {
+    return this.context.resolve(ServiceB);
+  }
+}
+```
+
+This is more complex than direct constructor injection.
+
+#### 5. **Questionable ROI**
+
+- **Testability**: Already achievable with constructor injection
+- **Extensibility**: Already achievable with plugins
+- **Type Safety**: Lost when using `context.resolve(Token)` vs direct properties
+- **Debugging**: Service resolution adds indirection, making stack traces harder to follow
+
+### Alternative Approaches (Recommended)
+
+#### **Option 1: Lightweight Service Factory Pattern** ⭐ Recommended First Step
+
+Instead of a full DI container, extract initialization logic to factories:
+
+```typescript
+// src/factories/application-factory.ts
+export class ApplicationFactory {
+  static createRedisManager(config: ApplicationConfig): RedisManager {
+    return new RedisManager({
+      applicationConfig: config,
+      host: config.redis.host,
+      port: config.redis.port,
+      password: config.redis.password,
+    });
+  }
+
+  static createCacheManager(config: ApplicationConfig, redisManager: RedisManager): CacheManager {
+    return new CacheManager({ redisManager });
+  }
+
+  static async createDatabaseManager(config: ApplicationConfig): Promise<DatabaseManager | undefined> {
+    if (!config.database?.enabled) return undefined;
+
+    return new DatabaseManager({
+      applicationConfig: config,
+      host: config.database.host,
+      port: config.database.port,
+      username: config.database.username,
+      password: config.database.password,
+      databaseName: config.database.databaseName,
+      entitiesDirectory: config.database.entitiesDirectory,
+    });
+  }
+}
+```
+
+**Benefits:**
+
+- Zero breaking changes
+- Reduces boilerplate in BaseApplication constructor
+- Easy to test
+- Maintains explicit dependencies
+- No new concepts to learn
+
+#### **Option 2: Plugin Architecture** ⭐ Best for Extensibility
+
+Expand the existing `PerformanceMonitorPlugin` pattern:
+
+```typescript
+// src/plugins/plugin.interface.ts
+export interface ApplicationPlugin {
+  name: string;
+  register(app: BaseApplication): void | Promise<void>;
+  initialize?(): void | Promise<void>;
+  dispose?(): void | Promise<void>;
+}
+
+// Usage
+const app = new WebApplication(config);
+app.use(new CachePlugin());
+app.use(new MetricsPlugin());
+app.use(new CustomBusinessLogicPlugin());
+await app.start();
+```
+
+**Benefits:**
+
+- Makes services truly optional
+- Users can add custom plugins
+- Non-breaking (opt-in)
+- Familiar pattern (Fastify, Express use this)
+
+#### **Option 3: Builder Pattern (Convenience Layer)**
+
+Add optional builder without changing core:
+
+```typescript
+// Convenience layer
+const app = await ApplicationBuilder.create(config).withDatabase().withCache().withQueue().build();
+
+// Still works
+const app = new WebApplication(config);
+```
+
+**Benefits:**
+
+- Fluent API for those who want it
+- Doesn't force migration
+- Reduces config verbosity
+
+#### **Option 4: Configuration Presets**
+
+```typescript
+// src/config/presets.ts
+export const WebAppPreset = {
+  redis: true,
+  database: true,
+  cache: true,
+  queue: true,
+  webServer: true,
+};
+
+export const WorkerPreset = {
+  redis: true,
+  database: true,
+  queue: true,
+  webServer: false,
+};
+
+// Usage
+const config = createConfig(WebAppPreset, customOverrides);
+```
+
+### Incremental Migration Path (If Full Modularity is Still Desired)
+
+If you still want to pursue the full modularity approach, do it incrementally:
+
+#### Phase 1: Extract One Module (Proof of Concept)
+
+- Implement only `CacheModule` with ApplicationContext
+- Provide **dual API** (old + new) for 2-3 versions
+- Gather real feedback from users
+
+#### Phase 2: Add Compatibility Layer
+
+```typescript
+// Old API (still works)
+const app = new WebApplication(config);
+
+// New API (opt-in)
+const app = await Application.create().withModules([...]).build();
+
+// Internally, old API uses new system
+```
+
+#### Phase 3: Deprecation Warnings
+
+- Add console warnings for old API
+- Provide migration guide
+- Give users 6-12 months to migrate
+
+#### Phase 4: Remove Old API
+
+- Major version bump
+- Complete migration
+
+### Recommended Immediate Actions
+
+1. **Identify Real Pain Points** - Survey actual users about what's hard in current API
+2. **Start with Factory Pattern** - Simplest improvement, zero risk
+3. **Expand Plugin System** - Builds on existing pattern
+4. **Add Builder Pattern** - Optional convenience layer
+5. **Measure Impact** - Before/after developer experience surveys
+
+### Questions to Answer Before Proceeding
+
+1. **Who asked for this?** - Is this solving a real user problem or theoretical?
+2. **What's the specific pain point?** - "God object" is a symptom, not the root cause
+3. **How many services will this framework have?** - If staying ~15, DI may be overkill
+4. **Can we solve this with composition?** - Instead of DI container
+5. **What's the migration cost?** - How many apps would need updates?
+
+### Alternative: Improve Current Architecture
+
+Sometimes the best refactor is targeted improvements:
+
+1. **Extract Large Methods** - Break down `BaseApplication.constructor`
+2. **Add Service Interfaces** - Enable better mocking
+3. **Improve Configuration** - Better defaults, validation messages
+4. **Better Documentation** - Architecture diagrams, recipes
+5. **Example Applications** - Show best practices
+
+### Conclusion
+
+The modularity proposal is **well-designed but likely over-engineered** for a framework with ~15 services. The ROI doesn't justify the complexity and breaking changes.
+
+**Recommended path:**
+
+1. Start with **factory pattern** (low risk, immediate value)
+2. Expand **plugin architecture** (aligns with framework goals)
+3. Add **builder pattern** as convenience layer
+4. Gather real user feedback
+5. Only proceed with full DI container if clear demand emerges
+
+The current architecture is solid. Focus on refinement over revolution.
