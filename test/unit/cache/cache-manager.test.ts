@@ -37,11 +37,10 @@ describe('CacheManager (ioredis unified)', () => {
     expect(mockRedisManager.connect).not.toHaveBeenCalled();
   });
 
-  it('falls back to raw string if JSON parse fails', async () => {
+  it('throws error if JSON parse fails', async () => {
     mockRedisInstance.getCache.mockResolvedValue('plain-string');
     const manager = new CacheManager({ redisManager: mockRedisManager });
-    const val = await manager.getItem({ key: 'plain' });
-    expect(val).toBe('plain-string');
+    await expect(manager.getItem({ key: 'plain' })).rejects.toThrow('Failed to parse cached value for key "plain"');
   });
 
   it('returns null when key missing', async () => {
