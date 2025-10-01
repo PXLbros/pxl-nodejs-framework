@@ -12,6 +12,7 @@ A simple Vue 3 + TypeScript frontend that demonstrates consuming the PXL Framewo
 - ✅ Error handling
 - ✅ Responsive design
 - ✅ Hot module replacement (HMR)
+- ✅ Live WebSocket feed with client-side parsing and UI updates
 
 ## Prerequisites
 
@@ -67,7 +68,13 @@ The app includes three interactive sections:
 - Enter your name and get a personalized greeting
 - Demonstrates POST requests with JSON body
 
-### 3. API Information
+### 3. WebSocket Greetings
+
+- Opens a persistent connection to `ws://<backend>/ws`
+- Streams real-time greetings from every connected client/tab
+- Shows connection status, endpoint URL, and the latest 20 events
+
+### 4. API Information
 
 - Calls `GET /api/info`
 - Shows all available endpoints
@@ -78,6 +85,7 @@ The app includes three interactive sections:
 The frontend uses environment variables for configuration:
 
 - `VITE_API_URL` - Backend API URL (default: http://localhost:3000)
+- `VITE_WS_URL` - Optional override for the WebSocket endpoint (default: derived from `VITE_API_URL`)
 
 Edit `.env` to customize.
 
@@ -158,6 +166,7 @@ The app uses vanilla CSS with:
 3. **Type Checking**: Run `npm run typecheck` to check types without building
 4. **CORS**: Backend has CORS enabled for cross-origin requests
 5. **DevTools**: Use Vue DevTools browser extension for debugging
+6. **WebSocket Demo**: Open the app in multiple browser tabs to watch greetings broadcast in real-time
 
 ## Connecting to Backend
 

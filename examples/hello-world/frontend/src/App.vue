@@ -45,6 +45,58 @@
         <div v-if="helloError" class="result error"><strong>Error:</strong> {{ helloError }}</div>
       </section>
 
+      <!-- WebSocket Greetings -->
+      <section class="card">
+        <h2>WebSocket Greetings</h2>
+        <p>Stream greetings in real-time using the /ws endpoint</p>
+        <p class="ws-url">Endpoint: {{ wsUrl }}</p>
+        <div class="ws-status">
+          <span class="status-dot" :class="wsStatus"></span>
+          <span class="status-text">{{ wsStatusText }}</span>
+        </div>
+        <div class="form-group">
+          <label for="ws-name">Display Name:</label>
+          <input id="ws-name" v-model="wsName" type="text" placeholder="Name to broadcast" class="input" />
+        </div>
+        <div class="form-group">
+          <label for="ws-message">Greeting Message:</label>
+          <input
+            id="ws-message"
+            v-model="wsMessage"
+            type="text"
+            placeholder="Share a greeting with other tabs"
+            class="input"
+            @keyup.enter="handleSendWebSocketGreeting"
+          />
+        </div>
+        <div class="button-group">
+          <button class="button" @click="handleSendWebSocketGreeting" :disabled="!canSendGreeting">
+            {{ wsStatus === 'connected' ? 'Send Greeting' : 'Connect to Send' }}
+          </button>
+          <button
+            class="button secondary"
+            type="button"
+            @click="connectWebSocket"
+            :disabled="wsStatus === 'connecting'"
+          >
+            {{ wsStatus === 'connected' ? 'Reconnect' : 'Connect' }}
+          </button>
+        </div>
+        <div v-if="wsError" class="result error"><strong>Error:</strong> {{ wsError }}</div>
+        <div v-if="wsMessages.length" class="ws-log">
+          <strong>Live Feed:</strong>
+          <ul>
+            <li v-for="entry in wsMessages" :key="entry.id">
+              <span class="timestamp">{{ formatTimestamp(entry.timestamp) }}</span>
+              <span class="message"
+                ><strong>{{ entry.name || 'Anonymous' }}:</strong> {{ entry.message }}</span
+              >
+              <span class="meta" v-if="entry.action && entry.action !== 'unknown'">({{ entry.action }})</span>
+            </li>
+          </ul>
+        </div>
+      </section>
+
       <!-- API Info -->
       <section class="card">
         <h2>API Information</h2>
@@ -81,8 +133,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import { get, post, type PingResponse, type HelloResponse, type InfoResponse } from './api/client';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { API_URL, get, post, type HelloResponse, type InfoResponse, type PingResponse } from './api/client';
+
+interface WebSocketGreetingMessage {
+  id: string;
+  type: string;
+  action: string;
+  message: string;
+  name?: string;
+  clientId?: string;
+  timestamp: string;
+}
 
 const loading = ref(false);
 const name = ref('');
@@ -98,6 +160,163 @@ const helloError = ref<string | null>(null);
 // Info state
 const infoResult = ref<InfoResponse | null>(null);
 const infoError = ref<string | null>(null);
+
+// WebSocket state
+const webSocket = ref<WebSocket | null>(null);
+const wsStatus = ref<'disconnected' | 'connecting' | 'connected' | 'error'>('disconnected');
+const wsError = ref<string | null>(null);
+const wsMessages = ref<WebSocketGreetingMessage[]>([]);
+const wsName = ref('');
+const wsMessage = ref('');
+
+const createMessageId = () => `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+const defaultWsUrl = (() => {
+  const explicitUrl = import.meta.env.VITE_WS_URL as string | undefined;
+  if (explicitUrl) {
+    return explicitUrl;
+  }
+
+  try {
+    const url = new URL(API_URL);
+    url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+    url.pathname = '/ws';
+    url.search = '';
+
+    return url.toString();
+  } catch {
+    return 'ws://localhost:3000/ws';
+  }
+})();
+
+const wsUrl = ref(defaultWsUrl);
+
+const wsStatusText = computed(() => {
+  switch (wsStatus.value) {
+    case 'connecting':
+      return 'Connecting...';
+    case 'connected':
+      return 'Connected';
+    case 'error':
+      return 'Connection Error';
+    default:
+      return 'Disconnected';
+  }
+});
+
+const canSendGreeting = computed(() => wsStatus.value === 'connected' && wsMessage.value.trim().length > 0);
+
+const formatTimestamp = (isoTimestamp: string) => {
+  try {
+    return new Date(isoTimestamp).toLocaleTimeString();
+  } catch {
+    return isoTimestamp;
+  }
+};
+
+const connectWebSocket = () => {
+  if (webSocket.value) {
+    webSocket.value.close();
+    webSocket.value = null;
+  }
+
+  wsStatus.value = 'connecting';
+  wsError.value = null;
+
+  try {
+    const socket = new WebSocket(wsUrl.value);
+    webSocket.value = socket;
+
+    socket.addEventListener('open', () => {
+      wsStatus.value = 'connected';
+    });
+
+    socket.addEventListener('message', event => {
+      const receivedAt = new Date().toISOString();
+      let parsed: any;
+
+      try {
+        parsed = JSON.parse(event.data as string);
+      } catch {
+        parsed = null;
+      }
+
+      const entry: WebSocketGreetingMessage = {
+        id: createMessageId(),
+        type: parsed?.type ?? 'message',
+        action: parsed?.action ?? 'unknown',
+        message:
+          typeof parsed?.data?.message === 'string'
+            ? parsed.data.message
+            : typeof event.data === 'string'
+              ? event.data
+              : '[binary message]',
+        name: typeof parsed?.data?.name === 'string' ? parsed.data.name : undefined,
+        clientId:
+          typeof parsed?.data?.clientId === 'string'
+            ? parsed.data.clientId
+            : typeof parsed?.clientId === 'string'
+              ? parsed.clientId
+              : undefined,
+        timestamp: typeof parsed?.data?.timestamp === 'string' ? parsed.data.timestamp : receivedAt,
+      };
+
+      wsMessages.value.unshift(entry);
+
+      if (wsMessages.value.length > 20) {
+        wsMessages.value.splice(20);
+      }
+    });
+
+    socket.addEventListener('close', () => {
+      wsStatus.value = 'disconnected';
+    });
+
+    socket.addEventListener('error', () => {
+      wsStatus.value = 'error';
+      wsError.value = 'WebSocket connection error';
+    });
+  } catch (error) {
+    wsStatus.value = 'error';
+    wsError.value = error instanceof Error ? error.message : 'Unable to open WebSocket connection';
+  }
+};
+
+const disconnectWebSocket = () => {
+  if (webSocket.value) {
+    webSocket.value.close();
+    webSocket.value = null;
+  }
+};
+
+const handleSendWebSocketGreeting = () => {
+  if (!webSocket.value || wsStatus.value !== 'connected') {
+    wsError.value = 'Connect to the WebSocket server before sending.';
+    return;
+  }
+
+  wsError.value = null;
+
+  const payload = {
+    type: 'hello',
+    action: 'greet',
+    data: {
+      name: wsName.value.trim() || name.value.trim() || 'Guest',
+      message: wsMessage.value.trim() || 'Hello from the browser!',
+    },
+  };
+
+  webSocket.value.send(JSON.stringify(payload));
+  wsMessage.value = '';
+};
+
+onMounted(() => {
+  connectWebSocket();
+});
+
+onBeforeUnmount(() => {
+  disconnectWebSocket();
+});
 
 const handlePing = async () => {
   loading.value = true;
@@ -339,6 +558,107 @@ body {
 .description {
   color: #666;
   font-size: 13px;
+}
+
+.button-group {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.button.secondary {
+  background: white;
+  color: #667eea;
+  border: 2px solid #667eea;
+}
+
+.button.secondary:hover:not(:disabled) {
+  box-shadow: 0 5px 15px rgba(255, 255, 255, 0.4);
+}
+
+.ws-url {
+  font-size: 0.9em;
+  color: #555;
+  margin-bottom: 12px;
+  word-break: break-all;
+}
+
+.ws-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+  font-weight: 600;
+  color: #444;
+}
+
+.status-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #bbb;
+  display: inline-block;
+}
+
+.status-dot.connecting {
+  background: #f6ad55;
+}
+
+.status-dot.connected {
+  background: #48bb78;
+}
+
+.status-dot.error {
+  background: #f56565;
+}
+
+.status-dot.disconnected {
+  background: #bbb;
+}
+
+.ws-log {
+  margin-top: 20px;
+  background: #f4f6ff;
+  border-left: 4px solid #667eea;
+  border-radius: 8px;
+  padding: 12px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.ws-log ul {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ws-log li {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: white;
+  border-radius: 6px;
+  padding: 10px 12px;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.12);
+}
+
+.ws-log .timestamp {
+  font-size: 12px;
+  color: #667eea;
+}
+
+.ws-log .message {
+  font-size: 14px;
+  color: #333;
+}
+
+.ws-log .meta {
+  font-size: 12px;
+  color: #888;
 }
 
 .footer {

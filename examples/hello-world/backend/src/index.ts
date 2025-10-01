@@ -7,8 +7,10 @@
 
 import 'dotenv/config';
 import type { FastifyRequest, FastifyReply } from 'fastify';
+import type { WebSocket } from 'ws';
 import { WebApplication, type WebApplicationConfig } from '../../../../src/application/index.js';
 import { WebServerBaseController, WebServerRouteType } from '../../../../src/webserver/index.js';
+import { WebSocketServerBaseController } from '../../../../src/websocket/index.js';
 
 /**
  * API Controller
@@ -57,21 +59,65 @@ class ApiController extends WebServerBaseController {
   };
 }
 
+/**
+ * WebSocket Controller
+ * Handles real-time hello messages broadcast to all connected clients
+ */
+class HelloWebSocketController extends WebSocketServerBaseController {
+  public greet = (clientWebSocket: WebSocket, webSocketClientId: string, data: any) => {
+    const name = typeof data?.name === 'string' && data.name.trim() ? data.name.trim() : 'World';
+    const message =
+      typeof data?.message === 'string' && data.message.trim() ? data.message.trim() : `${name} says hello!`;
+
+    const payload = {
+      type: 'hello',
+      action: 'greeting',
+      data: {
+        name,
+        message,
+        clientId: webSocketClientId,
+        timestamp: new Date().toISOString(),
+      },
+    };
+
+    // Broadcast the greeting to every connected client (including the sender)
+    this.webSocketServer.sendMessageToAll({
+      data: payload,
+    });
+
+    // Return an acknowledgement that the message was accepted
+    return {
+      success: true,
+    };
+  };
+}
+
+const webServerHost = process.env.HOST || '0.0.0.0';
+const webServerPort = parseInt(process.env.PORT || '3000', 10);
+const webSocketHost = process.env.WS_HOST || webServerHost;
+const webSocketPort = parseInt(process.env.WS_PORT || String(webServerPort), 10);
+const publicWebSocketHost = process.env.WS_PUBLIC_HOST || (webSocketHost === '0.0.0.0' ? 'localhost' : webSocketHost);
+const webSocketUrl = process.env.WS_URL || `ws://${publicWebSocketHost}:${webSocketPort}/ws`;
+
 // Create application configuration
 const config: WebApplicationConfig = {
   name: 'hello-world-api',
+  instanceId: `hello-world-${process.pid}`,
   rootDirectory: process.cwd(),
 
   // Web server configuration
   webServer: {
     enabled: true,
-    host: process.env.HOST || '0.0.0.0',
-    port: parseInt(process.env.PORT || '3000', 10),
+    host: webServerHost,
+    port: webServerPort,
     cors: {
       enabled: true,
       urls: ['*'], // Allow all origins for development
     },
     controllersDirectory: './controllers', // Required by framework
+    debug: {
+      printRoutes: false,
+    },
     routes: [
       {
         type: WebServerRouteType.Default,
@@ -95,6 +141,38 @@ const config: WebApplicationConfig = {
         action: 'info',
       },
     ],
+  },
+
+  // WebSocket server configuration
+  webSocket: {
+    enabled: true,
+    type: 'server',
+    host: webSocketHost,
+    url: webSocketUrl,
+    controllersDirectory: './controllers',
+    routes: [
+      {
+        type: 'hello',
+        action: 'greet',
+        controllerName: 'hello',
+        controller: HelloWebSocketController,
+      },
+    ],
+    events: {
+      onConnected: ({ ws, clientId }) => {
+        ws.send(
+          JSON.stringify({
+            type: 'hello',
+            action: 'connected',
+            data: {
+              message: 'Connected to the PXL Hello World WebSocket!',
+              clientId,
+              timestamp: new Date().toISOString(),
+            },
+          }),
+        );
+      },
+    },
   },
 
   // Redis - required by framework validation (won't be used in this example)
@@ -130,12 +208,15 @@ async function main() {
   console.log(`
 🚀 Hello World API is running!
 
-  URL: http://${config.webServer.host}:${config.webServer.port}
+  URL: http://${webServerHost}:${webServerPort}
+  WS:  ${webSocketUrl}
 
   Try these endpoints:
-  - GET  http://localhost:${config.webServer.port}/api/ping
-  - POST http://localhost:${config.webServer.port}/api/hello
-  - GET  http://localhost:${config.webServer.port}/api/info
+  - GET  http://localhost:${webServerPort}/api/ping
+  - POST http://localhost:${webServerPort}/api/hello
+  - GET  http://localhost:${webServerPort}/api/info
+  - WS  Send { "type": "hello", "action": "greet", "data": { "name": "Ada", "message": "Hello there" } }
+
 
 Press Ctrl+C to stop
   `);

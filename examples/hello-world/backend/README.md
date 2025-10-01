@@ -9,6 +9,7 @@ A minimal API built with the PXL Node.js Framework demonstrating basic web serve
 - ✅ Direct source imports from framework
 - ✅ Hot reload with tsx watch mode
 - ✅ TypeScript support
+- ✅ WebSocket greetings broadcast using the framework WebSocket server
 - ✅ Graceful shutdown handling
 - ✅ Performance monitoring (optional)
 
@@ -97,12 +98,49 @@ Returns information about the API.
 }
 ```
 
+### WS /ws (type: `hello`, action: `greet`)
+
+Broadcasts a greeting message to every connected WebSocket client.
+
+**Client Message:**
+
+```json
+{
+  "type": "hello",
+  "action": "greet",
+  "data": {
+    "name": "Ada",
+    "message": "Hello from the WebSocket client!"
+  }
+}
+```
+
+**Broadcast Response:**
+
+```json
+{
+  "type": "hello",
+  "action": "greeting",
+  "data": {
+    "name": "Ada",
+    "message": "Hello from the WebSocket client!",
+    "clientId": "d4f1c2ab",
+    "timestamp": "2024-01-01T00:00:00.000Z"
+  },
+  "workerId": 0
+}
+```
+
 ## Configuration
 
 Edit `.env` file to customize:
 
 - `PORT` - Server port (default: 3000)
 - `HOST` - Server host (default: 0.0.0.0)
+- `WS_HOST` - WebSocket server host (defaults to the HTTP host)
+- `WS_PORT` - WebSocket server port (defaults to the HTTP port)
+- `WS_PUBLIC_HOST` - Hostname used when generating the public WebSocket URL (defaults to `localhost` when binding to `0.0.0.0`)
+- `WS_URL` - Override the computed WebSocket URL (defaults to `ws://<WS_PUBLIC_HOST>:<WS_PORT>/ws`)
 - `NODE_ENV` - Environment (development/production)
 - `REDIS_HOST` - Redis host (required by framework validation, default: localhost)
 - `REDIS_PORT` - Redis port (required by framework validation, default: 6379)
@@ -146,7 +184,9 @@ The example uses the framework's controller-based routing system:
    - `hello()` - Greeting endpoint
    - `info()` - API information endpoint
 
-2. **Routes Configuration** - Routes are defined in the config:
+2. **HelloWebSocketController** - Extends `WebSocketServerBaseController` with a `greet()` action that broadcasts real-time greeting messages to all connected clients via `sendMessageToAll()`.
+
+3. **Routes Configuration** - Routes are defined in the config:
 
    ```typescript
    routes: [
@@ -155,7 +195,17 @@ The example uses the framework's controller-based routing system:
    ];
    ```
 
-3. **Framework Lifecycle** - The framework automatically:
+   ```typescript
+   webSocket: {
+     enabled: true,
+     type: 'server',
+     routes: [
+       { type: 'hello', action: 'greet', controllerName: 'hello', controller: HelloWebSocketController },
+     ],
+   };
+   ```
+
+4. **Framework Lifecycle** - The framework automatically:
    - Creates the webServer during `app.start()`
    - Registers routes from config during `webServer.load()`
    - Starts listening on the configured port
