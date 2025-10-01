@@ -143,7 +143,10 @@ export const WebServerConfigSchema = z
 
 // WebSocket configuration schema
 export const WebSocketRouteSchema = z.object({
-  path: z.string(),
+  type: z.string().min(1, 'webSocket.routes.type required'),
+  controllerName: z.string().min(1, 'webSocket.routes.controllerName required'),
+  action: z.string().min(1, 'webSocket.routes.action required'),
+  controller: z.any().optional(),
 });
 
 export const WebSocketConfigSchema = z
