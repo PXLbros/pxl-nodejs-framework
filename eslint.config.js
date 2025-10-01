@@ -16,6 +16,7 @@ export default [
       'docs/**',
       'test/**',
       'vitest.config.ts',
+      'examples/**',
     ],
   },
   js.configs.recommended,

@@ -1,0 +1,29 @@
+{
+  "name": "pxl-example-hello-world-backend",
+  "version": "1.0.0",
+  "description": "Simple PXL Framework API example",
+  "type": "module",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "pxl",
+    "example",
+    "hello-world"
+  ],
+  "author": "PXL",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^24.0.13",
+    "tsx": "^4.7.0",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.0"
+  }
+}

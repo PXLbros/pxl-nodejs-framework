@@ -100,6 +100,35 @@ class UserService {
 }
 ```
 
+## Examples
+
+The `examples/` directory contains working examples demonstrating the framework:
+
+### Hello World Example
+
+A simple full-stack example with:
+
+- Backend: PXL WebApplication with TypeScript
+- Frontend: Vue 3 + TypeScript + Vite
+
+**Run the example:**
+
+```bash
+# Install dependencies for the example (one-time setup)
+npm run example:install
+
+# Run backend + frontend together with hot-reload
+npm run example:hello-world
+
+# Or run individually
+npm run example:hello-world:backend
+npm run example:hello-world:frontend
+```
+
+Then open http://localhost:5173 to see the app.
+
+See [examples/README.md](examples/README.md) for more details.
+
 ## When Not to Use
 
 If you only need a single HTTP server or minimal script, this framework may be heavier than needed.
