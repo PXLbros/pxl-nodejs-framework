@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 
 describe('Lifecycle Exports', () => {
   it('should export all lifecycle components from main index', async () => {
-    // Test importing from main package index
-    const mainExports = await import('../../../src/index.js');
+    // Test importing from main package index (dist for coverage compatibility)
+    const mainExports = await import('../../../dist/index.js');
 
     // Verify all lifecycle exports are available
     expect(mainExports.LifecycleManager).toBeDefined();
@@ -21,8 +21,8 @@ describe('Lifecycle Exports', () => {
   });
 
   it('should export all lifecycle components from lifecycle module', async () => {
-    // Test importing directly from lifecycle module
-    const lifecycleExports = await import('../../../src/lifecycle/index.js');
+    // Test importing directly from lifecycle module (dist for coverage compatibility)
+    const lifecycleExports = await import('../../../dist/lifecycle/index.js');
 
     // Verify all exports are available
     expect(lifecycleExports.LifecycleManager).toBeDefined();
@@ -40,7 +40,7 @@ describe('Lifecycle Exports', () => {
   });
 
   it('should create functional lifecycle instances', async () => {
-    const { LifecycleManager, ShutdownController, LifecyclePhase } = await import('../../../src/lifecycle/index.js');
+    const { LifecycleManager, ShutdownController, LifecyclePhase } = await import('../../../dist/lifecycle/index.js');
 
     // Test creating instances
     const lifecycle = new LifecycleManager();
@@ -60,7 +60,7 @@ describe('Lifecycle Exports', () => {
   });
 
   it('should have all expected lifecycle phases', async () => {
-    const { LifecyclePhase } = await import('../../../src/lifecycle/index.js');
+    const { LifecyclePhase } = await import('../../../dist/lifecycle/index.js');
 
     expect(LifecyclePhase.CREATED).toBe('created');
     expect(LifecyclePhase.INITIALIZING).toBe('initializing');
@@ -72,7 +72,7 @@ describe('Lifecycle Exports', () => {
 
   it('should support TypeScript type imports', async () => {
     // This tests that the type exports work correctly
-    const types = await import('../../../src/lifecycle/types.js');
+    const types = await import('../../../dist/lifecycle/types.js');
 
     expect(types.LifecyclePhase).toBeDefined();
     expect(typeof types.LifecyclePhase).toBe('object');

@@ -14,6 +14,7 @@ describe('Hello World Example End-to-End', () => {
   const testHost = '127.0.0.1';
   let wsUrl: string;
   let baseUrl: string;
+  let previousInMemoryRedisEnv: string | undefined;
 
   beforeAll(async () => {
     // Import test port helper
@@ -32,6 +33,7 @@ describe('Hello World Example End-to-End', () => {
       PORT: testPort.toString(),
       HOST: testHost,
       NODE_ENV: 'test',
+      PXL_REDIS_IN_MEMORY: 'true',
       DB_ENABLED: 'false',
       DB_HOST: 'localhost',
       DB_PORT: '5432',
@@ -49,6 +51,9 @@ describe('Hello World Example End-to-End', () => {
       env,
       stdio: ['ignore', 'pipe', 'pipe'],
     });
+
+    previousInMemoryRedisEnv = process.env.PXL_REDIS_IN_MEMORY;
+    process.env.PXL_REDIS_IN_MEMORY = 'true';
 
     // Collect output for debugging
     let stdout = '';
@@ -89,7 +94,8 @@ describe('Hello World Example End-to-End', () => {
       // Give it an extra moment to fully initialize
       await new Promise(resolve => setTimeout(resolve, 1000));
     } catch (error) {
-      console.error('Server failed to start. Output:', output);
+      console.error('Server failed to start. STDOUT:', stdout);
+      console.error('Server failed to start. STDERR:', stderr);
       throw error;
     }
   }, 40000);
@@ -102,6 +108,12 @@ describe('Hello World Example End-to-End', () => {
       if (!backendProcess.killed) {
         backendProcess.kill('SIGKILL');
       }
+    }
+
+    if (previousInMemoryRedisEnv === undefined) {
+      delete process.env.PXL_REDIS_IN_MEMORY;
+    } else {
+      process.env.PXL_REDIS_IN_MEMORY = previousInMemoryRedisEnv;
     }
   }, 10000);
 
