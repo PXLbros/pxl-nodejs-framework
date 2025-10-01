@@ -20,6 +20,7 @@ export class LifecycleManager {
   private disposables = new Set<Disposable>();
   private intervals = new Set<NodeJS.Timeout>();
   private timeouts = new Set<NodeJS.Timeout>();
+  private abortControllers = new Set<AbortController>();
 
   private readinessChecks = new Map<string, ReadinessCheck>();
   private _isReady = false;
@@ -111,6 +112,27 @@ export class LifecycleManager {
     return id;
   }
 
+  /**
+   * Track an AbortController for automatic cleanup on shutdown.
+   * When the lifecycle manager shuts down, it will call abort() on all tracked controllers.
+   * @param controller - The AbortController to track
+   * @returns The same AbortController for chaining
+   */
+  trackAbortController(controller: AbortController): AbortController {
+    this.abortControllers.add(controller);
+    return controller;
+  }
+
+  /**
+   * Create and track a new AbortController.
+   * Convenience method that creates a new controller and automatically tracks it.
+   * @returns A new tracked AbortController
+   */
+  createAbortController(): AbortController {
+    const controller = new AbortController();
+    return this.trackAbortController(controller);
+  }
+
   async initialize(): Promise<{ errors: unknown[] }> {
     if (this._phase !== LifecyclePhase.CREATED) {
       return { errors: [] };
@@ -187,6 +209,16 @@ export class LifecycleManager {
     // Execute before-shutdown hooks in registration order (FIFO)
     const beforeShutdownErrors = await this.executeHooks(this.beforeShutdownHooks, 'before-shutdown');
     errors.push(...beforeShutdownErrors);
+
+    // Abort all tracked AbortControllers
+    for (const controller of this.abortControllers) {
+      try {
+        controller.abort();
+      } catch (e) {
+        errors.push(e);
+      }
+    }
+    this.abortControllers.clear();
 
     // Clear intervals and timeouts
     for (const id of this.intervals) {

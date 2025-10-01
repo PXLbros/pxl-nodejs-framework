@@ -15,7 +15,7 @@ import { CachePerformanceWrapper, DatabasePerformanceWrapper, QueuePerformanceWr
  */
 export class PerformanceMonitorPlugin {
   private started = false;
-  private reportIntervalId?: NodeJS.Timeout;
+  private abortController = new AbortController();
 
   private constructor(private readonly app: BaseApplication) {}
 
@@ -64,18 +64,23 @@ export class PerformanceMonitorPlugin {
 
     // Periodic reporting
     if (cfg.reportInterval && cfg.reportInterval > 0) {
-      this.reportIntervalId = setInterval(() => {
-        try {
-          const reportFormat = cfg.reportFormat ?? 'detailed';
-          const report = this.app.performanceMonitor?.generateFormattedReport(reportFormat);
-          if (report) {
-            Logger.info({ message: report });
+      // Note: setInterval with signal option requires Node.js 15+
+      // TypeScript types may not reflect this, so we use type assertion
+      (setInterval as (fn: () => void, ms: number, options?: { signal: AbortSignal }) => NodeJS.Timeout)(
+        () => {
+          try {
+            const reportFormat = cfg.reportFormat ?? 'detailed';
+            const report = this.app.performanceMonitor?.generateFormattedReport(reportFormat);
+            if (report) {
+              Logger.info({ message: report });
+            }
+          } catch (error) {
+            Logger.warn({ message: 'PerformanceMonitorPlugin: failed generating report', error });
           }
-        } catch (error) {
-          Logger.warn({ message: 'PerformanceMonitorPlugin: failed generating report', error });
-        }
-      }, cfg.reportInterval);
-      this.app.lifecycle.trackInterval(this.reportIntervalId);
+        },
+        cfg.reportInterval,
+        { signal: this.abortController.signal },
+      );
     }
 
     this.started = true;
@@ -85,12 +90,20 @@ export class PerformanceMonitorPlugin {
   /** Destroy monitor & clear references */
   public stop(): void {
     if (!this.started) return;
+
+    // Abort all ongoing operations (intervals, etc.)
+    this.abortController.abort();
+
     try {
       this.app.performanceMonitor?.destroy();
     } catch (error) {
       Logger.warn({ message: 'PerformanceMonitorPlugin: error during destroy', error });
     }
     this.app.performanceMonitor = undefined;
+
+    // Create new AbortController for potential restart
+    this.abortController = new AbortController();
+
     this.started = false;
     Logger.debug({ message: 'PerformanceMonitorPlugin: stopped' });
   }
