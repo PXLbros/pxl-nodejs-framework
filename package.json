@@ -28,6 +28,10 @@
       "import": "./dist/database/index.js",
       "types": "./dist/database/index.d.ts"
     },
+    "./error": {
+      "import": "./dist/error/index.js",
+      "types": "./dist/error/index.d.ts"
+    },
     "./webserver": {
       "import": "./dist/webserver/index.js",
       "types": "./dist/webserver/index.d.ts"
@@ -43,6 +47,10 @@
     "./redis": {
       "import": "./dist/redis/index.js",
       "types": "./dist/redis/index.d.ts"
+    },
+    "./request-context": {
+      "import": "./dist/request-context/index.js",
+      "types": "./dist/request-context/index.d.ts"
     },
     "./cache": {
       "import": "./dist/cache/index.js",
@@ -122,6 +130,7 @@
   "devDependencies": {
     "@swc/core": "^1.4.1",
     "@types/fluent-ffmpeg": "^2.1.26",
+    "@types/lodash.defaultsdeep": "^4.6.9",
     "@types/node": "^24.0.13",
     "@types/uuid": "^10.0.0",
     "@types/ws": "^8.5.10",
@@ -153,7 +162,9 @@
     "@aws-sdk/client-s3": "^3.496.0",
     "@aws-sdk/s3-request-presigner": "^3.675.0",
     "@fastify/cors": "^11.0.0",
+    "@fastify/helmet": "^12.0.0",
     "@fastify/multipart": "^9.0.0",
+    "@fastify/rate-limit": "^10.0.0",
     "@mikro-orm/cli": "^6.0.5",
     "@mikro-orm/core": "^6.0.5",
     "@mikro-orm/migrations": "^6.0.5",
@@ -169,6 +180,7 @@
     "ioredis": "^5.3.2",
     "joi": "^18.0.1",
     "jose": "^6.0.10",
+    "lodash.defaultsdeep": "^4.6.1",
     "lru-cache": "^11.2.2",
     "typescript": "^5.8.3",
     "uuid": "^13.0.0",

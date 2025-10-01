@@ -99,6 +99,40 @@ export const AuthConfigSchema = z
   })
   .optional();
 
+// Security configuration schema
+export const SecurityConfigSchema = z
+  .object({
+    helmet: z
+      .object({
+        enabled: z.boolean().optional(),
+        contentSecurityPolicy: z.boolean().optional(),
+        crossOriginEmbedderPolicy: z.boolean().optional(),
+        crossOriginOpenerPolicy: z.boolean().optional(),
+        crossOriginResourcePolicy: z.boolean().optional(),
+        dnsPrefetchControl: z.boolean().optional(),
+        frameguard: z.boolean().optional(),
+        hidePoweredBy: z.boolean().optional(),
+        hsts: z.boolean().optional(),
+        ieNoOpen: z.boolean().optional(),
+        noSniff: z.boolean().optional(),
+        originAgentCluster: z.boolean().optional(),
+        permittedCrossDomainPolicies: z.boolean().optional(),
+        referrerPolicy: z.boolean().optional(),
+        xssFilter: z.boolean().optional(),
+      })
+      .optional(),
+    rateLimit: z
+      .object({
+        enabled: z.boolean().optional(),
+        max: z.number().int().positive().optional(),
+        timeWindow: z.string().optional(),
+        ban: z.number().int().optional(),
+        cache: z.number().int().optional(),
+      })
+      .optional(),
+  })
+  .optional();
+
 // Web server configuration schema
 export const WebServerRouteSchema = z
   .object({
@@ -123,7 +157,12 @@ export const WebServerConfigSchema = z
       .number()
       .int()
       .positive()
-      .default(25 * 1024 * 1024), // 25MB default
+      .default(25 * 1024 * 1024), // 25MB default (was 100MB)
+    connectionTimeout: z
+      .number()
+      .int()
+      .positive()
+      .default(10 * 1000), // 10s default (was 30s)
     routes: z.array(WebServerRouteSchema).default([]),
     controllersDirectory: z.string().optional(), // Controllers directory path
     cors: z
@@ -132,6 +171,7 @@ export const WebServerConfigSchema = z
         urls: z.array(z.string()).default([]),
       })
       .optional(),
+    security: SecurityConfigSchema.optional(),
     debug: z
       .object({
         logAllRegisteredRoutes: z.boolean().optional(),
@@ -139,7 +179,7 @@ export const WebServerConfigSchema = z
       .default({})
       .optional(),
   })
-  .partial({ cors: true, debug: true, controllersDirectory: true });
+  .partial({ cors: true, debug: true, controllersDirectory: true, security: true });
 
 // WebSocket configuration schema
 export const WebSocketRouteSchema = z.object({

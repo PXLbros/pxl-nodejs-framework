@@ -3,6 +3,7 @@ import { nodeProfilingIntegration } from '@sentry/profiling-node';
 import cluster from 'node:cluster';
 import winston from 'winston';
 import type { LogOptions } from '../websocket/utils.js';
+import { getRequestId } from '../request-context/index.js';
 
 export type LoggerLevels =
   | 'error'
@@ -92,6 +93,12 @@ export class Logger {
 
   private getCustomFormat(): winston.Logform.Format {
     return winston.format.printf(({ level, message, timestamp, ...meta }) => {
+      // Auto-inject request ID from AsyncLocalStorage context if available
+      const requestId = getRequestId();
+      if (requestId && !meta['requestId']) {
+        meta['requestId'] = requestId;
+      }
+
       if (cluster.isWorker && cluster.worker) {
         meta['Worker'] = cluster.worker.id; // .process.pid;
       }
