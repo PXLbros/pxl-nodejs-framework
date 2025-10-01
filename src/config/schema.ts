@@ -5,7 +5,7 @@ import crypto from 'node:crypto';
 export const RedisConfigSchema = z.object({
   host: z.string().min(1, 'redis.host required'),
   port: z.number().int().positive().default(6379),
-  password: z.string().min(1).optional(),
+  password: z.preprocess(val => (val === '' ? undefined : val), z.string().min(1).optional()),
 });
 
 // Database configuration schema
