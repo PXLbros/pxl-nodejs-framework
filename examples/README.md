@@ -42,6 +42,43 @@ npm run dev
 
 ---
 
+### 2. Commands (`commands/`)
+
+A comprehensive CLI application example using CommandApplication:
+
+- **Modern CLI**: TypeScript-powered command-line application
+- **Multiple Commands**: hello, database-seed, queue-process examples
+- **Framework Integration**: Redis, Database (MikroORM), Queue (BullMQ) support
+- **Best Practices**: 2025 Node.js CLI patterns with colored output and proper error handling
+
+Perfect for building CLI tools, automation scripts, and background jobs.
+
+**Quick Start (from repository root):**
+
+```bash
+# One-time setup: Install dependencies
+npm run example:commands:install
+
+# Run commands
+npm run example:commands:hello
+npm run example:commands:seed
+npm run example:commands:queue
+```
+
+**Alternative (manual):**
+
+```bash
+cd commands
+npm install
+npm run dev hello -- --name "World" --count 3
+npm run dev database-seed -- --count 100
+npm run dev queue-process -- --action status
+```
+
+**See:** `commands/README.md` for detailed documentation and creating custom commands.
+
+---
+
 ## Running Examples
 
 ### From Repository Root (Recommended)
@@ -49,17 +86,19 @@ npm run dev
 The easiest way to run examples is from the repository root:
 
 ```bash
-# Install example dependencies (one-time setup)
+# Install all example dependencies (one-time setup)
 npm run example:install
 
-# Run hello-world example (backend + frontend with hot-reload)
-npm run example:hello-world
+# Hello World Example
+npm run example:hello-world              # Backend + frontend with hot-reload
+npm run example:hello-world:backend      # Backend only
+npm run example:hello-world:frontend     # Frontend only
 
-# Run only backend
-npm run example:hello-world:backend
-
-# Run only frontend
-npm run example:hello-world:frontend
+# Commands Example
+npm run example:commands:install         # Install commands example dependencies
+npm run example:commands:hello           # Run hello command
+npm run example:commands:seed            # Run database-seed command
+npm run example:commands:queue           # Run queue-process command
 ```
 
 **Features:**

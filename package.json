@@ -119,10 +119,15 @@
     "yalc:publish": "yalc publish",
     "yalc:push": "yalc push",
     "dev:yalc": "npm run build && npm run yalc:push",
-    "example:install": "npm install --prefix examples/hello-world/backend && npm install --prefix examples/hello-world/frontend",
+    "example:install": "npm install --prefix examples/hello-world/backend && npm install --prefix examples/hello-world/frontend && npm install --prefix examples/commands",
     "example:hello-world": "concurrently -n backend,frontend -c blue,magenta \"npm run example:hello-world:backend\" \"npm run example:hello-world:frontend\"",
     "example:hello-world:backend": "npm run dev --prefix examples/hello-world/backend",
-    "example:hello-world:frontend": "npm run dev --prefix examples/hello-world/frontend"
+    "example:hello-world:frontend": "npm run dev --prefix examples/hello-world/frontend",
+    "example:commands:install": "npm install --prefix examples/commands",
+    "example:commands": "npm run dev --prefix examples/commands --",
+    "example:commands:hello": "npm run dev --prefix examples/commands -- hello",
+    "example:commands:seed": "npm run dev --prefix examples/commands -- database-seed",
+    "example:commands:queue": "npm run dev --prefix examples/commands -- queue-process"
   },
   "keywords": [],
   "author": "PXL <devops@pxlagency.com>",
