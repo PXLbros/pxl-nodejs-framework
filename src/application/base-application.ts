@@ -402,7 +402,7 @@ export default abstract class BaseApplication {
       Logger.error({
         error: reason instanceof Error ? reason : new Error(String(reason)),
         message: 'Unhandled Rejection',
-        meta: { promise },
+        meta: { promise: String(promise) },
       });
       this.initiateGracefulShutdown();
     });

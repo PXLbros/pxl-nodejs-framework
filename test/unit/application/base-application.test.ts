@@ -408,7 +408,7 @@ describe('BaseApplication', () => {
       expect(mockLogger.error).toHaveBeenCalledWith({
         error,
         message: 'Unhandled Rejection',
-        meta: { promise },
+        meta: { promise: String(promise) },
       });
     });
 
@@ -423,7 +423,7 @@ describe('BaseApplication', () => {
       expect(mockLogger.error).toHaveBeenCalledWith({
         error: expect.any(Error),
         message: 'Unhandled Rejection',
-        meta: { promise },
+        meta: { promise: String(promise) },
       });
     });
   });

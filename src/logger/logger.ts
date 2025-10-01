@@ -105,7 +105,32 @@ export class Logger {
 
       const metaString = Object.entries(meta)
         .map(([key, value]) => {
-          return `${key}: ${value}`;
+          // Safely convert value to string representation
+          let stringValue: string;
+
+          if (value === null) {
+            stringValue = 'null';
+          } else if (value === undefined) {
+            stringValue = 'undefined';
+          } else if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+            stringValue = String(value);
+          } else if (value instanceof Error) {
+            stringValue = value.message;
+          } else if (value instanceof Promise) {
+            stringValue = '[Promise]';
+          } else if (typeof value === 'object') {
+            try {
+              // Attempt to JSON.stringify, but handle circular references
+              stringValue = JSON.stringify(value);
+            } catch {
+              // Fallback for circular references or other issues
+              stringValue = '[Object]';
+            }
+          } else {
+            stringValue = String(value);
+          }
+
+          return `${key}: ${stringValue}`;
         })
         .join(' | ');
 
