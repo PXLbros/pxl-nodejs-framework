@@ -24,6 +24,8 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
-    "dotenv": "^17.2.0"
+    "dotenv": "^17.2.0",
+    "@mikro-orm/core": "^6.3.14",
+    "@mikro-orm/postgresql": "^6.3.14"
   }
 }

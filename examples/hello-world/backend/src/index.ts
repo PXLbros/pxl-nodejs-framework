@@ -11,6 +11,7 @@ import type { WebSocket } from 'ws';
 import { WebApplication, type WebApplicationConfig } from '../../../../src/application/index.js';
 import { WebServerBaseController, WebServerRouteType } from '../../../../src/webserver/index.js';
 import { WebSocketServerBaseController } from '../../../../src/websocket/index.js';
+import { Greeting } from './entities/Greeting.js';
 
 /**
  * API Controller
@@ -46,16 +47,115 @@ class ApiController extends WebServerBaseController {
    * GET /api/info - API information endpoint
    */
   public info = async (request: FastifyRequest, reply: FastifyReply) => {
+    const endpoints = [
+      { method: 'GET', path: '/api/ping', description: 'Health check' },
+      { method: 'POST', path: '/api/hello', description: 'Greeting endpoint' },
+      { method: 'GET', path: '/api/info', description: 'API information' },
+      { method: 'GET', path: '/api/greetings', description: 'List all greetings' },
+      { method: 'GET', path: '/api/greetings/:id', description: 'Get greeting by ID' },
+      { method: 'POST', path: '/api/greetings', description: 'Create new greeting' },
+      { method: 'PUT', path: '/api/greetings/:id', description: 'Update greeting' },
+      { method: 'DELETE', path: '/api/greetings/:id', description: 'Delete greeting' },
+    ];
+
     return reply.send({
       name: 'PXL Framework - Hello World API',
       version: '1.0.0',
       framework: '@scpxl/nodejs-framework',
-      endpoints: [
-        { method: 'GET', path: '/api/ping', description: 'Health check' },
-        { method: 'POST', path: '/api/hello', description: 'Greeting endpoint' },
-        { method: 'GET', path: '/api/info', description: 'API information' },
-      ],
+      endpoints,
     });
+  };
+}
+
+/**
+ * Greetings Controller
+ * Handles CRUD operations for Greeting entity
+ */
+class GreetingsController extends WebServerBaseController {
+  /**
+   * GET /api/greetings - List all greetings
+   */
+  public list = async (request: FastifyRequest, reply: FastifyReply) => {
+    const em = this.databaseInstance.getEntityManager();
+    const greetings = await em.find(Greeting, {});
+    return reply.send({ greetings });
+  };
+
+  /**
+   * GET /api/greetings/:id - Get greeting by ID
+   */
+  public get = async (request: FastifyRequest, reply: FastifyReply) => {
+    const { id } = request.params as { id: string };
+    const em = this.databaseInstance.getEntityManager();
+
+    const greeting = await em.findOne(Greeting, { id: parseInt(id, 10) });
+
+    if (!greeting) {
+      return reply.status(404).send({ error: 'Greeting not found' });
+    }
+
+    return reply.send({ greeting });
+  };
+
+  /**
+   * POST /api/greetings - Create new greeting
+   */
+  public create = async (request: FastifyRequest, reply: FastifyReply) => {
+    const body = request.body as { name: string; message: string };
+
+    if (!body.name || !body.message) {
+      return reply.status(400).send({ error: 'Name and message are required' });
+    }
+
+    const em = this.databaseInstance.getEntityManager();
+    const greeting = em.create(Greeting, {
+      name: body.name,
+      message: body.message,
+    });
+
+    await em.persistAndFlush(greeting);
+
+    return reply.status(201).send({ greeting });
+  };
+
+  /**
+   * PUT /api/greetings/:id - Update greeting
+   */
+  public update = async (request: FastifyRequest, reply: FastifyReply) => {
+    const { id } = request.params as { id: string };
+    const body = request.body as { name?: string; message?: string };
+    const em = this.databaseInstance.getEntityManager();
+
+    const greeting = await em.findOne(Greeting, { id: parseInt(id, 10) });
+
+    if (!greeting) {
+      return reply.status(404).send({ error: 'Greeting not found' });
+    }
+
+    if (body.name !== undefined) greeting.name = body.name;
+    if (body.message !== undefined) greeting.message = body.message;
+
+    await em.flush();
+
+    return reply.send({ greeting });
+  };
+
+  /**
+   * DELETE /api/greetings/:id - Delete greeting
+   */
+  public delete = async (request: FastifyRequest, reply: FastifyReply) => {
+    const { id } = request.params as { id: string };
+    const em = this.databaseInstance.getEntityManager();
+
+    const greeting = await em.findOne(Greeting, { id: parseInt(id, 10) });
+
+    if (!greeting) {
+      return reply.status(404).send({ error: 'Greeting not found' });
+    }
+
+    await em.removeAndFlush(greeting);
+
+    return reply.status(204).send();
   };
 }
 
@@ -140,6 +240,42 @@ const config: WebApplicationConfig = {
         controller: ApiController,
         action: 'info',
       },
+      // Greetings CRUD routes
+      {
+        type: WebServerRouteType.Default,
+        method: 'GET',
+        path: '/api/greetings',
+        controller: GreetingsController,
+        action: 'list',
+      },
+      {
+        type: WebServerRouteType.Default,
+        method: 'GET',
+        path: '/api/greetings/:id',
+        controller: GreetingsController,
+        action: 'get',
+      },
+      {
+        type: WebServerRouteType.Default,
+        method: 'POST',
+        path: '/api/greetings',
+        controller: GreetingsController,
+        action: 'create',
+      },
+      {
+        type: WebServerRouteType.Default,
+        method: 'PUT',
+        path: '/api/greetings/:id',
+        controller: GreetingsController,
+        action: 'update',
+      },
+      {
+        type: WebServerRouteType.Default,
+        method: 'DELETE',
+        path: '/api/greetings/:id',
+        controller: GreetingsController,
+        action: 'delete',
+      },
     ],
   },
 
@@ -175,19 +311,30 @@ const config: WebApplicationConfig = {
     },
   },
 
-  // Redis - required by framework validation (won't be used in this example)
+  // Database configuration
+  database: {
+    enabled: process.env.DB_ENABLED === 'true',
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT || '5432', 10),
+    username: process.env.DB_USERNAME || 'postgres',
+    password: process.env.DB_PASSWORD || 'postgres',
+    databaseName: process.env.DB_DATABASE_NAME || 'hello_world',
+    entitiesDirectory: './src/entities',
+  },
+
+  // Redis - required by framework validation
   redis: {
     host: process.env.REDIS_HOST || 'localhost',
     port: parseInt(process.env.REDIS_PORT || '6379', 10),
   },
 
-  // Queue - required by framework validation (won't be used in this example)
+  // Queue - required by framework validation
   queue: {
     processorsDirectory: './processors',
     queues: [],
   },
 
-  // Auth - required by framework validation (won't be used in this example)
+  // Auth - required by framework validation
   auth: {
     jwtSecretKey: process.env.JWT_SECRET || 'dev-secret-change-in-production',
   },
