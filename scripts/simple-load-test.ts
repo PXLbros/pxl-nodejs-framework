@@ -1,13 +1,8 @@
-import fs from 'node:fs';
 import { spawn } from 'node:child_process';
 import type { ChildProcess } from 'node:child_process';
 import { once } from 'node:events';
 import { setTimeout as delay } from 'node:timers/promises';
 import path from 'node:path';
-import { tmpdir } from 'node:os';
-import { mkdtemp, rm } from 'node:fs/promises';
-import { build } from 'esbuild';
-import type { Plugin } from 'esbuild';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 
@@ -248,48 +243,20 @@ function createLoadTestState(loadTestOptions: LoadTestOptions): LoadTestState {
   };
 }
 
-async function bundleHelloWorldExample(): Promise<{ entryFile: string; cleanup: () => Promise<void> }> {
+async function bundleHelloWorldExample(): Promise<{
+  entryFile: string;
+  exampleDir: string;
+  cleanup: () => Promise<void>;
+}> {
   const exampleDir = path.resolve('examples/hello-world/backend');
-  const tempDir = await mkdtemp(path.join(tmpdir(), 'pxl-hello-world-'));
-  const outfile = path.join(tempDir, 'hello-world.mjs');
+  const entryFile = path.join(exampleDir, 'src/index.ts');
 
-  const resolveJsToTsPlugin: Plugin = {
-    name: 'resolve-js-to-ts',
-    setup(buildContext) {
-      buildContext.onResolve({ filter: /\.js$/ }, args => {
-        if (!args.path.startsWith('.') && !args.path.startsWith('/')) {
-          return null;
-        }
-
-        const resolvedPath = path.resolve(args.resolveDir, args.path);
-        const tsCandidate = resolvedPath.replace(/\.js$/, '.ts');
-
-        if (fs.existsSync(tsCandidate)) {
-          return { path: tsCandidate };
-        }
-
-        return null;
-      });
-    },
-  };
-
-  await build({
-    entryPoints: ['src/index.ts'],
-    outfile,
-    bundle: true,
-    platform: 'node',
-    format: 'esm',
-    target: ['node22'],
-    absWorkingDir: exampleDir,
-    logLevel: 'error',
-    packages: 'external',
-    plugins: [resolveJsToTsPlugin],
-  });
-
+  // No bundling needed - run source directly with tsx via node loader
   return {
-    entryFile: outfile,
+    entryFile,
+    exampleDir,
     cleanup: async () => {
-      await rm(tempDir, { recursive: true, force: true });
+      // No cleanup needed when running source directly
     },
   };
 }
@@ -298,16 +265,9 @@ async function startHelloWorldServer(loadTestOptions: LoadTestOptions): Promise<
   process: ChildProcess;
   cleanup: () => Promise<void>;
 }> {
-  const exampleDir = path.resolve('examples/hello-world/backend');
-  const { entryFile, cleanup } = await bundleHelloWorldExample();
+  const { entryFile, exampleDir, cleanup } = await bundleHelloWorldExample();
 
   try {
-    const nodePathSegments = [
-      path.join(exampleDir, 'node_modules'),
-      path.resolve('node_modules'),
-      process.env.NODE_PATH,
-    ].filter(Boolean) as string[];
-
     const childEnv = {
       ...process.env,
       HOST: '127.0.0.1',
@@ -316,10 +276,10 @@ async function startHelloWorldServer(loadTestOptions: LoadTestOptions): Promise<
       WS_PORT: String(loadTestOptions.helloWorldPort),
       WS_URL: `ws://localhost:${loadTestOptions.helloWorldPort}/ws`,
       RATE_LIMIT_ENABLED: loadTestOptions.enableRateLimit ? 'true' : 'false',
-      NODE_PATH: nodePathSegments.join(path.delimiter),
     };
 
-    const child = spawn('node', [entryFile], {
+    // Use tsx to run TypeScript directly (via npx to use local tsx installation)
+    const child = spawn('npx', ['tsx', entryFile], {
       cwd: exampleDir,
       env: childEnv,
       stdio: ['ignore', 'pipe', 'pipe'],
