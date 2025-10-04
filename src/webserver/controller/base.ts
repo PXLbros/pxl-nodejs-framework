@@ -17,16 +17,21 @@ export interface AuthenticatedUser {
   payload: any;
 }
 
-export default abstract class BaseController {
+export default abstract class BaseController<
+  TQueueManager extends QueueManager = QueueManager,
+  TRedisInstance extends RedisInstance = RedisInstance,
+  TEventManager extends EventManager = EventManager,
+  TDatabaseInstance extends DatabaseInstance = DatabaseInstance,
+> {
   protected workerId: number | undefined;
 
   protected applicationConfig: ApplicationConfig;
   protected webServerOptions: WebServerOptions;
 
-  protected redisInstance: RedisInstance;
-  protected queueManager: QueueManager;
-  protected eventManager: EventManager;
-  protected databaseInstance: DatabaseInstance;
+  protected redisInstance: TRedisInstance;
+  protected queueManager: TQueueManager;
+  protected eventManager: TEventManager;
+  protected databaseInstance: TDatabaseInstance;
   protected lifecycleManager: LifecycleManager;
 
   constructor({
@@ -37,7 +42,7 @@ export default abstract class BaseController {
     eventManager,
     databaseInstance,
     lifecycleManager,
-  }: WebServerBaseControllerConstructorParams) {
+  }: WebServerBaseControllerConstructorParams<TQueueManager, TRedisInstance, TEventManager, TDatabaseInstance>) {
     this.workerId = cluster.worker?.id;
 
     this.applicationConfig = applicationConfig;

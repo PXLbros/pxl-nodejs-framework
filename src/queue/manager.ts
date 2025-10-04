@@ -1,4 +1,4 @@
-import { type Job, type Processor, Queue, type QueueOptions, type WorkerOptions } from 'bullmq';
+import { type Job, Queue, type QueueOptions, type WorkerOptions } from 'bullmq';
 import path from 'path';
 import type { QueueManagerConstructorParams, QueueManagerOptions } from './manager.interface.js';
 import type { RedisInstance } from '../redis/index.js';
@@ -7,7 +7,7 @@ import { Logger } from '../logger/index.js';
 import QueueWorker from './worker.js';
 import type BaseProcessor from './processor/base.js';
 import { File, Helper, Loader, Time } from '../util/index.js';
-import type { QueueJob, QueueJobData } from './job.interface.js';
+import type { QueueJob, QueueJobData, QueueJobPayload } from './job.interface.js';
 import type { ProcessorConstructor } from './processor/processor.interface.js';
 import type { QueueItem } from './index.interface.js';
 import type { ApplicationConfig } from '../application/base-application.interface.js';
@@ -204,7 +204,20 @@ export default class QueueManager {
     this.log('Removed queue', { Queue: job.queueName, Job: job.id });
   };
 
-  public addJobToQueue = async ({ queueId, jobId, data }: { queueId: string; jobId: string; data: QueueJobData }) => {
+  public addJobToQueue = async <
+    TPayload extends QueueJobPayload = QueueJobPayload,
+    TMetadata extends Record<string, unknown> = Record<string, unknown>,
+    TResult = unknown,
+    TName extends string = string,
+  >({
+    queueId,
+    jobId,
+    data,
+  }: {
+    queueId: string;
+    jobId: TName;
+    data: QueueJobData<TPayload, TMetadata>;
+  }): Promise<Job<QueueJobData<TPayload, TMetadata>, TResult, TName> | undefined> => {
     const queue = this.queues.get(queueId);
 
     if (!queue) {
@@ -213,7 +226,7 @@ export default class QueueManager {
       return;
     }
 
-    const job = await queue.add(jobId, data);
+    const job = (await queue.add(jobId, data)) as Job<QueueJobData<TPayload, TMetadata>, TResult, TName>;
 
     const dataStr = JSON.stringify(data);
 
@@ -232,7 +245,7 @@ export default class QueueManager {
     return job;
   };
 
-  private workerProcessor = async (job: Job): Promise<Processor<any, any, string> | undefined> => {
+  private workerProcessor = async (job: Job): Promise<unknown> => {
     if (!job) {
       return;
     }

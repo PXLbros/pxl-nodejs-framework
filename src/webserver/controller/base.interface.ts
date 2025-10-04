@@ -7,20 +7,30 @@ import type { WebServerOptions } from '../webserver.interface.js';
 import type WebServerBaseController from './base.js';
 import type { LifecycleManager } from '../../lifecycle/lifecycle-manager.js';
 
-export interface WebServerBaseControllerConstructorParams {
+export interface WebServerBaseControllerConstructorParams<
+  TQueueManager extends QueueManager = QueueManager,
+  TRedisInstance extends RedisInstance = RedisInstance,
+  TEventManager extends EventManager = EventManager,
+  TDatabaseInstance extends DatabaseInstance = DatabaseInstance,
+> {
   applicationConfig: ApplicationConfig;
   webServerOptions: WebServerOptions;
 
-  redisInstance: RedisInstance;
-  queueManager: QueueManager;
-  eventManager: EventManager;
-  databaseInstance: DatabaseInstance;
+  redisInstance: TRedisInstance;
+  queueManager: TQueueManager;
+  eventManager: TEventManager;
+  databaseInstance: TDatabaseInstance;
   lifecycleManager: LifecycleManager;
 }
 
-export type WebServerBaseControllerType = new (
-  params: WebServerBaseControllerConstructorParams,
-) => WebServerBaseController;
+export type WebServerBaseControllerType<
+  TQueueManager extends QueueManager = QueueManager,
+  TRedisInstance extends RedisInstance = RedisInstance,
+  TEventManager extends EventManager = EventManager,
+  TDatabaseInstance extends DatabaseInstance = DatabaseInstance,
+> = new (
+  params: WebServerBaseControllerConstructorParams<TQueueManager, TRedisInstance, TEventManager, TDatabaseInstance>,
+) => WebServerBaseController<TQueueManager, TRedisInstance, TEventManager, TDatabaseInstance>;
 
 export interface ApiResponse<T = any> {
   data?: T;

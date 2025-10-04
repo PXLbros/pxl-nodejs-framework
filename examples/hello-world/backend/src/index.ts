@@ -193,7 +193,7 @@ class HelloWebSocketController extends WebSocketServerBaseController {
 }
 
 const webServerHost = process.env.HOST || '0.0.0.0';
-const webServerPort = parseInt(process.env.PORT || '3000', 10);
+const webServerPort = parseInt(process.env.PORT || '4000', 10);
 const webSocketHost = process.env.WS_HOST || webServerHost;
 const webSocketPort = parseInt(process.env.WS_PORT || String(webServerPort), 10);
 const publicWebSocketHost = process.env.WS_PUBLIC_HOST || (webSocketHost === '0.0.0.0' ? 'localhost' : webSocketHost);

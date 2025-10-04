@@ -1,3 +1,5 @@
+export type QueueJobPayload = Record<string, unknown>;
+
 export interface QueueJob {
   /** Job ID */
   id: string;
@@ -6,7 +8,10 @@ export interface QueueJob {
   maxConcurrency?: number;
 }
 
-export interface QueueJobData {
+export interface QueueJobData<
+  TPayload extends QueueJobPayload = QueueJobPayload,
+  TMetadata extends Record<string, unknown> = Record<string, unknown>,
+> {
   /** Unique identifier for the job */
   jobId?: string;
 
@@ -35,10 +40,10 @@ export interface QueueJobData {
   userId?: string;
 
   /** Custom metadata for the job */
-  metadata?: Record<string, unknown>;
+  metadata?: TMetadata;
 
   /** The actual job payload data */
-  payload: Record<string, unknown>;
+  payload: TPayload;
 
   /** Job configuration options */
   options?: {

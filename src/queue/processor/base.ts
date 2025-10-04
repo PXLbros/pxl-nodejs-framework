@@ -5,19 +5,24 @@ import type { ApplicationConfig } from '../../application/base-application.inter
 import { Logger } from '../../logger/index.js';
 import type { RedisInstance } from '../../redis/index.js';
 import type EventManager from '../../event/manager.js';
+import type { QueueJobData } from '../job.interface.js';
 
-export default abstract class BaseProcessor {
+export default abstract class BaseProcessor<
+  TQueueManager extends QueueManager = QueueManager,
+  TJobData extends QueueJobData = QueueJobData,
+  TResult = unknown,
+> {
   private logger: typeof Logger = Logger;
 
   constructor(
-    protected queueManager: QueueManager,
+    protected queueManager: TQueueManager,
     protected applicationConfig: ApplicationConfig,
     protected redisInstance: RedisInstance,
     protected databaseInstance: DatabaseInstance | null,
     protected eventManager?: EventManager,
   ) {}
 
-  public abstract process({ job }: { job: Job }): Promise<any>;
+  public abstract process({ job }: { job: Job<TJobData, TResult> }): Promise<TResult>;
 
   /**
    * Enhanced logger with structured methods
