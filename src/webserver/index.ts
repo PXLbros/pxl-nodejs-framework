@@ -26,3 +26,4 @@ export type {
 } from './controller/auth-middleware.js';
 export { withAuth } from './controller/auth-middleware.js';
 export { defineRoute } from './define-route.js';
+export { defineAction } from './define-action.js';

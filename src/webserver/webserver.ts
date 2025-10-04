@@ -29,7 +29,7 @@ import type { LifecycleManager } from '../lifecycle/lifecycle-manager.js';
 import type { ApplicationConfig } from '../application/base-application.interface.js';
 import type EventManager from '../event/manager.js';
 import { enterRequestContext } from '../request-context/index.js';
-import { toJSONSchema, type z } from 'zod';
+import { type ZodTypeProvider, serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -51,7 +51,7 @@ class WebServer {
   private eventManager: EventManager;
   private databaseInstance: DatabaseInstance;
 
-  public fastifyServer: FastifyInstance;
+  public fastifyServer: FastifyInstance<any, any, any, any, ZodTypeProvider>;
 
   private lifecycleManager: LifecycleManager;
   private _isReady = false;
@@ -101,7 +101,11 @@ class WebServer {
       logger: false,
       bodyLimit: this.options.bodyLimit ?? defaultBodyLimit,
       connectionTimeout: this.options.connectionTimeout ?? defaultConnectionTimeout,
-    });
+    }).withTypeProvider<ZodTypeProvider>();
+
+    // Set up Zod validators and serializers for automatic schema validation
+    this.fastifyServer.setValidatorCompiler(validatorCompiler);
+    this.fastifyServer.setSerializerCompiler(serializerCompiler);
   }
 
   /**
@@ -622,22 +626,30 @@ class WebServer {
 
     const controllerProvided =
       typeof candidate.controller === 'function' || typeof candidate.controllerName === 'string';
+    const handlerProvided = typeof candidate.handler === 'function';
 
     if (routeType === WebServerRouteType.Entity || routeType === 'entity') {
       return controllerProvided && typeof candidate.entityName === 'string' && candidate.entityName.length > 0;
     }
 
-    if (!controllerProvided) {
+    // For default routes, either controller+action OR handler must be provided
+    if (!controllerProvided && !handlerProvided) {
       return false;
     }
 
     const method = candidate.method;
-    const action = candidate.action;
 
     const isValidMethod =
       typeof method === 'string' ||
       (Array.isArray(method) && method.length > 0 && method.every(m => typeof m === 'string'));
 
+    // If handler is provided, we don't need action
+    if (handlerProvided) {
+      return isValidMethod;
+    }
+
+    // If controller is provided, we need action
+    const action = candidate.action;
     const isValidAction = typeof action === 'string' && action.length > 0;
 
     return isValidMethod && isValidAction;
@@ -739,31 +751,26 @@ class WebServer {
 
     const schema: FastifySchema = {};
 
+    // With ZodTypeProvider, we can pass Zod schemas directly
+    // The type provider handles validation automatically
     if (routeSchema.params) {
-      schema.params = this.convertZodSchema(routeSchema.params);
+      schema.params = routeSchema.params;
     }
 
     if (routeSchema.querystring) {
-      schema.querystring = this.convertZodSchema(routeSchema.querystring);
+      schema.querystring = routeSchema.querystring;
     }
 
     if (routeSchema.body) {
-      schema.body = this.convertZodSchema(routeSchema.body);
+      schema.body = routeSchema.body;
     }
 
     if (routeSchema.headers) {
-      schema.headers = this.convertZodSchema(routeSchema.headers);
+      schema.headers = routeSchema.headers;
     }
 
     if (routeSchema.response) {
-      const responses = routeSchema.response as Record<string, z.ZodTypeAny>;
-      const responseEntries = Object.entries(responses)
-        .filter(([statusCode]) => /^[1-5][0-9]{2}$/.test(statusCode))
-        .map(([statusCode, responseSchema]) => [statusCode, this.convertZodSchema(responseSchema)] as const);
-
-      if (responseEntries.length > 0) {
-        schema.response = Object.fromEntries(responseEntries);
-      }
+      schema.response = routeSchema.response;
     }
 
     return schema;
@@ -792,17 +799,6 @@ class WebServer {
     }
 
     return schema;
-  }
-
-  private convertZodSchema(zodSchema: z.ZodTypeAny) {
-    const jsonSchema = toJSONSchema(zodSchema);
-
-    if (jsonSchema && typeof jsonSchema === 'object' && '$schema' in jsonSchema) {
-      const { $schema: _jsonSchemaVersion, ...rest } = jsonSchema as Record<string, unknown>;
-      return rest;
-    }
-
-    return jsonSchema as Record<string, unknown>;
   }
 
   /**

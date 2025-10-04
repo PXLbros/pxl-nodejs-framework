@@ -18,12 +18,17 @@ vi.mock('fastify', () => {
     addHook: vi.fn(),
     route: vi.fn(),
     printRoutes: vi.fn().mockReturnValue('mocked routes'),
+    setValidatorCompiler: vi.fn(),
+    setSerializerCompiler: vi.fn(),
     server: {
       listening: true,
       address: vi.fn().mockReturnValue({ port: 3001 }),
     },
     version: '4.0.0',
   };
+
+  // Add withTypeProvider method that returns the instance
+  mockFastifyInstance.withTypeProvider = vi.fn(() => mockFastifyInstance);
 
   return {
     default: vi.fn(() => mockFastifyInstance),
@@ -35,6 +40,12 @@ vi.mock('@fastify/cors', () => ({ default: vi.fn() }));
 vi.mock('@fastify/helmet', () => ({ default: vi.fn() }));
 vi.mock('@fastify/rate-limit', () => ({ default: vi.fn() }));
 vi.mock('@fastify/multipart', () => ({ default: vi.fn() }));
+
+// Mock fastify-type-provider-zod
+vi.mock('fastify-type-provider-zod', () => ({
+  serializerCompiler: vi.fn(),
+  validatorCompiler: vi.fn(),
+}));
 
 // Mock utilities
 vi.mock('../../../src/util/index.js', async () => {
@@ -312,25 +323,20 @@ describe('WebServer', () => {
 
       await webServer.load();
 
-      expect(webServer.fastifyServer.route).toHaveBeenCalledWith(
-        expect.objectContaining({
-          url: '/typed',
-          method: 'POST',
-          schema: expect.objectContaining({
-            body: expect.objectContaining({
-              type: 'object',
-              properties: expect.objectContaining({
-                name: expect.objectContaining({ type: 'string' }),
-              }),
-            }),
-            response: expect.objectContaining({
-              200: expect.objectContaining({
-                type: 'object',
-              }),
-            }),
-          }),
-        }),
-      );
+      // With fastify-type-provider-zod, we now pass Zod schemas directly
+      // The schema should be the raw Zod object, not converted to JSON Schema
+      const routeCalls = vi.mocked(webServer.fastifyServer.route).mock.calls;
+      const typedRouteCall = routeCalls.find((call: any) => call[0].url === '/typed');
+
+      expect(typedRouteCall).toBeDefined();
+      expect(typedRouteCall![0]).toMatchObject({
+        url: '/typed',
+        method: 'POST',
+      });
+      // Schema is passed as-is (Zod schemas), not converted
+      expect(typedRouteCall![0].schema).toBeDefined();
+      expect(typedRouteCall![0].schema.body).toBeDefined();
+      expect(typedRouteCall![0].schema.response).toBeDefined();
     });
 
     it('should add health check routes', async () => {

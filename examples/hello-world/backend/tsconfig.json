@@ -12,6 +12,9 @@
     "emitDecoratorMetadata": true,
     "types": ["node"]
   },
+  "ts-node": {
+    "experimentalSpecifierResolution": "node"
+  },
   "include": ["src/**/*"],
   "exclude": ["node_modules"]
 }

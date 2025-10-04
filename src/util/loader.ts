@@ -60,13 +60,19 @@ const loadModulesInDirectory = async <T = unknown>({
 
     const moduleName = path.basename(file, ext);
     const filePath = path.join(directory, file);
+    // Convert to absolute path for ESM import
+    const absolutePath = path.isAbsolute(filePath) ? filePath : path.resolve(filePath);
+    // Use file:// URL for Windows compatibility
+    const fileUrl = `file://${absolutePath.replace(/\\/g, '/')}`;
 
     try {
-      const importedModule = await import(filePath);
+      const importedModule = await import(fileUrl);
 
       // Use safe property assignment to prevent prototype pollution
       if (moduleName !== '__proto__' && moduleName !== 'constructor' && moduleName !== 'prototype') {
-        Reflect.set(loadedModules, moduleName, importedModule.default);
+        // Prefer default export, but fall back to the entire module if no default
+        const moduleExport = importedModule.default ?? importedModule;
+        Reflect.set(loadedModules, moduleName, moduleExport);
       }
     } catch (error) {
       console.error(`Failed to import module ${filePath}:`, error);

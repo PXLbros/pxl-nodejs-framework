@@ -286,6 +286,18 @@ const webSocketPort = parseInt(process.env.WS_PORT || String(webServerPort), 10)
 const publicWebSocketHost = process.env.WS_PUBLIC_HOST || (webSocketHost === '0.0.0.0' ? 'localhost' : webSocketHost);
 const webSocketUrl = process.env.WS_URL || `ws://${publicWebSocketHost}:${webSocketPort}/ws`;
 
+const rateLimitEnv = process.env.RATE_LIMIT_ENABLED?.toLowerCase();
+const rateLimitEnabled = rateLimitEnv === 'true' ? true : rateLimitEnv === 'false' ? false : undefined;
+
+const webServerSecurity: WebApplicationConfig['webServer']['security'] =
+  rateLimitEnabled === undefined
+    ? undefined
+    : {
+        rateLimit: {
+          enabled: rateLimitEnabled,
+        },
+      };
+
 // Create application configuration
 const config: WebApplicationConfig = {
   name: 'hello-world-api',
@@ -302,6 +314,8 @@ const config: WebApplicationConfig = {
       urls: ['*'], // Allow all origins for development
     },
     controllersDirectory: './controllers', // Required by framework
+    security: webServerSecurity,
+    routesDirectory: './src/routes', // Auto-load typed routes from this directory
     debug: {
       printRoutes: false,
     },
@@ -446,10 +460,13 @@ async function main() {
   // Start the application
   await app.start();
 
+  // Replace 0.0.0.0 with localhost for display purposes
+  const displayHost = webServerHost === '0.0.0.0' ? 'localhost' : webServerHost;
+
   console.log(`
 🚀 Hello World API is running!
 
-  URL: http://${webServerHost}:${webServerPort}
+  URL: http://${displayHost}:${webServerPort}
   WS:  ${webSocketUrl}
 
   Try these endpoints:

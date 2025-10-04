@@ -121,6 +121,91 @@
         </div>
         <div v-if="infoError" class="result error"><strong>Error:</strong> {{ infoError }}</div>
       </section>
+
+      <!-- Greetings Manager -->
+      <section class="card greetings-card">
+        <h2>Greetings Manager</h2>
+        <p>Create, read, update, and delete greetings from the database</p>
+
+        <!-- Create Greeting Form -->
+        <div class="greeting-form">
+          <h3>Create New Greeting</h3>
+          <div class="form-group">
+            <label for="new-greeting-name">Name:</label>
+            <input
+              id="new-greeting-name"
+              v-model="newGreetingName"
+              type="text"
+              placeholder="Enter a name"
+              class="input"
+            />
+          </div>
+          <div class="form-group">
+            <label for="new-greeting-message">Message:</label>
+            <input
+              id="new-greeting-message"
+              v-model="newGreetingMessage"
+              type="text"
+              placeholder="Enter a message"
+              class="input"
+              @keyup.enter="handleCreateGreeting"
+            />
+          </div>
+          <button
+            @click="handleCreateGreeting"
+            :disabled="greetingsLoading || !newGreetingName || !newGreetingMessage"
+            class="button"
+          >
+            {{ greetingsLoading ? 'Creating...' : 'Create Greeting' }}
+          </button>
+        </div>
+
+        <!-- Load Greetings -->
+        <div class="button-group">
+          <button @click="loadGreetings" :disabled="greetingsLoading" class="button secondary">
+            {{ greetingsLoading ? 'Loading...' : 'Load Greetings' }}
+          </button>
+        </div>
+
+        <div v-if="greetingsError" class="result error"><strong>Error:</strong> {{ greetingsError }}</div>
+
+        <!-- Greetings List -->
+        <div v-if="greetings.length > 0" class="greetings-list">
+          <h3>Saved Greetings ({{ greetings.length }})</h3>
+          <div v-for="greeting in greetings" :key="greeting.id" class="greeting-item">
+            <div v-if="editingGreeting?.id === greeting.id" class="greeting-edit">
+              <div class="form-group">
+                <label>Name:</label>
+                <input v-model="editGreetingName" type="text" class="input" />
+              </div>
+              <div class="form-group">
+                <label>Message:</label>
+                <input v-model="editGreetingMessage" type="text" class="input" />
+              </div>
+              <div class="button-group">
+                <button @click="handleUpdateGreeting" :disabled="greetingsLoading" class="button small">Save</button>
+                <button @click="handleCancelEdit" class="button small secondary">Cancel</button>
+              </div>
+            </div>
+            <div v-else class="greeting-display">
+              <div class="greeting-info">
+                <div class="greeting-header">
+                  <strong class="greeting-name">{{ greeting.name }}</strong>
+                  <span class="greeting-id">#{{ greeting.id }}</span>
+                </div>
+                <p class="greeting-message">{{ greeting.message }}</p>
+                <div class="greeting-meta">
+                  <span class="greeting-date">Created: {{ new Date(greeting.createdAt).toLocaleString() }}</span>
+                </div>
+              </div>
+              <div class="greeting-actions">
+                <button @click="handleEditGreeting(greeting)" class="button small secondary">Edit</button>
+                <button @click="handleDeleteGreeting(greeting.id)" class="button small danger">Delete</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
     </main>
 
     <footer class="footer">
@@ -134,7 +219,21 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
-import { API_URL, get, post, type HelloResponse, type InfoResponse, type PingResponse } from './api/client';
+import {
+  API_URL,
+  get,
+  post,
+  put,
+  del,
+  type HelloResponse,
+  type InfoResponse,
+  type PingResponse,
+  type Greeting,
+  type GreetingsListResponse,
+  type GreetingResponse,
+  type CreateGreetingRequest,
+  type UpdateGreetingRequest,
+} from './api/client';
 
 interface WebSocketGreetingMessage {
   id: string;
@@ -160,6 +259,16 @@ const helloError = ref<string | null>(null);
 // Info state
 const infoResult = ref<InfoResponse | null>(null);
 const infoError = ref<string | null>(null);
+
+// Greetings state
+const greetings = ref<Greeting[]>([]);
+const greetingsError = ref<string | null>(null);
+const greetingsLoading = ref(false);
+const newGreetingName = ref('');
+const newGreetingMessage = ref('');
+const editingGreeting = ref<Greeting | null>(null);
+const editGreetingName = ref('');
+const editGreetingMessage = ref('');
 
 // WebSocket state
 const webSocket = ref<WebSocket | null>(null);
@@ -362,6 +471,95 @@ const handleInfo = async () => {
     infoError.value = error instanceof Error ? error.message : 'Unknown error';
   } finally {
     loading.value = false;
+  }
+};
+
+// Greetings handlers
+const loadGreetings = async () => {
+  greetingsLoading.value = true;
+  greetingsError.value = null;
+
+  try {
+    const data = await get<GreetingsListResponse>('/api/greetings');
+    greetings.value = data.greetings;
+  } catch (error) {
+    greetingsError.value = error instanceof Error ? error.message : 'Unknown error';
+  } finally {
+    greetingsLoading.value = false;
+  }
+};
+
+const handleCreateGreeting = async () => {
+  if (!newGreetingName.value || !newGreetingMessage.value) return;
+
+  greetingsLoading.value = true;
+  greetingsError.value = null;
+
+  try {
+    const data = await post<GreetingResponse, CreateGreetingRequest>('/api/greetings', {
+      name: newGreetingName.value,
+      message: newGreetingMessage.value,
+    });
+    greetings.value.unshift(data.greeting);
+    newGreetingName.value = '';
+    newGreetingMessage.value = '';
+  } catch (error) {
+    greetingsError.value = error instanceof Error ? error.message : 'Unknown error';
+  } finally {
+    greetingsLoading.value = false;
+  }
+};
+
+const handleEditGreeting = (greeting: Greeting) => {
+  editingGreeting.value = greeting;
+  editGreetingName.value = greeting.name;
+  editGreetingMessage.value = greeting.message;
+};
+
+const handleCancelEdit = () => {
+  editingGreeting.value = null;
+  editGreetingName.value = '';
+  editGreetingMessage.value = '';
+};
+
+const handleUpdateGreeting = async () => {
+  if (!editingGreeting.value) return;
+
+  greetingsLoading.value = true;
+  greetingsError.value = null;
+
+  try {
+    const data = await put<GreetingResponse, UpdateGreetingRequest>(`/api/greetings/${editingGreeting.value.id}`, {
+      name: editGreetingName.value,
+      message: editGreetingMessage.value,
+    });
+
+    const index = greetings.value.findIndex(g => g.id === editingGreeting.value!.id);
+    if (index !== -1) {
+      greetings.value[index] = data.greeting;
+    }
+
+    handleCancelEdit();
+  } catch (error) {
+    greetingsError.value = error instanceof Error ? error.message : 'Unknown error';
+  } finally {
+    greetingsLoading.value = false;
+  }
+};
+
+const handleDeleteGreeting = async (id: number) => {
+  if (!confirm('Are you sure you want to delete this greeting?')) return;
+
+  greetingsLoading.value = true;
+  greetingsError.value = null;
+
+  try {
+    await del(`/api/greetings/${id}`);
+    greetings.value = greetings.value.filter(g => g.id !== id);
+  } catch (error) {
+    greetingsError.value = error instanceof Error ? error.message : 'Unknown error';
+  } finally {
+    greetingsLoading.value = false;
   }
 };
 </script>
@@ -677,6 +875,114 @@ body {
   opacity: 0.8;
 }
 
+/* Greetings Manager Styles */
+.greetings-card {
+  grid-column: 1 / -1;
+}
+
+.greeting-form {
+  margin: 20px 0;
+  padding: 20px;
+  background: rgba(102, 126, 234, 0.05);
+  border-radius: 8px;
+}
+
+.greeting-form h3 {
+  margin: 0 0 15px;
+  color: #667eea;
+  font-size: 1.2em;
+}
+
+.greetings-list {
+  margin-top: 20px;
+}
+
+.greetings-list h3 {
+  margin: 0 0 15px;
+  color: #667eea;
+  font-size: 1.2em;
+}
+
+.greeting-item {
+  margin-bottom: 15px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.greeting-display {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 15px;
+}
+
+.greeting-info {
+  flex: 1;
+}
+
+.greeting-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.greeting-name {
+  color: #667eea;
+  font-size: 1.1em;
+}
+
+.greeting-id {
+  font-size: 0.85em;
+  color: #999;
+  background: #e0e0e0;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.greeting-message {
+  margin: 8px 0;
+  color: #333;
+  line-height: 1.5;
+}
+
+.greeting-meta {
+  font-size: 0.85em;
+  color: #666;
+}
+
+.greeting-date {
+  font-style: italic;
+}
+
+.greeting-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.greeting-edit {
+  background: white;
+  padding: 15px;
+  border-radius: 6px;
+}
+
+.button.small {
+  padding: 8px 16px;
+  font-size: 14px;
+  width: auto;
+}
+
+.button.danger {
+  background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+}
+
+.button.danger:hover:not(:disabled) {
+  box-shadow: 0 5px 15px rgba(245, 101, 101, 0.4);
+}
+
 @media (max-width: 768px) {
   .header h1 {
     font-size: 2em;
@@ -688,6 +994,18 @@ body {
 
   .card {
     padding: 20px;
+  }
+
+  .greeting-display {
+    flex-direction: column;
+  }
+
+  .greeting-actions {
+    width: 100%;
+  }
+
+  .button.small {
+    flex: 1;
   }
 }
 </style>

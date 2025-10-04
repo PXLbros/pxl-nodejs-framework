@@ -27,6 +27,13 @@ vi.mock('path', () => ({
       return name.split('.')[0];
     }),
     join: vi.fn((...args: string[]) => args.join('/')),
+    isAbsolute: vi.fn((p: string) => p.startsWith('/')),
+    resolve: vi.fn((...args: string[]) => {
+      const parts = args.filter(Boolean);
+      if (parts.length === 0) return '/';
+      const joined = parts.join('/');
+      return joined.startsWith('/') ? joined : `/${joined}`;
+    }),
   },
 }));
 

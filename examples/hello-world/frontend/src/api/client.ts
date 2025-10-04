@@ -33,6 +33,32 @@ export interface InfoResponse {
   endpoints: ApiEndpoint[];
 }
 
+export interface Greeting {
+  id: number;
+  name: string;
+  message: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GreetingsListResponse {
+  greetings: Greeting[];
+}
+
+export interface GreetingResponse {
+  greeting: Greeting;
+}
+
+export interface CreateGreetingRequest {
+  name: string;
+  message: string;
+}
+
+export interface UpdateGreetingRequest {
+  name?: string;
+  message?: string;
+}
+
 /**
  * Make a GET request to the API
  */
@@ -65,6 +91,48 @@ export async function post<T = unknown, D = unknown>(endpoint: string, data: D):
 
   if (!response.ok) {
     throw new Error(`API error: ${response.status} ${response.statusText}`);
+  }
+
+  return response.json() as Promise<T>;
+}
+
+/**
+ * Make a PUT request to the API
+ */
+export async function put<T = unknown, D = unknown>(endpoint: string, data: D): Promise<T> {
+  const response = await fetch(`${API_URL}${endpoint}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    throw new Error(`API error: ${response.status} ${response.statusText}`);
+  }
+
+  return response.json() as Promise<T>;
+}
+
+/**
+ * Make a DELETE request to the API
+ */
+export async function del<T = unknown>(endpoint: string): Promise<T | void> {
+  const response = await fetch(`${API_URL}${endpoint}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`API error: ${response.status} ${response.statusText}`);
+  }
+
+  // Handle 204 No Content responses
+  if (response.status === 204) {
+    return;
   }
 
   return response.json() as Promise<T>;

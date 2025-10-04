@@ -4,16 +4,73 @@ title: Typed Routes & Schemas
 
 # Typed Routes & Schemas
 
-Starting in v1.0.21 the web server exposes first-class support for **Zod-powered route schemas**. Instead of pushing ad-hoc `validation` objects into Fastify at runtime, you can now describe request and response contracts with Zod and receive fully typed handlers, automatic JSON Schema generation, and OpenAPI-ready metadata.
+Starting in **v1.0.21** the web server exposes first-class support for **Zod-powered route schemas**. In **v1.0.23**, we've integrated `fastify-type-provider-zod` for automatic runtime validation and enhanced type safety.
+
+Instead of pushing ad-hoc `validation` objects into Fastify at runtime, you can now describe request and response contracts with Zod and receive:
+
+- Fully typed handlers with automatic type inference
+- **Automatic runtime validation** - invalid requests are rejected with 400 errors
+- Response serialization
+- OpenAPI-ready metadata
 
 This guide walks through the new APIs, how to adopt them in existing controllers, and what migration steps you may need if you were relying on the old `validation` property.
 
-## Why the change?
+## Why typed routes?
 
 - **Type inference end-to-end** – the shape of `params`, `querystring`, `body`, and `reply` flows directly into your controller methods.
-- **Native Fastify integration** – Zod definitions are converted to JSON Schema up front and passed to Fastify's `schema` field. That enables AJV-powered request validation, hooks, and ecosystem plugins with zero extra wiring.
+- **Automatic validation** (v1.0.23+) – Zod schemas are validated by Fastify automatically. Invalid requests return detailed 400 error responses.
+- **Native Fastify integration** – Powered by `fastify-type-provider-zod`, with full support for Zod 4.
 - **Docs & client generation** – the framework now holds all the metadata needed to emit OpenAPI specs or SDKs later on.
 - **Safer routing** – handlers are registered explicitly, removing the `any`-based reflective lookup that previously reached into controller instances.
+
+## Quick Example
+
+Here's a complete example showing validation in action:
+
+```ts
+// src/routes/users.routes.ts
+import { defineRoute } from '@scpxl/nodejs-framework/webserver';
+import type { RouteSchemaDefinition } from '@scpxl/nodejs-framework/webserver';
+import { z } from 'zod';
+
+const createUserSchema = {
+  body: z.object({
+    email: z.string().email(),
+    name: z.string().min(1).max(100),
+  }),
+  response: {
+    201: z.object({
+      id: z.string(),
+      email: z.string().email(),
+      name: z.string(),
+    }),
+  },
+} satisfies RouteSchemaDefinition;
+
+export const routes = [
+  defineRoute({
+    method: 'POST',
+    path: '/api/users',
+    schema: createUserSchema,
+    handler: async (request, reply) => {
+      // request.body is typed as { email: string; name: string }
+      // Validation has already passed - no need to check!
+
+      const user = await createUser(request.body);
+      return reply.status(201).send(user);
+    },
+  }),
+];
+```
+
+**What happens:**
+
+- Valid request: Handler executes with typed `request.body`
+- Invalid email: Returns `400` with error message
+- Missing name: Returns `400` with error message
+- Name too long: Returns `400` with error message
+
+All validation is automatic - you just write your business logic!
 
 ## Defining a Typed Route
 
@@ -48,9 +105,15 @@ Key points:
 
 - `schema` accepts any combination of `params`, `querystring`, `body`, `headers`, and `response` (use status codes as keys).
 - The `handler` receives a `FastifyRequest` whose types are derived automatically from the Zod schema.
+- **Validation is automatic** - Fastify will validate requests against the schema and return 400 errors for invalid data.
 - The helper defaults to `WebServerRouteType.Default`, but you can pass `type` if you need entity routes.
 
-Under the hood the framework converts each Zod schema via `z.toJSONSchema` and attaches it to Fastify. The `$schema` metadata is stripped to keep Fastify happy, but all validation rules stay intact.
+**Under the hood** (v1.0.23+): The framework uses `fastify-type-provider-zod` which:
+
+1. Passes Zod schemas directly to Fastify (no conversion needed!)
+2. Configures validators and serializers automatically
+3. Validates requests before they reach your handler
+4. Returns detailed validation errors to clients
 
 ## Using Controllers with Typed Actions
 
@@ -155,6 +218,55 @@ This is especially handy is especially handy for temporary endpoints, internal t
 - New code should prefer `schema` with Zod definitions. You get static typing, better editor support, and a future-proof path to generated references.
 - Replace direct usage of `request.compileValidationSchema` with Zod validation in the schema definition. No manual `preValidation` step is required anymore—Fastify handles it.
 - When moving controllers over, type methods with `ControllerAction<YourSchema>` and adjust references to `request.body`, `request.params`, etc. (the types will now match the schema).
+
+## Validation Error Responses
+
+When a request fails validation (v1.0.23+), Fastify automatically returns a **400 Bad Request** with detailed error information:
+
+```json
+{
+  "statusCode": 400,
+  "error": "Bad Request",
+  "message": "body/email must be a valid email"
+}
+```
+
+The error messages come directly from Zod and include:
+
+- The path to the invalid field (e.g., `body/email`, `params/id`)
+- A description of what went wrong
+- Multiple errors if multiple fields are invalid
+
+You don't need to write validation code in your handlers - it's all automatic!
+
+## Using `defineAction()` Helper
+
+For controller methods, you can use the `defineAction()` helper to get full type inference:
+
+```ts
+import { defineAction } from '@scpxl/nodejs-framework/webserver';
+import { z } from 'zod';
+
+const helloSchema = {
+  body: z.object({ name: z.string() }),
+  response: { 200: z.object({ message: z.string() }) },
+} satisfies RouteSchemaDefinition;
+
+class MyController extends WebServerBaseController {
+  // With schema - fully typed
+  hello = defineAction(helloSchema, async (request, reply) => {
+    // request.body.name is typed as string
+    return reply.send({ message: `Hello ${request.body.name}` });
+  });
+
+  // Without schema - still works
+  ping = defineAction(async (_request, reply) => {
+    return reply.send({ status: 'pong' });
+  });
+}
+```
+
+The `defineAction()` helper is purely for type inference - it returns the handler function unchanged. The actual validation happens at the route registration level when you provide a `schema`.
 
 ## What about entity routes?
 

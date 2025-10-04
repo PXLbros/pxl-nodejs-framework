@@ -43,32 +43,23 @@ This document tracks planned improvements, features, and technical debt for the 
 
 ### Input Validation & Route Typing
 
-**Status**: In Progress
-**Current Issues**:
+**Status**: ✅ **Completed** (v1.0.23)
+**Completed Features**:
 
-- Dynamic controller/action resolution with `any` types
-- Custom validation instead of Fastify's native AJV
-- No OpenAPI schema generation
+- ✅ Zod schema validation with `fastify-type-provider-zod`
+- ✅ Full TypeScript type inference for request/response
+- ✅ `defineRoute()` and `defineAction()` helpers
+- ✅ Automatic request validation (params, query, body, headers)
+- ✅ Response serialization support
+- ✅ 100% test coverage for typed routes
 
-**Action**:
+**Remaining Work** (Lower Priority):
 
-- Generate JSON Schemas (Zod → JSON) for routes
-- Use Fastify `schema` property for automatic validation
-- Add typed controller signature: `Controller<ActionParams, Body, Query, Reply>`
-- Create common validation schemas (pagination, IDs, responses)
+- Create `src/schemas/common.ts` with reusable schemas (pagination, IDs, responses)
+- Replace Joi with Zod in `DynamicEntity` for consistency
+- Add OpenAPI/Swagger generation from Zod schemas
 
-**Implementation**:
-
-1. Install `zod-to-json-schema` dependency
-2. Create `src/validation/` infrastructure
-3. Create `src/schemas/common.ts` with reusable schemas
-4. Update route interfaces to use `RouteSchema`
-5. Update WebServer route registration to convert Zod → JSON Schema
-6. Migrate controllers to use typed actions
-7. Replace Joi with Zod in `DynamicEntity`
-
-**Timeline**: 4-5 weeks
-**Effort**: Large | **Risk**: Medium
+**Completed**: October 2025
 
 ### Unified Error Handling & Logging
 
@@ -360,6 +351,16 @@ This document tracks planned improvements, features, and technical debt for the 
 - ✅ Safe object property access patterns
 - ✅ Input sanitization in controllers
 - ✅ WebSocket client property whitelisting
+
+### Input Validation & Typed Routes (v1.0.23)
+
+- ✅ Integrated `fastify-type-provider-zod` for automatic validation
+- ✅ Full TypeScript type inference from Zod schemas
+- ✅ `defineRoute()` helper for inline typed handlers
+- ✅ `defineAction()` helper for typed controller methods
+- ✅ Request validation (params, query, body, headers)
+- ✅ Response serialization support
+- ✅ Comprehensive test coverage with 11 passing integration tests
 
 ---
 
