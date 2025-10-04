@@ -23,6 +23,7 @@ A comprehensive, production-ready Node.js framework for building modern applicat
 ### 🌐 **Web & Networking**
 
 - **Fastify Web Server** - High-performance HTTP server with route management and middleware
+- **Route Autoloading** - Drop route modules into a directory and have them loaded automatically
 - **WebSocket Support** - Real-time bidirectional communication with room-based routing
 - **CORS & Security** - Built-in CORS, Helmet integration, and rate limiting support
 - **File Uploads** - Multipart form data handling with configurable limits

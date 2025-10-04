@@ -12,6 +12,34 @@ app.webserver.route({
 });
 ```
 
+## Automatic Route Discovery
+
+Set `webServer.routesDirectory` in your application config to auto-load route definitions. Each `.ts`/`.js` file can export a single route, an array of routes, or an object with a `routes` array. Discovered routes are merged with statically configured routes before controllers are resolved.
+
+```ts
+// Application config
+const app = new WebApplication({
+  webServer: {
+    enabled: true,
+    port: 3000,
+    controllersDirectory: './src/webserver/controllers',
+    routesDirectory: './src/webserver/routes',
+  },
+  redis: { host: '127.0.0.1', port: 6379 },
+});
+
+// src/webserver/routes/health.ts
+export default {
+  type: 'default',
+  method: 'GET',
+  path: '/health',
+  controllerName: 'health',
+  action: 'status',
+};
+```
+
+Invalid exports are skipped with a warning so you can fix the file without crashing the server.
+
 ## Raw Fastify
 
 ```ts

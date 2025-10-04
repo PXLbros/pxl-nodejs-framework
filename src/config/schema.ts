@@ -170,6 +170,7 @@ export const WebServerConfigSchema = z
       .default(10 * 1000), // 10s default (was 30s)
     routes: z.array(WebServerRouteSchema).default([]),
     controllersDirectory: z.string().optional(), // Controllers directory path
+    routesDirectory: z.string().optional(),
     cors: z
       .object({
         enabled: z.boolean().default(false),
@@ -184,7 +185,7 @@ export const WebServerConfigSchema = z
       .default({})
       .optional(),
   })
-  .partial({ cors: true, debug: true, controllersDirectory: true, security: true });
+  .partial({ cors: true, debug: true, controllersDirectory: true, routesDirectory: true, security: true });
 
 // WebSocket configuration schema
 export const WebSocketRouteSchema = z.object({

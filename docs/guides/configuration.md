@@ -17,6 +17,11 @@ new Application({
 });
 ```
 
+## Web Server Options
+
+- `controllersDirectory` – Directory containing controller classes referenced by routes.
+- `routesDirectory` – Optional directory for auto-loaded route definition files. Files may export a single route, an array of routes, or `{ routes: [...] }`.
+
 ## Optional Modules
 
 Leaving a section out means it's skipped.

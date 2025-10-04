@@ -184,6 +184,9 @@ export interface WebServerOptions {
   /** Web server controllers directory */
   controllersDirectory: string;
 
+  /** Optional directory containing route definition files */
+  routesDirectory?: string;
+
   log?: WebServerLogConfig;
 
   /** Web server security options (helmet, rate limiting) */

@@ -60,6 +60,7 @@ export default class WebApplication extends BaseApplication {
           host: this.config.webServer.host,
           port: this.config.webServer.port,
           controllersDirectory: this.config.webServer.controllersDirectory,
+          routesDirectory: this.config.webServer.routesDirectory,
           cors: this.config.webServer.cors,
           log: this.config.webServer.log,
           debug: this.config.webServer.debug,

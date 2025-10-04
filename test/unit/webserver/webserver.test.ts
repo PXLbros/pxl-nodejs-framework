@@ -216,6 +216,71 @@ describe('WebServer', () => {
       expect(webServer.fastifyServer.register).toHaveBeenCalled();
     });
 
+    it('should load routes from configured routes directory', async () => {
+      const routesDirectory = '/test/routes';
+      const { File, Loader } = await import('../../../src/util/index.js');
+
+      class AutoController {
+        public auto = vi.fn();
+
+        public constructor(..._args: any[]) {}
+      }
+
+      vi.mocked(File.pathExists).mockImplementation(async path => {
+        if (path === routesDirectory) {
+          return true;
+        }
+
+        if (path === options.controllersDirectory) {
+          return true;
+        }
+
+        return false;
+      });
+
+      vi.mocked(Loader.loadModulesInDirectory).mockImplementation(async ({ directory }) => {
+        if (directory === routesDirectory) {
+          return {
+            autoRoutes: {
+              type: WebServerRouteType.Default,
+              method: 'GET',
+              path: '/auto-loaded',
+              controller: AutoController,
+              action: 'auto',
+            },
+          };
+        }
+
+        return {};
+      });
+
+      const webServer = new WebServer({
+        applicationConfig,
+        options: {
+          ...options,
+          routesDirectory,
+        },
+        routes,
+        redisInstance: mockRedisInstance as any,
+        queueManager: mockQueueManager as any,
+        eventManager: mockEventManager,
+        databaseInstance: mockDatabaseInstance as any,
+        lifecycleManager: mockLifecycleManager,
+      });
+
+      await webServer.load();
+
+      expect(webServer.fastifyServer.route).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: '/auto-loaded',
+          method: 'GET',
+        }),
+      );
+
+      vi.mocked(File.pathExists).mockResolvedValue(false);
+      vi.mocked(Loader.loadModulesInDirectory).mockResolvedValue({});
+    });
+
     it('should add health check routes', async () => {
       const { File } = await import('../../../src/util/index.js');
       vi.mocked(File.pathExists).mockResolvedValue(true);

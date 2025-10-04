@@ -77,7 +77,7 @@ class WebServer {
     this.applicationConfig = params.applicationConfig;
 
     this.options = mergedOptions;
-    this.routes = params.routes;
+    this.routes = [...(params.routes ?? [])];
 
     this.redisInstance = params.redisInstance;
     this.queueManager = params.queueManager;
@@ -313,6 +313,8 @@ class WebServer {
    * Configure routes.
    */
   private async configureRoutes(): Promise<void> {
+    await this.loadRoutesFromDirectory();
+
     // Check if controllers directory exists
     const controllersDirectoryExists = await File.pathExists(this.options.controllersDirectory);
 
@@ -473,6 +475,133 @@ class WebServer {
 
       console.log(this.fastifyServer.printRoutes());
     }
+  }
+
+  private async loadRoutesFromDirectory(): Promise<void> {
+    const { routesDirectory } = this.options;
+
+    if (!routesDirectory) {
+      return;
+    }
+
+    const directoryExists = await File.pathExists(routesDirectory);
+
+    if (!directoryExists) {
+      this.logger.warn({
+        message: 'Web server routes directory not found',
+        meta: {
+          Directory: routesDirectory,
+        },
+      });
+
+      return;
+    }
+
+    const routeModules = await Loader.loadModulesInDirectory<
+      WebServerRoute | WebServerRoute[] | { routes?: WebServerRoute[] }
+    >({
+      directory: routesDirectory,
+      extensions: ['.ts', '.js'],
+    });
+
+    const loadedRoutes: WebServerRoute[] = [];
+
+    for (const [moduleName, exportedRoutes] of Object.entries(routeModules)) {
+      const normalizedRoutes = this.normalizeRouteExport(exportedRoutes, moduleName);
+
+      if (normalizedRoutes.length === 0) {
+        continue;
+      }
+
+      loadedRoutes.push(...normalizedRoutes);
+    }
+
+    if (loadedRoutes.length > 0) {
+      this.routes.push(...loadedRoutes);
+    }
+  }
+
+  private normalizeRouteExport(exportedValue: unknown, moduleName: string): WebServerRoute[] {
+    const ensureRouteArray = (value: unknown): WebServerRoute[] => {
+      if (Array.isArray(value)) {
+        return value;
+      }
+
+      if (value && typeof value === 'object') {
+        const maybeRoute = value as { routes?: unknown };
+
+        if (Array.isArray(maybeRoute.routes)) {
+          return maybeRoute.routes as WebServerRoute[];
+        }
+      }
+
+      return value ? [value as WebServerRoute] : [];
+    };
+
+    const routeCandidates = ensureRouteArray(exportedValue);
+    const validRoutes: WebServerRoute[] = [];
+
+    for (const [index, candidate] of routeCandidates.entries()) {
+      if (this.isValidRoute(candidate)) {
+        validRoutes.push(candidate);
+      } else {
+        this.logger.warn({
+          message: 'Invalid web server route definition skipped',
+          meta: {
+            Module: moduleName,
+            Index: index,
+          },
+        });
+      }
+    }
+
+    if (validRoutes.length === 0 && routeCandidates.length > 0) {
+      this.logger.warn({
+        message: 'No valid routes exported from module',
+        meta: {
+          Module: moduleName,
+        },
+      });
+    }
+
+    return validRoutes;
+  }
+
+  private isValidRoute(route: unknown): route is WebServerRoute {
+    if (!route || typeof route !== 'object') {
+      return false;
+    }
+
+    const candidate = route as Record<string, unknown>;
+    const routePath = candidate.path;
+
+    if (typeof routePath !== 'string' || routePath.length === 0) {
+      return false;
+    }
+
+    const routeType = candidate.type ?? WebServerRouteType.Default;
+
+    const controllerProvided =
+      typeof candidate.controller === 'function' || typeof candidate.controllerName === 'string';
+
+    if (routeType === WebServerRouteType.Entity || routeType === 'entity') {
+      return controllerProvided && typeof candidate.entityName === 'string' && candidate.entityName.length > 0;
+    }
+
+    if (!controllerProvided) {
+      return false;
+    }
+
+    const method = candidate.method;
+    const action = candidate.action;
+
+    const isValidMethod =
+      typeof method === 'string' ||
+      (Array.isArray(method) && method.length > 0 && method.every(m => typeof m === 'string'));
+
+    const isValidAction = typeof action === 'string' && action.length > 0;
+
+    return isValidMethod && isValidAction;
   }
 
   public async defineRoute({
