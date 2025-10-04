@@ -33,10 +33,15 @@ export const QueueLogConfigSchema = z
   })
   .optional();
 
+export const QueueJobSchema = z.object({
+  id: z.string().min(1),
+  maxConcurrency: z.number().int().positive().optional(),
+});
+
 export const QueueItemSchema = z.object({
   name: z.string(),
   isExternal: z.boolean().optional(),
-  jobs: z.array(z.any()).default([]),
+  jobs: z.array(QueueJobSchema).default([]),
 });
 
 export const QueueConfigSchema = z.object({
@@ -140,11 +145,13 @@ export const WebServerRouteSchema = z
     method: z.union([z.string(), z.array(z.string())]).optional(),
     path: z.string(),
     url: z.string().optional(), // Keep for backwards compatibility
-    controller: z.any().optional(), // Controller class reference
+    controller: z.unknown().optional(), // Controller class reference
     controllerName: z.string().optional(),
     action: z.string().optional(),
     entityName: z.string().optional(),
-    validation: z.any().optional(),
+    validation: z.unknown().optional(), // Validation schema reference
+    handler: z.unknown().optional(),
+    schema: z.unknown().optional(),
   })
   .passthrough(); // Allow additional properties to pass through
 
@@ -165,6 +172,7 @@ export const WebServerConfigSchema = z
       .default(10 * 1000), // 10s default (was 30s)
     routes: z.array(WebServerRouteSchema).default([]),
     controllersDirectory: z.string().optional(), // Controllers directory path
+    routesDirectory: z.string().optional(),
     cors: z
       .object({
         enabled: z.boolean().default(false),
@@ -179,14 +187,14 @@ export const WebServerConfigSchema = z
       .default({})
       .optional(),
   })
-  .partial({ cors: true, debug: true, controllersDirectory: true, security: true });
+  .partial({ cors: true, debug: true, controllersDirectory: true, routesDirectory: true, security: true });
 
 // WebSocket configuration schema
 export const WebSocketRouteSchema = z.object({
   type: z.string().min(1, 'webSocket.routes.type required'),
   controllerName: z.string().min(1, 'webSocket.routes.controllerName required'),
   action: z.string().min(1, 'webSocket.routes.action required'),
-  controller: z.any().optional(),
+  controller: z.unknown().optional(), // Controller class reference
 });
 
 export const WebSocketConfigSchema = z
@@ -248,9 +256,9 @@ export class ConfigValidationError extends Error {
 export function validateFrameworkConfig(raw: unknown, _options: ValidateConfigOptions = {}): InferFrameworkConfig {
   const result = FrameworkConfigSchema.safeParse(raw);
   if (!result.success) {
-    const issues: ValidationIssueDetail[] = result.error.issues.map((i: any) => ({
-      path: (i.path.join('.') ?? '(root)') as string,
-      message: i.message as string,
+    const issues: ValidationIssueDetail[] = result.error.issues.map(i => ({
+      path: i.path.join('.') || '(root)',
+      message: i.message,
     }));
     throw new ConfigValidationError('Invalid framework configuration', issues);
   }

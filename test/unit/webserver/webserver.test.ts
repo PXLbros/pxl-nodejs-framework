@@ -7,6 +7,7 @@ import { mockQueueManager } from '../../utils/mocks/queue-mocks.js';
 import type { ApplicationConfig } from '../../../src/application/base-application.interface.js';
 import type { WebServerOptions, WebServerRoute } from '../../../src/webserver/webserver.interface.js';
 import { WebServerRouteType } from '../../../src/webserver/webserver.interface.js';
+import { z } from 'zod';
 
 // Mock Fastify
 vi.mock('fastify', () => {
@@ -95,6 +96,7 @@ describe('WebServer', () => {
     mockLifecycleManager = {
       registerComponent: mock.fn(),
       shutdown: mock.fn(),
+      addReadinessCheck: mock.fn(),
     };
   });
 
@@ -214,6 +216,121 @@ describe('WebServer', () => {
       await webServer.load();
 
       expect(webServer.fastifyServer.register).toHaveBeenCalled();
+    });
+
+    it('should load routes from configured routes directory', async () => {
+      const routesDirectory = '/test/routes';
+      const { File, Loader } = await import('../../../src/util/index.js');
+
+      class AutoController {
+        public auto = vi.fn();
+
+        public constructor(..._args: any[]) {}
+      }
+
+      vi.mocked(File.pathExists).mockImplementation(async path => {
+        if (path === routesDirectory) {
+          return true;
+        }
+
+        if (path === options.controllersDirectory) {
+          return true;
+        }
+
+        return false;
+      });
+
+      vi.mocked(Loader.loadModulesInDirectory).mockImplementation(async ({ directory }) => {
+        if (directory === routesDirectory) {
+          return {
+            autoRoutes: {
+              type: WebServerRouteType.Default,
+              method: 'GET',
+              path: '/auto-loaded',
+              controller: AutoController,
+              action: 'auto',
+            },
+          };
+        }
+
+        return {};
+      });
+
+      const webServer = new WebServer({
+        applicationConfig,
+        options: {
+          ...options,
+          routesDirectory,
+        },
+        routes,
+        redisInstance: mockRedisInstance as any,
+        queueManager: mockQueueManager as any,
+        eventManager: mockEventManager,
+        databaseInstance: mockDatabaseInstance as any,
+        lifecycleManager: mockLifecycleManager,
+      });
+
+      await webServer.load();
+
+      expect(webServer.fastifyServer.route).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: '/auto-loaded',
+          method: 'GET',
+        }),
+      );
+
+      vi.mocked(File.pathExists).mockResolvedValue(false);
+      vi.mocked(Loader.loadModulesInDirectory).mockResolvedValue({});
+    });
+
+    it('should register routes with Zod schemas via handler-only definitions', async () => {
+      routes = [
+        {
+          type: WebServerRouteType.Default,
+          method: 'POST',
+          path: '/typed',
+          handler: vi.fn(),
+          schema: {
+            body: z.object({ name: z.string() }),
+            response: {
+              200: z.object({ ok: z.boolean() }),
+            },
+          },
+        } as WebServerRoute,
+      ];
+
+      const webServer = new WebServer({
+        applicationConfig,
+        options,
+        routes,
+        redisInstance: mockRedisInstance as any,
+        queueManager: mockQueueManager as any,
+        eventManager: mockEventManager,
+        databaseInstance: mockDatabaseInstance as any,
+        lifecycleManager: mockLifecycleManager,
+      });
+
+      await webServer.load();
+
+      expect(webServer.fastifyServer.route).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: '/typed',
+          method: 'POST',
+          schema: expect.objectContaining({
+            body: expect.objectContaining({
+              type: 'object',
+              properties: expect.objectContaining({
+                name: expect.objectContaining({ type: 'string' }),
+              }),
+            }),
+            response: expect.objectContaining({
+              200: expect.objectContaining({
+                type: 'object',
+              }),
+            }),
+          }),
+        }),
+      );
     });
 
     it('should add health check routes', async () => {
@@ -404,7 +521,7 @@ describe('WebServer', () => {
         expect.objectContaining({
           method: 'GET',
           url: '/test',
-          handler: mockControllerInstance.testAction,
+          handler: expect.any(Function),
         }),
       );
     });

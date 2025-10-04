@@ -86,7 +86,9 @@ export default class WebSocketServer extends WebSocketBase {
     return 'server';
   }
 
-  private async validateWebSocketAuth(url: string): Promise<{ userId: number; payload: any } | null> {
+  private async validateWebSocketAuth(
+    url: string,
+  ): Promise<{ userId: number; payload: Record<string, unknown> } | null> {
     try {
       const parsedUrl = new URL(url, 'ws://localhost');
       const token = parsedUrl.searchParams.get('token');
@@ -287,19 +289,19 @@ export default class WebSocketServer extends WebSocketBase {
       return;
     }
 
-    const runSameWorker = parsedMessage.runSameWorker === true;
+    const includeSender = parsedMessage.includeSender === true;
 
     const isSameWorker = parsedMessage.workerId === this.workerId;
 
     // Check if message is from the same worker
-    if (runSameWorker !== true && isSameWorker) {
+    if (includeSender !== true && isSameWorker) {
       // Ignore the message if it's from the same worker
       return;
     }
 
     log('Incoming subscriber message', {
       Channel: channel,
-      // 'Run Same Worker': parsedMessage.runSameWorker ? 'Yes' : 'No',
+      // 'Run Same Worker': parsedMessage.includeSender ? 'Yes' : 'No',
       'Client ID': parsedMessage.clientId ?? '-',
     });
 
@@ -594,7 +596,11 @@ export default class WebSocketServer extends WebSocketBase {
           response: serverMessageResponse?.response,
         });
 
-        if (serverMessageResponse?.response?.error) {
+        if (
+          serverMessageResponse?.response &&
+          typeof serverMessageResponse.response === 'object' &&
+          'error' in serverMessageResponse.response
+        ) {
           // throw new Error(serverMessageResponse?.response?.error);
 
           Logger.error({ error: serverMessageResponse.response.error });
@@ -613,7 +619,7 @@ export default class WebSocketServer extends WebSocketBase {
     this.redisInstance.publisherClient.publish(
       WebSocketRedisSubscriberEvent.MessageError,
       JSON.stringify({
-        runSameWorker: true,
+        includeSender: true,
         clientId,
         error,
       }),

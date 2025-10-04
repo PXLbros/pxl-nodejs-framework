@@ -12,21 +12,26 @@ import type { WebServerOptions } from '../webserver.interface.js';
 import type { LifecycleManager } from '../../lifecycle/lifecycle-manager.js';
 import Jwt from '../../auth/jwt.js';
 
-export interface AuthenticatedUser {
+export interface AuthenticatedUser<TPayload = Record<string, unknown>> {
   userId: number;
-  payload: any;
+  payload: TPayload;
 }
 
-export default abstract class BaseController {
+export default abstract class BaseController<
+  TQueueManager extends QueueManager = QueueManager,
+  TRedisInstance extends RedisInstance = RedisInstance,
+  TEventManager extends EventManager = EventManager,
+  TDatabaseInstance extends DatabaseInstance = DatabaseInstance,
+> {
   protected workerId: number | undefined;
 
   protected applicationConfig: ApplicationConfig;
   protected webServerOptions: WebServerOptions;
 
-  protected redisInstance: RedisInstance;
-  protected queueManager: QueueManager;
-  protected eventManager: EventManager;
-  protected databaseInstance: DatabaseInstance;
+  protected redisInstance: TRedisInstance;
+  protected queueManager: TQueueManager;
+  protected eventManager: TEventManager;
+  protected databaseInstance: TDatabaseInstance;
   protected lifecycleManager: LifecycleManager;
 
   constructor({
@@ -37,7 +42,7 @@ export default abstract class BaseController {
     eventManager,
     databaseInstance,
     lifecycleManager,
-  }: WebServerBaseControllerConstructorParams) {
+  }: WebServerBaseControllerConstructorParams<TQueueManager, TRedisInstance, TEventManager, TDatabaseInstance>) {
     this.workerId = cluster.worker?.id;
 
     this.applicationConfig = applicationConfig;
@@ -50,7 +55,7 @@ export default abstract class BaseController {
     this.lifecycleManager = lifecycleManager;
   }
 
-  protected sendSuccessResponse<T = any>({
+  protected sendSuccessResponse<T = unknown>({
     reply,
     data,
     statusCode = StatusCodes.OK,
@@ -95,7 +100,7 @@ export default abstract class BaseController {
     errorType?: ApiError['type'];
   }) {
     let publicErrorMessage: string;
-    let errorDetails: any = undefined;
+    let errorDetails: Record<string, unknown> | undefined = undefined;
 
     if (this.webServerOptions.errors?.verbose === true) {
       if (error instanceof Error) {

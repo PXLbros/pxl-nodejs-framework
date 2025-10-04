@@ -32,7 +32,7 @@ export default class AwsS3 {
 
   constructor(options: Partial<AwsS3ConstructorOptions>) {
     // Define default options
-    const defaultOptions: Partial<AwsS3ConstructorOptions> = {
+    const defaultOptions: AwsS3ConstructorOptions = {
       region: 'us-east-1',
       localstack: {
         enabled: false,
@@ -40,7 +40,7 @@ export default class AwsS3 {
       },
     };
 
-    this.options = Helper.defaultsDeep(options, defaultOptions);
+    this.options = Helper.defaultsDeep(options, defaultOptions) as AwsS3ConstructorOptions;
 
     const s3ClientConfig: S3ClientConfig = {
       region: this.options.region,

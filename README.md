@@ -1,120 +1,305 @@
 # PXL Node.js Framework
 
-A comprehensive Node.js framework for building modern applications with support for web servers, databases, queues, caching, and more.
+[![npm version](https://img.shields.io/npm/v/@scpxl/nodejs-framework.svg)](https://www.npmjs.com/package/@scpxl/nodejs-framework)
+[![Node.js Version](https://img.shields.io/node/v/@scpxl/nodejs-framework.svg)](https://nodejs.org)
+[![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue.svg)](https://www.typescriptlang.org/)
 
-Opinionated TypeScript framework combining Fastify, WebSockets, Redis, BullMQ, and MikroORM under a unified Application lifecycle.
+A comprehensive, production-ready Node.js framework for building modern applications with built-in support for web servers, databases, queues, caching, WebSockets, and more.
 
-## Install
+**Opinionated TypeScript framework** combining Fastify, WebSockets, Redis, BullMQ, and MikroORM under a unified Application lifecycle with graceful shutdown, health checks, and observability.
+
+---
+
+## ✨ Features
+
+### 🚀 **Core Application System**
+
+- **Unified Lifecycle Management** - Coordinated startup, readiness probes, and graceful shutdown
+- **TypeScript-First** - Full type safety with strict mode enabled and comprehensive type definitions
+- **Configuration Validation** - Zod-based schema validation with fail-fast error reporting
+- **Modular Architecture** - Use only what you need via granular package exports
+
+### 🌐 **Web & Networking**
+
+- **Fastify Web Server** - High-performance HTTP server with route management and middleware
+- **Route Autoloading** - Drop route modules into a directory and have them loaded automatically
+- **WebSocket Support** - Real-time bidirectional communication with room-based routing
+- **CORS & Security** - Built-in CORS, Helmet integration, and rate limiting support
+- **File Uploads** - Multipart form data handling with configurable limits
+
+### 💾 **Data & State Management**
+
+- **PostgreSQL + MikroORM** - Type-safe database access with migrations and entities
+- **Redis Integration** - Connection pooling, pub/sub, and caching via `ioredis`
+- **Queue Processing (BullMQ)** - Background job processing with Redis-backed queues
+- **LRU Caching** - High-performance in-memory caching with TTL support
+
+### 🔧 **Developer Experience**
+
+- **Structured Logging** - Winston-based logging with context and Sentry integration
+- **CLI Commands** - Yargs-based command system for scripts and utilities
+- **Hot Module Reload** - Fast development iteration with automatic rebuilds
+- **Request Context** - Trace requests across async boundaries with correlation IDs
+- **Error Handling** - Standardized error classes with detailed context
+
+### ⚙️ **Operations & Observability**
+
+- **Health Endpoints** - Liveness (`/health/live`) and readiness (`/health/ready`) probes
+- **Performance Monitoring** - Track connection health, queue metrics, and resource usage
+- **Graceful Shutdown** - Coordinated cleanup of connections, intervals, and resources
+- **Cluster Support** - Multi-process scaling with built-in cluster management
+
+### 🔐 **Security & Authentication**
+
+- **JWT Authentication** - JOSE-based token signing and verification
+- **Input Validation** - Zod schemas with runtime validation and type inference
+- **AWS S3 Integration** - Secure file storage with presigned URLs
+- **Prototype Pollution Protection** - Safe object operations and property access
+
+---
+
+## 📦 Installation
 
 ```bash
 npm install @scpxl/nodejs-framework
 ```
 
-## Quick Start
+**Requirements:**
 
-```ts
-import { Application } from '@scpxl/nodejs-framework';
+- Node.js >= 22.0.0
+- PostgreSQL (optional, for database features)
+- Redis (optional, for caching and queues)
 
-const app = new Application({
+---
+
+## 🚀 Quick Start
+
+### Basic Web Application
+
+```typescript
+import { WebApplication } from '@scpxl/nodejs-framework';
+
+const app = new WebApplication({
+  name: 'my-app',
+  webserver: {
+    port: 3000,
+    host: '0.0.0.0',
+  },
+  redis: {
+    host: '127.0.0.1',
+    port: 6379,
+  },
+  logger: {
+    level: 'info',
+  },
+});
+
+// Add routes
+app.webserver.route({
+  method: 'GET',
+  url: '/api/health',
+  handler: async (request, reply) => {
+    return { status: 'healthy', timestamp: new Date() };
+  },
+});
+
+// Start the application
+await app.start();
+
+console.log(`Server running at http://localhost:3000`);
+```
+
+### With Database & Queue
+
+```typescript
+import { WebApplication } from '@scpxl/nodejs-framework';
+
+const app = new WebApplication({
+  name: 'my-app',
   webserver: { port: 3000 },
-  logger: { level: 'info' },
+  database: {
+    enabled: true,
+    host: 'localhost',
+    port: 5432,
+    username: 'postgres',
+    password: 'password',
+    databaseName: 'myapp',
+    entitiesDirectory: './src/database/entities',
+  },
+  queue: {
+    enabled: true,
+    queues: [
+      {
+        id: 'email',
+        jobs: [{ id: 'send-welcome', processor: './src/processors/email-processor.ts' }],
+      },
+    ],
+  },
+  redis: {
+    host: '127.0.0.1',
+    port: 6379,
+  },
 });
 
 await app.start();
 
-app.webserver.route({
-  method: 'GET',
-  url: '/health',
-  handler: async () => ({ ok: true }),
+// Add a job to the queue
+await app.queue.manager.addJobToQueue({
+  queueId: 'email',
+  jobId: 'send-welcome',
+  data: { userId: 123, email: 'user@example.com' },
 });
 ```
 
-## Add WebSocket
+### WebSocket Server
 
-```ts
-app.websocket.onConnection(client => {
-  client.sendJSON({ welcome: true });
-});
-```
+```typescript
+import { WebApplication } from '@scpxl/nodejs-framework';
 
-## Add Queue Job
-
-```ts
-await app.queue.manager.add('email', { userId: 123 });
-```
-
-## Configuration Example
-
-```ts
-new Application({
+const app = new WebApplication({
+  name: 'chat-app',
   webserver: { port: 3000 },
   websocket: { enabled: true },
-  queue: { enabled: true },
   redis: { host: '127.0.0.1', port: 6379 },
-  database: {
-    /* MikroORM config */
-  },
-  logger: { level: 'info' },
+});
+
+await app.start();
+
+// Handle WebSocket connections
+app.websocket.server.onConnection(client => {
+  console.log('Client connected:', client.id);
+
+  client.sendJSON({ type: 'welcome', message: 'Connected to chat server' });
+
+  client.on('message', data => {
+    // Broadcast to all clients
+    app.websocket.server.broadcast({ type: 'chat', data });
+  });
 });
 ```
 
-## Features
+---
 
-- Unified lifecycle (start/stop all subsystems)
-- Fastify routing + raw access
-- WebSocket client + room management
-- BullMQ queue integration
-- MikroORM database integration
-- Redis cache + pub/sub
-- Structured logging
-- Utilities & services layer
+## 📚 Documentation
 
-## Documentation
+### Architecture
 
-Full docs & guides (VitePress) + API reference (TypeDoc).
+The framework is built around three main application types:
 
-- Getting Started, Concepts, Guides
-- API: https://pxlbros.github.io/pxl-nodejs-framework/
+1. **`BaseApplication`** - Abstract base with Redis, Database, Queue, Events, Performance Monitoring
+2. **`WebApplication`** - Extends `BaseApplication` with Fastify web server and WebSocket support
+3. **`CommandApplication`** - Extends `BaseApplication` for CLI commands and scripts
 
-To run local docs site (once cloned):
+### Core Components
 
-```bash
-npm run docs:site:dev
+| Component           | Description                                      | Import Path                               |
+| ------------------- | ------------------------------------------------ | ----------------------------------------- |
+| **Application**     | Main application classes                         | `@scpxl/nodejs-framework/application`     |
+| **Logger**          | Structured logging with Winston                  | `@scpxl/nodejs-framework/logger`          |
+| **Database**        | MikroORM integration and entity management       | `@scpxl/nodejs-framework/database`        |
+| **WebServer**       | Fastify server and routing                       | `@scpxl/nodejs-framework/webserver`       |
+| **WebSocket**       | WebSocket server and client                      | `@scpxl/nodejs-framework/websocket`       |
+| **Queue**           | BullMQ job queue management                      | `@scpxl/nodejs-framework/queue`           |
+| **Redis**           | Redis connection management                      | `@scpxl/nodejs-framework/redis`           |
+| **Cache**           | High-level caching abstraction                   | `@scpxl/nodejs-framework/cache`           |
+| **Auth**            | JWT authentication utilities                     | `@scpxl/nodejs-framework/auth`            |
+| **Request Context** | Request correlation and tracing                  | `@scpxl/nodejs-framework/request-context` |
+| **Lifecycle**       | Application lifecycle and shutdown management    | `@scpxl/nodejs-framework/lifecycle`       |
+| **Error**           | Custom error classes                             | `@scpxl/nodejs-framework/error`           |
+| **Utilities**       | File, string, time, URL helpers                  | `@scpxl/nodejs-framework/util`            |
+| **Performance**     | Performance monitoring and metrics               | `@scpxl/nodejs-framework/performance`     |
+| **API Requester**   | HTTP client wrapper (migrated to native `fetch`) | `@scpxl/nodejs-framework/api-requester`   |
+| **Command**         | CLI command framework                            | `@scpxl/nodejs-framework/command`         |
+| **Services**        | Additional service integrations (AWS S3, etc.)   | `@scpxl/nodejs-framework/services`        |
+
+### Key Patterns
+
+#### Lifecycle Hooks
+
+```typescript
+const app = new WebApplication(config);
+
+// Register lifecycle hooks
+app.lifecycle.onStart(async () => {
+  console.log('Application starting...');
+});
+
+app.lifecycle.onReady(async () => {
+  console.log('Application ready for traffic');
+});
+
+app.lifecycle.onShutdown(async () => {
+  console.log('Cleaning up resources...');
+});
+
+await app.start();
 ```
 
-## Graceful Shutdown
+#### Graceful Shutdown
 
-```ts
-process.on('SIGINT', () => app.stop());
-process.on('SIGTERM', () => app.stop());
+```typescript
+const app = new WebApplication(config);
+
+await app.start();
+
+// Handle signals
+process.on('SIGINT', async () => {
+  console.log('Received SIGINT, shutting down gracefully...');
+  await app.stop();
+  process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+  console.log('Received SIGTERM, shutting down gracefully...');
+  await app.stop();
+  process.exit(0);
+});
 ```
 
-## Example Service Pattern
+#### Service Injection Pattern
 
-```ts
+```typescript
 class UserService {
-  constructor(private app: Application) {}
-  async register(data: any) {
-    // use app.database / app.queue / app.logger
+  constructor(private app: WebApplication) {}
+
+  async createUser(data: CreateUserDto) {
+    // Use database
+    const user = this.app.database.instance.em.create(User, data);
+    await this.app.database.instance.em.flush();
+
+    // Use queue
+    await this.app.queue.manager.addJobToQueue({
+      queueId: 'email',
+      jobId: 'send-welcome',
+      data: { userId: user.id },
+    });
+
+    // Use logger
+    this.app.logger.info('User created', { userId: user.id });
+
+    return user;
   }
 }
 ```
 
-## Examples
+---
 
-The `examples/` directory contains working examples demonstrating the framework:
+## 📖 Examples
+
+The `examples/` directory contains working demonstrations:
 
 ### Hello World Example
 
-A simple full-stack example with:
+A full-stack example with:
 
-- Backend: PXL WebApplication with TypeScript
-- Frontend: Vue 3 + TypeScript + Vite
+- **Backend**: PXL WebApplication with TypeScript, WebSocket support, and API routes
+- **Frontend**: Vue 3 + TypeScript + Vite with real-time WebSocket updates
 
 **Run the example:**
 
 ```bash
-# Install dependencies for the example (one-time setup)
+# Install dependencies for examples (one-time setup)
 npm run example:install
 
 # Run backend + frontend together with hot-reload
@@ -127,21 +312,299 @@ npm run example:hello-world:frontend
 
 Then open http://localhost:5173 to see the app.
 
-See [examples/README.md](examples/README.md) for more details.
+### CLI Commands Example
 
-## When Not to Use
-
-If you only need a single HTTP server or minimal script, this framework may be heavier than needed.
-
-## Contributing
-
-Issues and PRs welcome. Development scripts remain available:
+Demonstrates the command framework with examples:
 
 ```bash
-npm run dev     # watch build
-npm run build   # production build
+# Install dependencies
+npm run example:commands:install
+
+# Run hello command
+npm run example:commands:hello
+
+# Run database seed command
+npm run example:commands:seed
+
+# Run queue processing command
+npm run example:commands:queue
+```
+
+See [examples/README.md](examples/README.md) for more details.
+
+---
+
+## 🛠️ Development
+
+### Build Commands
+
+```bash
+# Development with hot-reload
+npm run dev
+
+# Production build
+npm run build
+
+# Type checking
+npm run typecheck
+
+# Linting
+npm run lint
+npm run lint:fix
+
+# Code formatting
+npm run prettier
+npm run prettier:fix
+```
+
+### Testing
+
+```bash
+# Run all tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run with coverage report
+npm run test:coverage
+
+# Run specific test suites
+npm run test:unit
+npm run test:integration
+npm run test:e2e
+
+# Run tests with UI
+npm run test:ui
+```
+
+The framework maintains **80% code coverage** across all metrics (lines, branches, functions, statements) as enforced by Vitest thresholds.
+
+### Local Development with Yalc
+
+For testing changes in consuming applications:
+
+```bash
+# Publish framework locally
+npm run build:local
+
+# In your consuming project
+yalc add @scpxl/nodejs-framework
+
+# Push updates after changes
+npm run yalc:push
 ```
 
 ---
 
-Released under ISC License.
+## 🔧 Configuration
+
+### Environment Variables
+
+Create a `.env` file in your project root:
+
+```env
+# Application
+NODE_ENV=development
+APP_NAME=my-app
+APP_PORT=3000
+
+# Database
+DB_HOST=localhost
+DB_PORT=5432
+DB_USERNAME=postgres
+DB_PASSWORD=password
+DB_NAME=myapp
+
+# Redis
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+REDIS_PASSWORD=
+
+# Logging
+LOG_LEVEL=info
+
+# Sentry (optional)
+SENTRY_DSN=https://...
+```
+
+### TypeScript Configuration
+
+The framework uses **ESNext** module target with `.js` extensions in imports:
+
+```typescript
+// ✅ Correct
+import { WebApplication } from '@scpxl/nodejs-framework/application';
+
+// ✅ Also correct (in framework source)
+import { Logger } from '../logger/index.js';
+
+// ❌ Incorrect (in framework source)
+import { Logger } from '../logger'; // Missing .js extension
+```
+
+---
+
+## 🏗️ Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                   Application Layer                      │
+│  ┌─────────────┐  ┌──────────────┐  ┌───────────────┐  │
+│  │    Web      │  │   Command    │  │  Custom App   │  │
+│  │ Application │  │ Application  │  │               │  │
+│  └──────┬──────┘  └──────┬───────┘  └───────┬───────┘  │
+└─────────┼─────────────────┼──────────────────┼──────────┘
+          │                 │                  │
+          └─────────────────┴──────────────────┘
+                            │
+          ┌─────────────────▼──────────────────┐
+          │        Base Application            │
+          │  ┌──────────────────────────────┐  │
+          │  │   Lifecycle Manager          │  │
+          │  │  - Startup phases            │  │
+          │  │  - Readiness probes          │  │
+          │  │  - Graceful shutdown         │  │
+          │  └──────────────────────────────┘  │
+          └────────────────┬───────────────────┘
+                           │
+     ┌─────────────────────┼─────────────────────┐
+     │                     │                     │
+┌────▼─────┐      ┌────────▼────────┐   ┌───────▼──────┐
+│  Redis   │      │    Database     │   │    Queue     │
+│ Manager  │◄─────┤     Manager     │   │   Manager    │
+└────┬─────┘      └────────┬────────┘   └───────┬──────┘
+     │                     │                     │
+┌────▼─────┐      ┌────────▼────────┐   ┌───────▼──────┐
+│  Cache   │      │   MikroORM      │   │   BullMQ     │
+│ Manager  │      │   PostgreSQL    │   │   Workers    │
+└──────────┘      └─────────────────┘   └──────────────┘
+```
+
+---
+
+## 🎯 When to Use PXL Framework
+
+### ✅ **Good Fit**
+
+- Building **APIs** or **microservices** with TypeScript
+- Need **real-time features** via WebSockets
+- Require **background job processing** with queues
+- Want **structured application lifecycle** with health checks
+- Building **full-stack applications** with unified backend framework
+- Need **production-ready** defaults with observability built-in
+
+### ⚠️ **Consider Alternatives**
+
+- **Simple scripts** or **single-purpose utilities** - Framework may be heavier than needed
+- **Serverless functions** - Better suited for lightweight frameworks
+- **Non-TypeScript projects** - Framework is TypeScript-first
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for:
+
+- Development setup instructions
+- Code style guidelines
+- Testing requirements
+- Pull request process
+
+### Quick Contribution Guide
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/my-feature`
+3. Make your changes with tests
+4. Run checks: `npm run check-all` (linting, prettier, typecheck)
+5. Ensure tests pass: `npm test`
+6. Commit with descriptive message
+7. Push and create a Pull Request
+
+---
+
+## 🐛 Troubleshooting
+
+### Database Connection Issues
+
+```
+Error: Connection to database failed
+```
+
+**Solution**: Ensure PostgreSQL is running and credentials are correct in `.env`
+
+```bash
+# Check PostgreSQL status
+docker ps | grep postgres
+
+# Start PostgreSQL with Docker
+docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=password postgres:16
+```
+
+### Redis Connection Errors
+
+```
+Error: Redis connection refused
+```
+
+**Solution**: Ensure Redis is running
+
+```bash
+# Start Redis with Docker
+docker run -d -p 6379:6379 redis:7-alpine
+```
+
+### Port Already in Use
+
+```
+Error: listen EADDRINUSE: address already in use :::3000
+```
+
+**Solution**: Change the port in configuration or kill the process using the port
+
+```bash
+# Find process using port 3000
+lsof -i :3000
+
+# Kill the process
+kill -9 <PID>
+```
+
+### TypeScript Module Resolution
+
+```
+Error: Cannot find module '../logger/index.js'
+```
+
+**Solution**: Ensure all imports in framework source code use `.js` extensions (required for ESM)
+
+---
+
+## 📄 License
+
+[ISC License](LICENSE) - Copyright (c) PXL Agency
+
+---
+
+## 🔗 Links
+
+- **Documentation**: https://pxlbros.github.io/pxl-nodejs-framework/
+- **npm Package**: https://www.npmjs.com/package/@scpxl/nodejs-framework
+- **GitHub Repository**: https://github.com/pxlbros/pxl-nodejs-framework
+- **Issues**: https://github.com/pxlbros/pxl-nodejs-framework/issues
+- **Changelog**: [CHANGELOG.md](CHANGELOG.md)
+- **TODO/Roadmap**: [TODO.md](TODO.md)
+
+---
+
+## 💬 Support
+
+For questions, issues, or feature requests:
+
+- Open an [issue on GitHub](https://github.com/pxlbros/pxl-nodejs-framework/issues)
+- Check existing [discussions](https://github.com/pxlbros/pxl-nodejs-framework/discussions)
+- Review [documentation](https://pxlbros.github.io/pxl-nodejs-framework/)
+
+---
+
+**Built with ❤️ by [PXL Agency](https://pxlagency.com)**

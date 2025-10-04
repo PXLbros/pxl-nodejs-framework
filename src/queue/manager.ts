@@ -1,4 +1,4 @@
-import { type Job, type Processor, Queue, type QueueOptions, type WorkerOptions } from 'bullmq';
+import { type Job, Queue, type QueueOptions, type WorkerOptions } from 'bullmq';
 import path from 'path';
 import type { QueueManagerConstructorParams, QueueManagerOptions } from './manager.interface.js';
 import type { RedisInstance } from '../redis/index.js';
@@ -7,11 +7,20 @@ import { Logger } from '../logger/index.js';
 import QueueWorker from './worker.js';
 import type BaseProcessor from './processor/base.js';
 import { File, Helper, Loader, Time } from '../util/index.js';
-import type { QueueJob, QueueJobData } from './job.interface.js';
+import type { QueueJob, QueueJobData, QueueJobPayload } from './job.interface.js';
 import type { ProcessorConstructor } from './processor/processor.interface.js';
 import type { QueueItem } from './index.interface.js';
 import type { ApplicationConfig } from '../application/base-application.interface.js';
 import type EventManager from '../event/manager.js';
+
+export interface JobSummary {
+  id: string;
+  name: string;
+  queueName: string;
+  state: 'active' | 'waiting' | 'completed' | 'failed' | 'delayed' | 'paused';
+  attemptsMade: number;
+  failedReason?: string;
+}
 
 export default class QueueManager {
   private logger: typeof Logger = Logger;
@@ -36,11 +45,13 @@ export default class QueueManager {
     databaseInstance,
     eventManager,
   }: QueueManagerConstructorParams) {
-    // Define default options
-    const defaultOptions: Partial<QueueManagerOptions> = {};
-
-    // Merge options
-    this.options = Helper.defaultsDeep(options, defaultOptions);
+    // Merge options with defaults if provided
+    if (options) {
+      this.options = options;
+    } else {
+      // This shouldn't happen, but handle the edge case
+      this.options = { processorsDirectory: '' };
+    }
 
     this.applicationConfig = applicationConfig;
 
@@ -62,7 +73,7 @@ export default class QueueManager {
     }
 
     try {
-      const jobProcessorClasses = await Loader.loadModulesInDirectory({
+      const jobProcessorClasses = await Loader.loadModulesInDirectory<ProcessorConstructor>({
         directory: this.options.processorsDirectory,
         extensions: ['.ts', '.js'],
       });
@@ -82,7 +93,13 @@ export default class QueueManager {
     }
   }
 
-  private registerQueue({ queue, jobProcessorClasses }: { queue: QueueItem; jobProcessorClasses: any }): void {
+  private registerQueue({
+    queue,
+    jobProcessorClasses,
+  }: {
+    queue: QueueItem;
+    jobProcessorClasses: Record<string, ProcessorConstructor>;
+  }): void {
     if (!queue.jobs) {
       Logger.warn({
         message: 'No jobs found for queue, skip register',
@@ -191,7 +208,7 @@ export default class QueueManager {
     }
   };
 
-  private onQueueProgress = (job: Job<any, any, string>, progress: number | object): void => {
+  private onQueueProgress = (job: Job, progress: number | object): void => {
     this.log('Progress update', {
       Queue: job.queueName,
       'Job Name': job.name,
@@ -204,7 +221,20 @@ export default class QueueManager {
     this.log('Removed queue', { Queue: job.queueName, Job: job.id });
   };
 
-  public addJobToQueue = async ({ queueId, jobId, data }: { queueId: string; jobId: string; data: QueueJobData }) => {
+  public addJobToQueue = async <
+    TPayload extends QueueJobPayload = QueueJobPayload,
+    TMetadata extends Record<string, unknown> = Record<string, unknown>,
+    TResult = unknown,
+    TName extends string = string,
+  >({
+    queueId,
+    jobId,
+    data,
+  }: {
+    queueId: string;
+    jobId: TName;
+    data: QueueJobData<TPayload, TMetadata>;
+  }): Promise<Job<QueueJobData<TPayload, TMetadata>, TResult, TName> | undefined> => {
     const queue = this.queues.get(queueId);
 
     if (!queue) {
@@ -213,7 +243,7 @@ export default class QueueManager {
       return;
     }
 
-    const job = await queue.add(jobId, data);
+    const job = (await queue.add(jobId, data)) as Job<QueueJobData<TPayload, TMetadata>, TResult, TName>;
 
     const dataStr = JSON.stringify(data);
 
@@ -232,7 +262,7 @@ export default class QueueManager {
     return job;
   };
 
-  private workerProcessor = async (job: Job): Promise<Processor<any, any, string> | undefined> => {
+  private workerProcessor = async (job: Job): Promise<unknown> => {
     if (!job) {
       return;
     }
@@ -273,22 +303,24 @@ export default class QueueManager {
     }
   };
 
-  public async listAllJobsWithStatus(): Promise<any[]> {
-    const jobsSummary: any[] = [];
+  public async listAllJobsWithStatus(): Promise<JobSummary[]> {
+    const jobsSummary: JobSummary[] = [];
 
     for (const [queueName, queue] of this.queues) {
-      const jobStates = ['active', 'waiting', 'completed', 'failed', 'delayed', 'paused'];
+      const jobStates = ['active', 'waiting', 'completed', 'failed', 'delayed', 'paused'] as const;
 
-      const jobsDetailsPromises = jobStates.map(async (state: any) => {
+      const jobsDetailsPromises = jobStates.map(async state => {
         const jobs = await queue.getJobs([state]);
-        return jobs.map(job => ({
-          id: job.id,
-          name: job.name,
-          queueName,
-          state,
-          attemptsMade: job.attemptsMade,
-          failedReason: job.failedReason,
-        }));
+        return jobs.map(
+          (job): JobSummary => ({
+            id: job.id ?? 'unknown',
+            name: job.name ?? 'unknown',
+            queueName,
+            state,
+            attemptsMade: job.attemptsMade,
+            failedReason: job.failedReason,
+          }),
+        );
       });
 
       const results = await Promise.all(jobsDetailsPromises);

@@ -1,6 +1,6 @@
 {
   "name": "@scpxl/nodejs-framework",
-  "version": "1.0.19",
+  "version": "1.0.22",
   "description": "PXL Node.js Framework",
   "engines": {
     "node": ">=22.0.0"
@@ -167,7 +167,7 @@
     "@aws-sdk/client-s3": "^3.496.0",
     "@aws-sdk/s3-request-presigner": "^3.675.0",
     "@fastify/cors": "^11.0.0",
-    "@fastify/helmet": "^12.0.0",
+    "@fastify/helmet": "^13.0.2",
     "@fastify/multipart": "^9.0.0",
     "@fastify/rate-limit": "^10.0.0",
     "@mikro-orm/cli": "^6.0.5",

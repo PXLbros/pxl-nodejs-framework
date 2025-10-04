@@ -19,6 +19,93 @@ import { Greeting } from './entities/Greeting.js';
  */
 class ApiController extends WebServerBaseController {
   /**
+   * GET / - Landing page with quick links
+   */
+  public home = async (_request: FastifyRequest, reply: FastifyReply) => {
+    const html = `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>PXL Hello World</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background-color: #0f172a;
+        color: #e2e8f0;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      main {
+        max-width: 640px;
+        padding: 2.5rem;
+        background: rgba(15, 23, 42, 0.85);
+        border-radius: 18px;
+        box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.65);
+        backdrop-filter: blur(12px);
+      }
+      h1 {
+        margin: 0 0 1rem;
+        font-size: clamp(2.2rem, 5vw, 2.8rem);
+      }
+      p {
+        margin: 0 0 1rem;
+        line-height: 1.6;
+      }
+      ul {
+        margin: 1.5rem 0 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: 0.75rem;
+      }
+      li {
+        background: rgba(30, 41, 59, 0.85);
+        border-radius: 12px;
+        padding: 0.9rem 1rem;
+        border: 1px solid rgba(148, 163, 184, 0.25);
+      }
+      a {
+        color: #38bdf8;
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      code {
+        font-weight: 600;
+      }
+      footer {
+        margin-top: 1.5rem;
+        font-size: 0.875rem;
+        color: rgba(226, 232, 240, 0.7);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>👋 Welcome to the PXL Hello World API</h1>
+      <p>The backend server is running and ready. Try the sample endpoints below or launch the Vue frontend for a full demo.</p>
+      <ul>
+        <li><a href="/api/ping">GET /api/ping</a> — Health check</li>
+        <li><a href="/api/info">GET /api/info</a> — API overview</li>
+        <li><code>POST /api/hello</code> — Send <code>{ "name": "Ada" }</code> for a greeting</li>
+      </ul>
+      <footer>Frontend available at <code>examples/hello-world/frontend</code> → <code>npm run dev</code></footer>
+    </main>
+  </body>
+</html>`;
+
+    return reply.type('text/html; charset=utf-8').send(html);
+  };
+
+  /**
    * GET /api/ping - Health check endpoint
    */
   public ping = async (request: FastifyRequest, reply: FastifyReply) => {
@@ -193,7 +280,7 @@ class HelloWebSocketController extends WebSocketServerBaseController {
 }
 
 const webServerHost = process.env.HOST || '0.0.0.0';
-const webServerPort = parseInt(process.env.PORT || '3000', 10);
+const webServerPort = parseInt(process.env.PORT || '4000', 10);
 const webSocketHost = process.env.WS_HOST || webServerHost;
 const webSocketPort = parseInt(process.env.WS_PORT || String(webServerPort), 10);
 const publicWebSocketHost = process.env.WS_PUBLIC_HOST || (webSocketHost === '0.0.0.0' ? 'localhost' : webSocketHost);
@@ -219,6 +306,13 @@ const config: WebApplicationConfig = {
       printRoutes: false,
     },
     routes: [
+      {
+        type: WebServerRouteType.Default,
+        method: 'GET',
+        path: '/',
+        controller: ApiController,
+        action: 'home',
+      },
       {
         type: WebServerRouteType.Default,
         method: 'GET',

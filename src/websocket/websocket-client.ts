@@ -155,7 +155,7 @@ export default class WebSocketClient extends WebSocketBase {
       this.options.events.onMessage({
         ws: this.ws,
         clientId: this.clientId,
-        data: parsedMessage,
+        data: parsedMessage as { type: string; action: string; data: unknown },
         redisInstance: this.redisInstance,
         queueManager: this.queueManager,
         databaseInstance: this.databaseInstance,

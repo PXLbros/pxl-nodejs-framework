@@ -1,10 +1,17 @@
 import crypto from 'node:crypto';
-import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest, type HTTPMethods } from 'fastify';
+import Fastify, {
+  type FastifyInstance,
+  type FastifyReply,
+  type FastifyRequest,
+  type FastifySchema,
+  type HTTPMethods,
+} from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 import multipart from '@fastify/multipart';
 import {
+  type AnyRouteSchemaDefinition,
   type WebServerConstructorParams,
   type WebServerOptions,
   type WebServerRoute,
@@ -15,13 +22,14 @@ import { File, Helper, Loader, Time } from '../util/index.js';
 import WebServerUtil from './util.js';
 import type { RedisInstance } from '../redis/index.js';
 import type { DatabaseInstance } from '../database/index.js';
-import type { WebServerBaseControllerType } from './controller/base.interface.js';
+import type { ControllerAction, WebServerBaseControllerType } from './controller/base.interface.js';
 import type { QueueManager } from '../queue/index.js';
 import { WebServerHealthController } from '../index.js';
 import type { LifecycleManager } from '../lifecycle/lifecycle-manager.js';
 import type { ApplicationConfig } from '../application/base-application.interface.js';
 import type EventManager from '../event/manager.js';
 import { enterRequestContext } from '../request-context/index.js';
+import { toJSONSchema, type z } from 'zod';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -77,7 +85,7 @@ class WebServer {
     this.applicationConfig = params.applicationConfig;
 
     this.options = mergedOptions;
-    this.routes = params.routes;
+    this.routes = [...(params.routes ?? [])];
 
     this.redisInstance = params.redisInstance;
     this.queueManager = params.queueManager;
@@ -313,25 +321,33 @@ class WebServer {
    * Configure routes.
    */
   private async configureRoutes(): Promise<void> {
+    await this.loadRoutesFromDirectory();
+
     // Check if controllers directory exists
-    const controllersDirectoryExists = await File.pathExists(this.options.controllersDirectory);
+    const controllersDirectoryExists = await File.pathExists(this.options.controllersDirectory ?? '');
 
     if (!controllersDirectoryExists) {
-      Logger.warn({
-        message: 'Web server controllers directory not found',
-        meta: {
-          Directory: this.options.controllersDirectory,
-        },
-      });
+      const routesRequiringControllers = this.routes.length === 0 || this.routes.some(route => !route.handler);
 
-      return;
+      if (routesRequiringControllers) {
+        Logger.warn({
+          message: 'Web server controllers directory not found',
+          meta: {
+            Directory: this.options.controllersDirectory,
+          },
+        });
+
+        return;
+      }
     }
 
     // Load controllers
-    const controllers = await Loader.loadModulesInDirectory({
-      directory: this.options.controllersDirectory,
-      extensions: ['.ts', '.js'],
-    });
+    const controllers = controllersDirectoryExists
+      ? await Loader.loadModulesInDirectory({
+          directory: this.options.controllersDirectory,
+          extensions: ['.ts', '.js'],
+        })
+      : {};
 
     // Add health check routes
     this.routes.push(
@@ -357,12 +373,33 @@ class WebServer {
 
       let controllerName;
 
+      if (route.handler && !route.controller && !route.controllerName) {
+        if (route.type && route.type !== WebServerRouteType.Default) {
+          throw new Error('Handler-only routes are only supported for default route type');
+        }
+
+        if (!('method' in route)) {
+          throw new Error('Handler-only routes require an HTTP method');
+        }
+
+        const schema = this.buildFastifySchema(route.schema) ?? this.buildLegacySchema(route.validation);
+
+        this.fastifyServer.route({
+          method: route.method,
+          url: route.path,
+          handler: route.handler,
+          ...(schema ? { schema } : {}),
+        });
+
+        continue;
+      }
+
       if (route.controller) {
         ControllerClass = route.controller;
 
         controllerName = ControllerClass.name;
       } else if (route.controllerName) {
-        ControllerClass = controllers[route.controllerName];
+        ControllerClass = controllers[route.controllerName] as WebServerBaseControllerType;
 
         controllerName = route.controllerName;
       } else {
@@ -411,7 +448,9 @@ class WebServer {
             routeMethod,
             routePath,
             routeAction,
-            routeValidation: route.validation,
+            routeSchema: route.schema,
+            handlerOverride: route.handler?.bind(controllerInstance),
+            legacyValidation: route.validation,
           });
 
           break;
@@ -423,16 +462,20 @@ class WebServer {
               entityName: route.entityName,
             });
 
-            const entityValidationSchema = entityModel.schema?.describe();
+            const entityValidationSchema = (
+              entityModel as { schema?: { describe: () => unknown } }
+            ).schema?.describe() as
+              | {
+                  keys: Record<string, { type: string; flags?: { presence?: string }; [key: string]: unknown }>;
+                  [key: string]: unknown;
+                }
+              | undefined;
 
             const formattedEntityValidationSchema = entityValidationSchema
               ? {
                   type: 'object',
                   properties: Object.fromEntries(
-                    Object.entries(entityValidationSchema.keys).map(([key, value]) => [
-                      key,
-                      { type: (value as any).type },
-                    ]),
+                    Object.entries(entityValidationSchema.keys).map(([key, value]) => [key, { type: value.type }]),
                   ),
                   required: Object.keys(entityValidationSchema.keys).filter(
                     // Dynamic schema inspection of joi describe output; keys are from trusted entity definitions
@@ -454,7 +497,9 @@ class WebServer {
                 routeMethod: entityRouteDefinition.method,
                 routePath: entityRouteDefinition.path,
                 routeAction: entityRouteDefinition.action,
-                routeValidation: entityRouteDefinition.validationSchema,
+                routeSchema: route.schema,
+                handlerOverride: route.handler?.bind(controllerInstance),
+                legacyValidation: entityRouteDefinition.validationSchema,
               });
             }
           }
@@ -471,83 +516,194 @@ class WebServer {
     }
   }
 
+  private async loadRoutesFromDirectory(): Promise<void> {
+    const { routesDirectory } = this.options;
+
+    if (!routesDirectory) {
+      return;
+    }
+
+    const directoryExists = await File.pathExists(routesDirectory);
+
+    if (!directoryExists) {
+      this.logger.warn({
+        message: 'Web server routes directory not found',
+        meta: {
+          Directory: routesDirectory,
+        },
+      });
+
+      return;
+    }
+
+    const routeModules = await Loader.loadModulesInDirectory<
+      WebServerRoute | WebServerRoute[] | { routes?: WebServerRoute[] }
+    >({
+      directory: routesDirectory,
+      extensions: ['.ts', '.js'],
+    });
+
+    const loadedRoutes: WebServerRoute[] = [];
+
+    for (const [moduleName, exportedRoutes] of Object.entries(routeModules)) {
+      const normalizedRoutes = this.normalizeRouteExport(exportedRoutes, moduleName);
+
+      if (normalizedRoutes.length === 0) {
+        continue;
+      }
+
+      loadedRoutes.push(...normalizedRoutes);
+    }
+
+    if (loadedRoutes.length > 0) {
+      this.routes.push(...loadedRoutes);
+    }
+  }
+
+  private normalizeRouteExport(exportedValue: unknown, moduleName: string): WebServerRoute[] {
+    const ensureRouteArray = (value: unknown): WebServerRoute[] => {
+      if (Array.isArray(value)) {
+        return value;
+      }
+
+      if (value && typeof value === 'object') {
+        const maybeRoute = value as { routes?: unknown };
+
+        if (Array.isArray(maybeRoute.routes)) {
+          return maybeRoute.routes as WebServerRoute[];
+        }
+      }
+
+      return value ? [value as WebServerRoute] : [];
+    };
+
+    const routeCandidates = ensureRouteArray(exportedValue);
+    const validRoutes: WebServerRoute[] = [];
+
+    for (const [index, candidate] of routeCandidates.entries()) {
+      if (this.isValidRoute(candidate)) {
+        validRoutes.push(candidate);
+      } else {
+        this.logger.warn({
+          message: 'Invalid web server route definition skipped',
+          meta: {
+            Module: moduleName,
+            Index: index,
+          },
+        });
+      }
+    }
+
+    if (validRoutes.length === 0 && routeCandidates.length > 0) {
+      this.logger.warn({
+        message: 'No valid routes exported from module',
+        meta: {
+          Module: moduleName,
+        },
+      });
+    }
+
+    return validRoutes;
+  }
+
+  private isValidRoute(route: unknown): route is WebServerRoute {
+    if (!route || typeof route !== 'object') {
+      return false;
+    }
+
+    const candidate = route as Record<string, unknown>;
+    const routePath = candidate.path;
+
+    if (typeof routePath !== 'string' || routePath.length === 0) {
+      return false;
+    }
+
+    const routeType = candidate.type ?? WebServerRouteType.Default;
+
+    const controllerProvided =
+      typeof candidate.controller === 'function' || typeof candidate.controllerName === 'string';
+
+    if (routeType === WebServerRouteType.Entity || routeType === 'entity') {
+      return controllerProvided && typeof candidate.entityName === 'string' && candidate.entityName.length > 0;
+    }
+
+    if (!controllerProvided) {
+      return false;
+    }
+
+    const method = candidate.method;
+    const action = candidate.action;
+
+    const isValidMethod =
+      typeof method === 'string' ||
+      (Array.isArray(method) && method.length > 0 && method.every(m => typeof m === 'string'));
+
+    const isValidAction = typeof action === 'string' && action.length > 0;
+
+    return isValidMethod && isValidAction;
+  }
+
   public async defineRoute({
     controllerInstance,
     controllerName,
     routeMethod,
     routePath,
     routeAction,
-    routeValidation,
+    routeSchema,
+    handlerOverride,
+    legacyValidation,
   }: {
     controllerInstance: any;
     controllerName: string;
     routeMethod: HTTPMethods | HTTPMethods[];
     routePath: string;
-    routeAction: string;
-    routeValidation?: {
+    routeAction?: string;
+    routeSchema?: AnyRouteSchemaDefinition;
+    handlerOverride?: ControllerAction<any>;
+    legacyValidation?: {
       type: 'body' | 'query' | 'params';
       schema: { [key: string]: any };
     };
   }): Promise<void> {
-    // Get controller action handler
-    // Validate action name to avoid prototype access
-    if (!/^[A-Za-z0-9_]+$/.test(routeAction) || ['__proto__', 'prototype', 'constructor'].includes(routeAction)) {
-      throw new Error('Invalid controller action name');
+    let handler = handlerOverride;
+
+    if (!handler) {
+      if (!routeAction) {
+        throw new Error('Route action is required when handler override is not provided');
+      }
+
+      if (!/^[A-Za-z0-9_]+$/.test(routeAction) || ['__proto__', 'prototype', 'constructor'].includes(routeAction)) {
+        throw new Error('Invalid controller action name');
+      }
+
+      const controllerHandler = controllerInstance[routeAction as keyof typeof controllerInstance];
+
+      if (!controllerHandler) {
+        Logger.warn({
+          message: 'Web server controller action not found',
+          meta: {
+            Controller: controllerName,
+            Action: routeAction,
+          },
+        });
+
+        throw new Error('Web server controller action not found');
+      }
+
+      handler = controllerHandler.bind(controllerInstance) as ControllerAction<any>;
     }
-    // Dynamic access guarded by regex + deny list (keys validated above)
-    const controllerHandler = controllerInstance[routeAction as keyof typeof controllerInstance];
 
-    if (!controllerHandler) {
-      Logger.warn({
-        message: 'Web server controller action not found',
-        meta: {
-          Controller: controllerName,
-          Action: routeAction,
-        },
-      });
+    const fastifySchema = this.buildFastifySchema(routeSchema) ?? this.buildLegacySchema(legacyValidation);
 
-      throw new Error('Web server controller action not found');
+    if (!handler) {
+      throw new Error('Route handler could not be resolved');
     }
 
-    // Add route
     this.fastifyServer.route({
       method: routeMethod,
       url: routePath,
-      handler: controllerHandler,
-      preValidation: async (request, reply) => {
-        if (!routeValidation?.schema) {
-          // Logger.warn('Web server route validation schema not found', {
-          //   Controller: controllerName,
-          //   Action: routeAction,
-          // });
-
-          return;
-        }
-
-        const validate = request.compileValidationSchema(routeValidation.schema);
-
-        // Avoid dynamic request[...] access for security lint; map explicitly
-        let dataToValidate: any;
-        switch (routeValidation.type) {
-          case 'body':
-            dataToValidate = request.body;
-            break;
-          case 'query':
-            dataToValidate = request.query;
-            break;
-          case 'params':
-            dataToValidate = request.params;
-            break;
-          default:
-            dataToValidate = undefined;
-        }
-
-        if (!validate(dataToValidate)) {
-          return reply.code(400).send({
-            error: validate.errors,
-          });
-        }
-      },
+      handler: handler as unknown as (request: FastifyRequest, reply: FastifyReply) => unknown,
+      ...(fastifySchema ? { schema: fastifySchema } : {}),
     });
   }
 
@@ -574,6 +730,79 @@ class WebServer {
     this._isReady = false;
     // Close Fastify server
     await this.fastifyServer.close();
+  }
+
+  private buildFastifySchema(routeSchema?: AnyRouteSchemaDefinition): FastifySchema | undefined {
+    if (!routeSchema) {
+      return undefined;
+    }
+
+    const schema: FastifySchema = {};
+
+    if (routeSchema.params) {
+      schema.params = this.convertZodSchema(routeSchema.params);
+    }
+
+    if (routeSchema.querystring) {
+      schema.querystring = this.convertZodSchema(routeSchema.querystring);
+    }
+
+    if (routeSchema.body) {
+      schema.body = this.convertZodSchema(routeSchema.body);
+    }
+
+    if (routeSchema.headers) {
+      schema.headers = this.convertZodSchema(routeSchema.headers);
+    }
+
+    if (routeSchema.response) {
+      const responses = routeSchema.response as Record<string, z.ZodTypeAny>;
+      const responseEntries = Object.entries(responses)
+        .filter(([statusCode]) => /^[1-5][0-9]{2}$/.test(statusCode))
+        .map(([statusCode, responseSchema]) => [statusCode, this.convertZodSchema(responseSchema)] as const);
+
+      if (responseEntries.length > 0) {
+        schema.response = Object.fromEntries(responseEntries);
+      }
+    }
+
+    return schema;
+  }
+
+  private buildLegacySchema(legacyValidation?: {
+    type: 'body' | 'query' | 'params';
+    schema: { [key: string]: any };
+  }): FastifySchema | undefined {
+    if (!legacyValidation) {
+      return undefined;
+    }
+
+    const schema: FastifySchema = {};
+
+    switch (legacyValidation.type) {
+      case 'body':
+        schema.body = legacyValidation.schema;
+        break;
+      case 'query':
+        schema.querystring = legacyValidation.schema;
+        break;
+      case 'params':
+        schema.params = legacyValidation.schema;
+        break;
+    }
+
+    return schema;
+  }
+
+  private convertZodSchema(zodSchema: z.ZodTypeAny) {
+    const jsonSchema = toJSONSchema(zodSchema);
+
+    if (jsonSchema && typeof jsonSchema === 'object' && '$schema' in jsonSchema) {
+      const { $schema: _jsonSchemaVersion, ...rest } = jsonSchema as Record<string, unknown>;
+      return rest;
+    }
+
+    return jsonSchema as Record<string, unknown>;
   }
 
   /**

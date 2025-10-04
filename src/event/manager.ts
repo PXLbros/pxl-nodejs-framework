@@ -1,7 +1,12 @@
 // event-manager.ts
 import { Logger } from '../logger/index.js';
 import { File, Helper, Loader } from '../util/index.js';
-import type { EventDefinition, EventManagerConstructorParams, EventManagerOptions } from './manager.interface.js';
+import type {
+  EventDefinition,
+  EventHandler,
+  EventManagerConstructorParams,
+  EventManagerOptions,
+} from './manager.interface.js';
 import type { ApplicationConfig } from '../application/base-application.interface.js';
 import type DatabaseInstance from '../database/instance.js';
 import type { RedisInstance } from '../redis/index.js';
@@ -17,7 +22,7 @@ export default class EventManager {
   // private queueManager: QueueManager;
   private databaseInstance: DatabaseInstance | null;
 
-  private eventHandlers: Map<string, Function>;
+  private eventHandlers: Map<string, EventHandler>;
 
   constructor(params: EventManagerConstructorParams) {
     const defaultOptions: Partial<EventManagerOptions> = {
@@ -63,7 +68,7 @@ export default class EventManager {
         ControllerClass = event.controller;
         controllerName = ControllerClass.name;
       } else if (event.controllerName) {
-        ControllerClass = controllers[event.controllerName];
+        ControllerClass = controllers[event.controllerName] as EventControllerType;
         controllerName = event.controllerName;
       } else {
         throw new Error('Event controller not specified');
@@ -105,7 +110,7 @@ export default class EventManager {
       }
 
       // Store the handler
-      this.eventHandlers.set(event.name, (handler as Function).bind(controllerInstance));
+      this.eventHandlers.set(event.name, (handler as EventHandler).bind(controllerInstance));
     }
 
     // Log the list of registered events
@@ -124,7 +129,7 @@ export default class EventManager {
     }
   }
 
-  public async run({ name, data }: { name: string; data: any }): Promise<void> {
+  public async run<TPayload = unknown>({ name, data }: { name: string; data: TPayload }): Promise<void> {
     try {
       const handler = this.eventHandlers.get(name);
 

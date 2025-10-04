@@ -15,7 +15,7 @@ export interface Timer {
   readonly startTime: number;
 }
 
-export interface TimingResult<T = any> {
+export interface TimingResult<T = unknown> {
   /**
    * Duration in milliseconds with decimal precision.
    */

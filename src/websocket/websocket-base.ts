@@ -13,7 +13,7 @@ export default abstract class WebSocketBase {
 
   public abstract get type(): WebSocketType;
 
-  protected abstract getControllerDependencies(): any;
+  protected abstract getControllerDependencies(): Record<string, unknown>;
   protected abstract shouldPrintRoutes(): boolean;
   protected abstract handleMessageError(clientId: string, error: string): void;
 
@@ -54,7 +54,9 @@ export default abstract class WebSocketBase {
       if (route.controller) {
         ControllerClass = route.controller;
       } else if (route.controllerName) {
-        ControllerClass = controllers[route.controllerName];
+        ControllerClass = controllers[route.controllerName] as
+          | WebSocketServerBaseControllerType
+          | WebSocketClientBaseControllerType;
       } else {
         throw new Error('WebSocket controller config not found');
       }
@@ -70,7 +72,7 @@ export default abstract class WebSocketBase {
 
       const controllerDependencies = this.getControllerDependencies();
 
-      const controllerInstance = new ControllerClass(controllerDependencies);
+      const controllerInstance = new ControllerClass(controllerDependencies as any);
 
       const controllerHandler = controllerInstance[
         route.action as keyof typeof controllerInstance
@@ -87,7 +89,11 @@ export default abstract class WebSocketBase {
     }
   }
 
-  protected async handleServerMessage(ws: WebSocket, message: WebSocket.Data, clientId: string): Promise<void | any> {
+  protected async handleServerMessage(
+    ws: WebSocket,
+    message: WebSocket.Data,
+    clientId: string,
+  ): Promise<{ type: unknown; action: unknown; response: unknown } | void> {
     try {
       const parsedMessage = parseServerMessage(message);
       const type = parsedMessage.type;

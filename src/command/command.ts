@@ -33,7 +33,7 @@ export default abstract class Command {
   /**
    * Run command
    */
-  public abstract run(): Promise<void>;
+  public abstract run(argv?: unknown): Promise<void>;
 
   /**
    * Log command message
