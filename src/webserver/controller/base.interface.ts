@@ -32,7 +32,7 @@ export type WebServerBaseControllerType<
   params: WebServerBaseControllerConstructorParams<TQueueManager, TRedisInstance, TEventManager, TDatabaseInstance>,
 ) => WebServerBaseController<TQueueManager, TRedisInstance, TEventManager, TDatabaseInstance>;
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   data?: T;
   meta?: {
     pagination?: {
@@ -51,7 +51,7 @@ export interface ApiError {
   message: string;
   code?: string;
   type: 'validation' | 'authentication' | 'authorization' | 'not_found' | 'server_error' | 'client_error';
-  details?: any;
+  details?: Record<string, unknown>;
   timestamp: string;
   requestId: string;
 }

@@ -86,7 +86,9 @@ export default class WebSocketServer extends WebSocketBase {
     return 'server';
   }
 
-  private async validateWebSocketAuth(url: string): Promise<{ userId: number; payload: any } | null> {
+  private async validateWebSocketAuth(
+    url: string,
+  ): Promise<{ userId: number; payload: Record<string, unknown> } | null> {
     try {
       const parsedUrl = new URL(url, 'ws://localhost');
       const token = parsedUrl.searchParams.get('token');
@@ -594,7 +596,11 @@ export default class WebSocketServer extends WebSocketBase {
           response: serverMessageResponse?.response,
         });
 
-        if (serverMessageResponse?.response?.error) {
+        if (
+          serverMessageResponse?.response &&
+          typeof serverMessageResponse.response === 'object' &&
+          'error' in serverMessageResponse.response
+        ) {
           // throw new Error(serverMessageResponse?.response?.error);
 
           Logger.error({ error: serverMessageResponse.response.error });

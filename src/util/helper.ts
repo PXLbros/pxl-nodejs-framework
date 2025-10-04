@@ -18,12 +18,13 @@ import lodashDefaultsDeep from 'lodash.defaultsdeep';
  * const merged = defaultsDeep(userConfig, defaults);
  * // merged = { host: 'localhost', port: 3001 }
  */
-function defaultsDeep(target: any, ...sources: any[]): any {
+function defaultsDeep<T extends object>(target: T, ...sources: Array<Partial<T>>): T {
   // Sanitize sources to prevent prototype pollution
   const sanitizedSources = sources.map(source => {
     if (!isObject(source)) return source;
 
-    const sanitized = { ...source };
+    // Create a copy and remove dangerous properties
+    const sanitized: Record<string, unknown> = { ...source };
     delete sanitized['__proto__'];
     delete sanitized['constructor'];
     delete sanitized['prototype'];
@@ -31,17 +32,17 @@ function defaultsDeep(target: any, ...sources: any[]): any {
   });
 
   // Delegate to lodash.defaultsdeep with sanitized sources
-  return lodashDefaultsDeep(target, ...sanitizedSources);
+  return lodashDefaultsDeep(target, ...sanitizedSources) as T;
 }
 
 /**
  * Check if a value is an object.
  */
-function isObject(item: any): boolean {
-  return item && typeof item === 'object' && !Array.isArray(item);
+function isObject(item: unknown): item is Record<string, unknown> {
+  return item !== null && typeof item === 'object' && !Array.isArray(item);
 }
 
-type AnyObject = { [key: string]: any };
+type AnyObject = Record<string, unknown>;
 
 /**
  * Retrieves the value from an object using a dotted key path safely.
@@ -50,7 +51,7 @@ type AnyObject = { [key: string]: any };
  * @param path - The dotted key path (e.g., 'user.email').
  * @returns The value at the specified key path or undefined if not found.
  */
-function getValueFromObject(obj: AnyObject, path: string): any {
+function getValueFromObject(obj: AnyObject, path: string): unknown {
   const parts = path.split('.');
   let current: any = obj;
   for (const part of parts) {
@@ -70,7 +71,7 @@ function getValueFromObject(obj: AnyObject, path: string): any {
  * @param path - The dotted key path (e.g., 'user.email').
  * @returns An array of values at the specified key path from each object.
  */
-function getValueFromArray(arr: AnyObject[], path: string): any[] {
+function getValueFromArray(arr: AnyObject[], path: string): unknown[] {
   return arr.map(obj => getValueFromObject(obj, path));
 }
 

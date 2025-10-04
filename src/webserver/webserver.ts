@@ -362,7 +362,7 @@ class WebServer {
 
         controllerName = ControllerClass.name;
       } else if (route.controllerName) {
-        ControllerClass = controllers[route.controllerName];
+        ControllerClass = controllers[route.controllerName] as WebServerBaseControllerType;
 
         controllerName = route.controllerName;
       } else {
@@ -423,16 +423,20 @@ class WebServer {
               entityName: route.entityName,
             });
 
-            const entityValidationSchema = entityModel.schema?.describe();
+            const entityValidationSchema = (
+              entityModel as { schema?: { describe: () => unknown } }
+            ).schema?.describe() as
+              | {
+                  keys: Record<string, { type: string; flags?: { presence?: string }; [key: string]: unknown }>;
+                  [key: string]: unknown;
+                }
+              | undefined;
 
             const formattedEntityValidationSchema = entityValidationSchema
               ? {
                   type: 'object',
                   properties: Object.fromEntries(
-                    Object.entries(entityValidationSchema.keys).map(([key, value]) => [
-                      key,
-                      { type: (value as any).type },
-                    ]),
+                    Object.entries(entityValidationSchema.keys).map(([key, value]) => [key, { type: value.type }]),
                   ),
                   required: Object.keys(entityValidationSchema.keys).filter(
                     // Dynamic schema inspection of joi describe output; keys are from trusted entity definitions

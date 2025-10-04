@@ -96,8 +96,9 @@ export class LifecycleManager {
     };
   }
 
-  trackDisposable(disposable: Disposable | { dispose: Function }): Disposable {
-    const d: Disposable = 'dispose' in disposable ? { dispose: () => (disposable as any).dispose() } : disposable;
+  trackDisposable(disposable: Disposable | { dispose: () => void | Promise<void> }): Disposable {
+    const d: Disposable =
+      'dispose' in disposable ? { dispose: () => (disposable as { dispose: () => void }).dispose() } : disposable;
     this.disposables.add(d);
     return d;
   }

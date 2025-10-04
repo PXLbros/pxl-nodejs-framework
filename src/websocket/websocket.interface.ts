@@ -12,6 +12,12 @@ export interface WebSocketDebugOptions {
   printConnectedClients?: 'simple' | 'table';
 }
 
+export interface WebSocketMessage<TData = unknown> {
+  type: string;
+  action: string;
+  data: TData;
+}
+
 export interface WebSocketEventsConfig {
   onServerStarted?: ({ webSocketServer }: { webSocketServer: WebSocketServer }) => void;
   onConnected?: ({
@@ -35,7 +41,7 @@ export interface WebSocketEventsConfig {
   }) => void;
   onDisconnected?: ({ clientId }: { clientId?: string }) => void;
   onError?: ({ error }: { error: Error }) => void;
-  onMessage?: ({
+  onMessage?: <TData = unknown>({
     ws,
     clientId,
     data,
@@ -45,7 +51,7 @@ export interface WebSocketEventsConfig {
   }: {
     ws: WebSocket;
     clientId: string;
-    data: any;
+    data: WebSocketMessage<TData>;
     redisInstance: RedisInstance;
     queueManager: QueueManager;
     databaseInstance: DatabaseInstance;
@@ -138,8 +144,8 @@ export interface WebSocketMessageResponse {
   error?: string;
 }
 
-export interface WebSocketMessageHandler {
-  (ws: WebSocket, clientId: string, data: any): WebSocketMessageResponse;
+export interface WebSocketMessageHandler<TData = unknown, TResponse = WebSocketMessageResponse> {
+  (ws: WebSocket, clientId: string, data: TData): Promise<TResponse> | TResponse;
 }
 
 export enum WebSocketRedisSubscriberEvent {

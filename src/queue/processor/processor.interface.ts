@@ -8,8 +8,8 @@ import type { QueueJobData } from '../job.interface.js';
 
 export interface ProcessorConstructorParams<
   TQueueManager extends QueueManager = QueueManager,
-  TJobData extends QueueJobData = QueueJobData,
-  TResult = unknown,
+  _TJobData extends QueueJobData = QueueJobData,
+  _TResult = unknown,
 > {
   queueManager: TQueueManager;
   applicationConfig: ApplicationConfig;

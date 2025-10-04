@@ -12,9 +12,9 @@ import type { WebServerOptions } from '../webserver.interface.js';
 import type { LifecycleManager } from '../../lifecycle/lifecycle-manager.js';
 import Jwt from '../../auth/jwt.js';
 
-export interface AuthenticatedUser {
+export interface AuthenticatedUser<TPayload = Record<string, unknown>> {
   userId: number;
-  payload: any;
+  payload: TPayload;
 }
 
 export default abstract class BaseController<
@@ -55,7 +55,7 @@ export default abstract class BaseController<
     this.lifecycleManager = lifecycleManager;
   }
 
-  protected sendSuccessResponse<T = any>({
+  protected sendSuccessResponse<T = unknown>({
     reply,
     data,
     statusCode = StatusCodes.OK,
@@ -100,7 +100,7 @@ export default abstract class BaseController<
     errorType?: ApiError['type'];
   }) {
     let publicErrorMessage: string;
-    let errorDetails: any = undefined;
+    let errorDetails: Record<string, unknown> | undefined = undefined;
 
     if (this.webServerOptions.errors?.verbose === true) {
       if (error instanceof Error) {
