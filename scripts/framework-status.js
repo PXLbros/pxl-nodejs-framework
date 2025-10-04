@@ -323,6 +323,98 @@ function formatDate(d) {
   return d instanceof Date && !isNaN(d) ? d.toISOString().slice(0, 10) : 'n/a';
 }
 
+async function getTopLevelInstalled() {
+  // Uses npm to read installed top-level deps (node_modules + lockfile truth)
+  const stdout = await runNpm(['ls', '--json', '--depth=0']);
+  if (!stdout) return null;
+  let data = {};
+  try {
+    data = JSON.parse(stdout);
+  } catch {
+    return null;
+  }
+  const deps = data.dependencies || {};
+  const list = [];
+  for (const [name, info] of Object.entries(deps)) {
+    // Skip extraneous/invalid entries
+    if (!info || typeof info !== 'object' || !info.version) continue;
+    list.push({ name, version: info.version });
+  }
+  return list;
+}
+
+async function getPackageAgeInfo(packages) {
+  // Fetch publish dates for each installed version, plus latest
+  if (!packages || packages.length === 0) return [];
+  const results = [];
+  let i = 0;
+  const concurrency = Math.min(4, packages.length);
+
+  function safeDate(s) {
+    const d = new Date(s);
+    return isNaN(d) ? null : d;
+  }
+  function daysSince(d) {
+    if (!d) return null;
+    const MS = 24 * 60 * 60 * 1000;
+    return Math.max(0, Math.round((Date.now() - d.getTime()) / MS));
+  }
+
+  async function worker() {
+    while (i < packages.length) {
+      const idx = i++;
+      const { name, version } = packages[idx];
+
+      // 1) times for all versions
+      const timesJson = await runNpm(['view', name, 'time', '--json']);
+      let times = null;
+      if (timesJson) {
+        try {
+          times = JSON.parse(timesJson);
+        } catch {}
+      }
+
+      // 2) latest dist-tag (to avoid guessing)
+      let latest = null;
+      const latestJson = await runNpm(['view', name, 'dist-tags.latest', '--json']);
+      if (latestJson) {
+        try {
+          latest = JSON.parse(latestJson);
+        } catch {}
+        if (typeof latest === 'string') {
+          /* ok */
+        } else {
+          latest = null;
+        }
+      }
+
+      const installedDate = times && times[version] ? safeDate(times[version]) : null;
+      const latestDate = times && latest && times[latest] ? safeDate(times[latest]) : null;
+
+      results.push({
+        name,
+        installed: version,
+        latest: latest || version,
+        installedDate,
+        latestDate,
+        installedAgeDays: daysSince(installedDate),
+        latestAgeDays: daysSince(latestDate),
+        isLatest: latest ? latest === version : null,
+      });
+    }
+  }
+
+  await Promise.all(Array.from({ length: concurrency }, worker));
+  return results;
+}
+
+function median(nums) {
+  const arr = nums.filter(n => Number.isFinite(n)).sort((a, b) => a - b);
+  if (arr.length === 0) return null;
+  const mid = Math.floor(arr.length / 2);
+  return arr.length % 2 ? arr[mid] : Math.round((arr[mid - 1] + arr[mid]) / 2);
+}
+
 async function main() {
   const pkg = await readPackageJson();
   const dependencyCount = Object.keys(pkg.dependencies || {}).length;
@@ -443,6 +535,54 @@ async function main() {
         colors.dim(`(${o.type}, ${lag}${age})`);
       console.log(line);
     });
+
+    // ------- Package age overview (includes non-outdated) -------
+    const installed = await getTopLevelInstalled();
+
+    section('Package ages — installed releases', '🕰️');
+    if (!installed) {
+      console.log('Could not read installed packages (npm ls failed).');
+    } else if (installed.length === 0) {
+      console.log('No top-level packages found.');
+    } else {
+      const ageInfo = await getPackageAgeInfo(installed);
+
+      // Top N oldest installed releases by publish date
+      const oldest = ageInfo
+        .filter(p => p.installedAgeDays != null)
+        .sort((a, b) => b.installedAgeDays - a.installedAgeDays || a.name.localeCompare(b.name))
+        .slice(0, 10);
+
+      if (oldest.length === 0) {
+        console.log('No publish dates available to rank by age.');
+      } else {
+        oldest.forEach((p, idx) => {
+          const latestNote =
+            p.isLatest === true ? 'latest' : p.isLatest === false ? `latest ${p.latest}` : 'latest n/a';
+          const line =
+            `${idx + 1}. ${p.name} ` +
+            `${colors.value(p.installed)} ` +
+            colors.dim(
+              `— released ${p.installedAgeDays} days ago ` + `(on ${formatDate(p.installedDate)}; ${latestNote})`,
+            );
+          console.log(line);
+        });
+      }
+
+      // Quick stats across all packages with known dates
+      const ages = ageInfo.map(p => p.installedAgeDays).filter(n => Number.isFinite(n));
+      if (ages.length > 0) {
+        const min = Math.min(...ages);
+        const max = Math.max(...ages);
+        const med = median(ages);
+        const avg = Math.round(ages.reduce((a, b) => a + b, 0) / ages.length);
+        console.log(
+          colors.dim(
+            `\nInstalled release age — count ${ages.length}, min ${min}d, median ${med}d, avg ${avg}d, max ${max}d.`,
+          ),
+        );
+      }
+    }
   }
 }
 

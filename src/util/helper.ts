@@ -1,12 +1,11 @@
-import lodashDefaultsDeep from 'lodash.defaultsdeep';
-
 /**
  * Deep merge objects with defaults, preventing prototype pollution.
  *
- * This is a secure wrapper around lodash.defaultsdeep that:
+ * This function:
+ * - Recursively merges source objects into the target
+ * - Preserves existing values in target (acts like defaults)
  * - Sanitizes sources to remove dangerous keys (__proto__, constructor, prototype)
- * - Delegates to battle-tested lodash.defaultsdeep for merge logic
- * - Maintains backward compatibility with existing usage
+ * - Prevents prototype pollution attacks
  *
  * @param target - The target object to merge into
  * @param sources - Source objects providing default values
@@ -19,20 +18,141 @@ import lodashDefaultsDeep from 'lodash.defaultsdeep';
  * // merged = { host: 'localhost', port: 3001 }
  */
 function defaultsDeep<T extends object>(target: T, ...sources: Array<Partial<T>>): T {
-  // Sanitize sources to prevent prototype pollution
-  const sanitizedSources = sources.map(source => {
-    if (!isObject(source)) return source;
+  // Handle null/undefined target by converting to empty object
+  let result = target;
+  if (target === null || target === undefined) {
+    result = {} as T;
+  }
 
-    // Create a copy and remove dangerous properties
-    const sanitized: Record<string, unknown> = { ...source };
-    delete sanitized['__proto__'];
-    delete sanitized['constructor'];
-    delete sanitized['prototype'];
-    return sanitized;
-  });
+  // Process each source
+  for (const source of sources) {
+    if (!isObject(source) && !Array.isArray(source)) continue;
 
-  // Delegate to lodash.defaultsdeep with sanitized sources
-  return lodashDefaultsDeep(target, ...sanitizedSources) as T;
+    // Recursively merge source into target
+    mergeObjects(result, source);
+  }
+
+  return result;
+}
+
+/**
+ * Recursively merge source into target, preserving target values.
+ * This acts like defaultsDeep - only fills in missing values from source.
+ */
+function mergeObjects(target: any, source: any): void {
+  // Handle arrays specially - merge by index
+  if (Array.isArray(source)) {
+    // If target is not an array but source is, treat target as object with numeric keys
+    if (!Array.isArray(target)) {
+      // Merge array into object-like target
+      for (let i = 0; i < source.length; i++) {
+        const key = String(i);
+        if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
+
+        // eslint-disable-next-line security/detect-object-injection
+        const sourceValue = source[i];
+        // eslint-disable-next-line security/detect-object-injection
+        const targetValue = target[key];
+
+        // Check if key exists in target
+        const keyExists = key in target;
+
+        if (keyExists && isObject(targetValue) && isObject(sourceValue)) {
+          mergeObjects(targetValue, sourceValue);
+        } else if (!keyExists || targetValue === undefined) {
+          // eslint-disable-next-line security/detect-object-injection
+          target[key] = isObject(sourceValue) ? deepClone(sourceValue) : sourceValue;
+        }
+      }
+      return;
+    }
+
+    // Both are arrays - merge by index
+    for (let i = 0; i < source.length; i++) {
+      // eslint-disable-next-line security/detect-object-injection
+      const sourceValue = source[i];
+      // eslint-disable-next-line security/detect-object-injection
+      const targetValue = target[i];
+
+      // Check if index exists in target (not just if value is undefined)
+      const indexExists = i in target;
+
+      // If index exists and both values are objects, merge them
+      if (indexExists && isObject(targetValue) && isObject(sourceValue)) {
+        mergeObjects(targetValue, sourceValue);
+      }
+      // If index doesn't exist or value is undefined, fill from source
+      else if (!indexExists || targetValue === undefined) {
+        // eslint-disable-next-line security/detect-object-injection
+        target[i] = isObject(sourceValue) ? deepClone(sourceValue) : sourceValue;
+      }
+      // Otherwise, keep target's existing value
+    }
+    return;
+  }
+
+  // Regular object merging
+  for (const key of Object.keys(source)) {
+    // Block dangerous keys to prevent prototype pollution
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+      continue;
+    }
+
+    // Only use hasOwnProperty for safer property access
+    if (!Object.prototype.hasOwnProperty.call(source, key)) {
+      continue;
+    }
+
+    // Access guarded by ownProperty check and blocked prototype keys
+    // eslint-disable-next-line security/detect-object-injection
+    const sourceValue = source[key];
+
+    // eslint-disable-next-line security/detect-object-injection
+    const targetValue = target[key];
+
+    // If both are arrays, merge them by index
+    if (Array.isArray(targetValue) && Array.isArray(sourceValue)) {
+      mergeObjects(targetValue, sourceValue);
+    }
+    // If target is object and source is array, merge array into object by numeric keys
+    else if (isObject(targetValue) && Array.isArray(sourceValue)) {
+      mergeObjects(targetValue, sourceValue);
+    }
+    // If target value exists and both are objects (not arrays), recurse
+    else if (targetValue !== undefined && isObject(targetValue) && isObject(sourceValue)) {
+      mergeObjects(targetValue, sourceValue);
+    }
+    // If target doesn't have this key, set it from source
+    else if (targetValue === undefined) {
+      // eslint-disable-next-line security/detect-object-injection
+      target[key] = isObject(sourceValue) || Array.isArray(sourceValue) ? deepClone(sourceValue) : sourceValue;
+    }
+    // Otherwise, keep target's existing value (defaultsDeep behavior)
+  }
+}
+
+/**
+ * Deep clone an object to avoid reference sharing.
+ */
+function deepClone<T>(obj: T): T {
+  if (!isObject(obj)) return obj;
+
+  const cloned: any = Array.isArray(obj) ? [] : {};
+
+  for (const key of Object.keys(obj)) {
+    // Block dangerous keys
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+      continue;
+    }
+
+    // eslint-disable-next-line security/detect-object-injection
+    const value = (obj as any)[key];
+
+    // eslint-disable-next-line security/detect-object-injection
+    cloned[key] = isObject(value) ? deepClone(value) : value;
+  }
+
+  return cloned;
 }
 
 /**
