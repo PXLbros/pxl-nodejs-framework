@@ -116,6 +116,7 @@
     "test:e2e": "vitest run test/e2e",
     "test:ui": "vitest --ui",
     "check-all": "npm run lint && npm run prettier && npm run typecheck",
+    "load:test": "node --loader ts-node/esm scripts/simple-load-test.ts",
     "yalc:publish": "yalc publish",
     "yalc:push": "yalc push",
     "dev:yalc": "npm run build && npm run yalc:push",

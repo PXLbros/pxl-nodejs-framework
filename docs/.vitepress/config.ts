@@ -70,6 +70,7 @@ export default defineConfig({
             { text: 'Commands & CLI', link: '/guides/commands' },
             { text: 'Typed Routes & Schemas', link: '/guides/typed-routes' },
             { text: 'Testing', link: '/guides/testing' },
+            { text: 'Simple Load Test', link: '/guides/simple-load-test' },
             { text: 'Deployment', link: '/guides/deployment' },
             { text: 'Scaling & Clustering', link: '/guides/scaling' },
             { text: 'Performance Monitoring', link: '/guides/performance-monitoring' },

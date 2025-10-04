@@ -152,6 +152,22 @@ await app.queue.manager.addJobToQueue({
 });
 ```
 
+### Simple Load Test
+
+Run lightweight load against any endpoint while iterating locally:
+
+```bash
+npm run load:test -- --url http://localhost:3000/health --requests 200 --concurrency 10
+```
+
+Switch to a time-based stream for soak-style checks:
+
+```bash
+npm run load:test -- --url http://localhost:3000/api/users --duration 30 --concurrency 8 --method POST --body '{"name":"Test"}' --header 'Content-Type: application/json'
+```
+
+The script reports latency percentiles, status code counts, and a few failure samples for quick feedback.
+
 ### WebSocket Server
 
 ```typescript

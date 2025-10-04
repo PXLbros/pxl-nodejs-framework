@@ -12,3 +12,6 @@ bin/
 
 # Example files
 EXAMPLE_USAGE.ts
+
+# Claude Code settings
+.claude/
