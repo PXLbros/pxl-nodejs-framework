@@ -1,11 +1,67 @@
-import type { HTTPMethods } from 'fastify';
+import type { FastifyReply, FastifyRequest, HTTPMethods, RouteGenericInterface } from 'fastify';
 import type { DatabaseInstance } from '../database/index.js';
 import type { QueueManager } from '../queue/index.js';
 import type { RedisInstance } from '../redis/index.js';
-import type { WebServerBaseControllerType } from './controller/base.interface.js';
+import type { ControllerAction, WebServerBaseControllerType } from './controller/base.interface.js';
 import type { ApplicationConfig } from '../application/base-application.interface.js';
 import type EventManager from '../event/manager.js';
 import type { LifecycleManager } from '../lifecycle/lifecycle-manager.js';
+import type { z } from 'zod';
+
+export interface RouteSchemaDefinition<
+  TParams extends z.ZodTypeAny | undefined = undefined,
+  TQuery extends z.ZodTypeAny | undefined = undefined,
+  TBody extends z.ZodTypeAny | undefined = undefined,
+  TReply extends Record<number | `${number}`, z.ZodTypeAny> | undefined = undefined,
+  THeaders extends z.ZodTypeAny | undefined = undefined,
+> {
+  params?: TParams;
+  querystring?: TQuery;
+  body?: TBody;
+  response?: TReply;
+  headers?: THeaders;
+}
+
+type InferOrDefault<TZod extends z.ZodTypeAny | undefined, TFallback> = TZod extends z.ZodTypeAny
+  ? z.input<TZod>
+  : TFallback;
+
+type InferResponse<TResponse> =
+  TResponse extends Record<number | `${number}`, z.ZodTypeAny>
+    ? z.output<TResponse[keyof TResponse]>
+    : RouteGenericInterface['Reply'];
+
+export interface RouteHandlerContext<Schema extends RouteSchemaDefinition | undefined = undefined>
+  extends RouteGenericInterface {
+  Params?: Schema extends RouteSchemaDefinition<infer TParams, any, any, any, any>
+    ? InferOrDefault<TParams, RouteGenericInterface['Params']>
+    : RouteGenericInterface['Params'];
+  Querystring?: Schema extends RouteSchemaDefinition<any, infer TQuery, any, any, any>
+    ? InferOrDefault<TQuery, RouteGenericInterface['Querystring']>
+    : RouteGenericInterface['Querystring'];
+  Body?: Schema extends RouteSchemaDefinition<any, any, infer TBody, any, any>
+    ? InferOrDefault<TBody, RouteGenericInterface['Body']>
+    : RouteGenericInterface['Body'];
+  Headers?: Schema extends RouteSchemaDefinition<any, any, any, any, infer THeaders>
+    ? InferOrDefault<THeaders, RouteGenericInterface['Headers']>
+    : RouteGenericInterface['Headers'];
+  Reply?: Schema extends RouteSchemaDefinition<any, any, any, infer TReply, any>
+    ? InferResponse<TReply>
+    : RouteGenericInterface['Reply'];
+}
+
+export type AnyRouteSchemaDefinition = RouteSchemaDefinition<
+  z.ZodTypeAny | undefined,
+  z.ZodTypeAny | undefined,
+  z.ZodTypeAny | undefined,
+  Record<number | `${number}`, z.ZodTypeAny> | undefined,
+  z.ZodTypeAny | undefined
+>;
+
+export type RouteHandler<Schema extends RouteSchemaDefinition | undefined = undefined> = (
+  request: FastifyRequest<RouteHandlerContext<Schema>>,
+  reply: FastifyReply,
+) => Promise<RouteHandlerContext<Schema>['Reply'] | void> | RouteHandlerContext<Schema>['Reply'] | void;
 
 export interface WebServerConstructorParams {
   /** Application configuration */
@@ -51,6 +107,9 @@ export interface BaseWebServerRoute {
   /** Route controller */
   controller?: WebServerBaseControllerType;
 
+  /** Typed route handler */
+  handler?: ControllerAction<any>;
+
   /** Route validation */
   validation?: {
     /** Validation type */
@@ -59,6 +118,9 @@ export interface BaseWebServerRoute {
     /** Validation schema */
     schema: { [key: string]: any };
   };
+
+  /** Zod-based schema definition */
+  schema?: AnyRouteSchemaDefinition;
 }
 
 export interface DefaultWebServerRoute extends BaseWebServerRoute {
@@ -68,7 +130,7 @@ export interface DefaultWebServerRoute extends BaseWebServerRoute {
   method: HTTPMethods | HTTPMethods[];
 
   /** Route action */
-  action: string;
+  action?: string;
 }
 
 export interface EntityWebServerRoute extends BaseWebServerRoute {

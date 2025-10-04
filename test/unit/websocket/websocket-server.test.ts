@@ -300,7 +300,7 @@ describe('WebSocketServer', () => {
       expect(removeClientSpy).toHaveBeenCalledWith('remote-client');
     });
 
-    it('should ignore messages from same worker when runSameWorker is false', async () => {
+    it('should ignore messages from same worker when includeSender is false', async () => {
       const { server } = createServer();
       (server as any).workerId = 1;
 
@@ -310,7 +310,7 @@ describe('WebSocketServer', () => {
         clientId: 'same-worker-client',
         lastActivity: Date.now(),
         workerId: 1, // Same worker
-        runSameWorker: false,
+        includeSender: false,
       });
 
       await (server as any).handleSubscriberMessage('clientConnected', message);
@@ -318,7 +318,7 @@ describe('WebSocketServer', () => {
       expect(addClientSpy).not.toHaveBeenCalled();
     });
 
-    it('should handle messages from same worker when runSameWorker is true', async () => {
+    it('should handle messages from same worker when includeSender is true', async () => {
       const { server } = createServer();
       (server as any).workerId = 1;
 
@@ -328,7 +328,7 @@ describe('WebSocketServer', () => {
         clientId: 'same-worker-client',
         lastActivity: Date.now(),
         workerId: 1,
-        runSameWorker: true,
+        includeSender: true,
       });
 
       await (server as any).handleSubscriberMessage('clientConnected', message);

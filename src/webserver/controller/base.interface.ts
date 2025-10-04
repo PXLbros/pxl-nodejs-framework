@@ -1,9 +1,15 @@
+import type { FastifyRequest } from 'fastify';
 import type { ApplicationConfig } from '../../application/base-application.interface.js';
 import type { DatabaseInstance } from '../../database/index.js';
 import type EventManager from '../../event/manager.js';
 import type { QueueManager } from '../../queue/index.js';
 import type { RedisInstance } from '../../redis/index.js';
-import type { WebServerOptions } from '../webserver.interface.js';
+import type {
+  RouteHandler,
+  RouteHandlerContext,
+  RouteSchemaDefinition,
+  WebServerOptions,
+} from '../webserver.interface.js';
 import type WebServerBaseController from './base.js';
 import type { LifecycleManager } from '../../lifecycle/lifecycle-manager.js';
 
@@ -31,6 +37,12 @@ export type WebServerBaseControllerType<
 > = new (
   params: WebServerBaseControllerConstructorParams<TQueueManager, TRedisInstance, TEventManager, TDatabaseInstance>,
 ) => WebServerBaseController<TQueueManager, TRedisInstance, TEventManager, TDatabaseInstance>;
+
+export type ControllerAction<Schema extends RouteSchemaDefinition | undefined = undefined> = RouteHandler<Schema>;
+
+export type ControllerRequest<Schema extends RouteSchemaDefinition | undefined = undefined> = FastifyRequest<
+  RouteHandlerContext<Schema>
+>;
 
 export interface ApiResponse<T = unknown> {
   data?: T;

@@ -150,6 +150,8 @@ export const WebServerRouteSchema = z
     action: z.string().optional(),
     entityName: z.string().optional(),
     validation: z.unknown().optional(), // Validation schema reference
+    handler: z.unknown().optional(),
+    schema: z.unknown().optional(),
   })
   .passthrough(); // Allow additional properties to pass through
 

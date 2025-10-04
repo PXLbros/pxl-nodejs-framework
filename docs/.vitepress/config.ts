@@ -68,6 +68,7 @@ export default defineConfig({
           collapsed: false,
           items: [
             { text: 'Commands & CLI', link: '/guides/commands' },
+            { text: 'Typed Routes & Schemas', link: '/guides/typed-routes' },
             { text: 'Testing', link: '/guides/testing' },
             { text: 'Deployment', link: '/guides/deployment' },
             { text: 'Scaling & Clustering', link: '/guides/scaling' },

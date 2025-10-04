@@ -289,19 +289,19 @@ export default class WebSocketServer extends WebSocketBase {
       return;
     }
 
-    const runSameWorker = parsedMessage.runSameWorker === true;
+    const includeSender = parsedMessage.includeSender === true;
 
     const isSameWorker = parsedMessage.workerId === this.workerId;
 
     // Check if message is from the same worker
-    if (runSameWorker !== true && isSameWorker) {
+    if (includeSender !== true && isSameWorker) {
       // Ignore the message if it's from the same worker
       return;
     }
 
     log('Incoming subscriber message', {
       Channel: channel,
-      // 'Run Same Worker': parsedMessage.runSameWorker ? 'Yes' : 'No',
+      // 'Run Same Worker': parsedMessage.includeSender ? 'Yes' : 'No',
       'Client ID': parsedMessage.clientId ?? '-',
     });
 
@@ -619,7 +619,7 @@ export default class WebSocketServer extends WebSocketBase {
     this.redisInstance.publisherClient.publish(
       WebSocketRedisSubscriberEvent.MessageError,
       JSON.stringify({
-        runSameWorker: true,
+        includeSender: true,
         clientId,
         error,
       }),
