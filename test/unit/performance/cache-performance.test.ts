@@ -132,4 +132,131 @@ describe('CachePerformanceWrapper', () => {
       expect(mockMonitor.measureAsync).toHaveBeenCalled();
     });
   });
+
+  describe('monitorClear', () => {
+    it('should monitor clear operation with pattern', async () => {
+      const operation = vi.fn().mockResolvedValue(10);
+
+      const result = await CachePerformanceWrapper.monitorClear('user:*', operation);
+
+      expect(result).toBe(10);
+      expect(mockMonitor.measureAsync).toHaveBeenCalledWith({
+        name: 'clear.user:*',
+        type: 'cache',
+        fn: operation,
+        metadata: { operation: 'clear', keyPattern: 'user:*' },
+      });
+    });
+
+    it('should monitor clear with metadata', async () => {
+      const operation = vi.fn().mockResolvedValue(5);
+      const metadata = { size: 5 };
+
+      await CachePerformanceWrapper.monitorClear('session:*', operation, metadata);
+
+      expect(mockMonitor.measureAsync).toHaveBeenCalled();
+    });
+  });
+
+  describe('monitorMultiGet', () => {
+    it('should monitor multi-get operation', async () => {
+      const operation = vi.fn().mockResolvedValue(['value1', 'value2', 'value3']);
+      const keys = ['key1', 'key2', 'key3'];
+
+      const result = await CachePerformanceWrapper.monitorMultiGet(keys, operation);
+
+      expect(result).toEqual(['value1', 'value2', 'value3']);
+      expect(mockMonitor.measureAsync).toHaveBeenCalledWith({
+        name: 'multi_get.3_keys',
+        type: 'cache',
+        fn: operation,
+        metadata: { operation: 'multi_get', keyPattern: '[key1, key2, key3]' },
+      });
+    });
+
+    it('should monitor multi-get with metadata', async () => {
+      const operation = vi.fn().mockResolvedValue([]);
+      const metadata = { ttl: 60 };
+
+      await CachePerformanceWrapper.monitorMultiGet(['a', 'b'], operation, metadata);
+
+      expect(mockMonitor.measureAsync).toHaveBeenCalled();
+    });
+  });
+
+  describe('monitorMultiSet', () => {
+    it('should monitor multi-set operation', async () => {
+      const operation = vi.fn().mockResolvedValue('OK');
+      const keys = ['key1', 'key2', 'key3'];
+
+      const result = await CachePerformanceWrapper.monitorMultiSet(keys, operation);
+
+      expect(result).toBe('OK');
+      expect(mockMonitor.measureAsync).toHaveBeenCalledWith({
+        name: 'multi_set.3_keys',
+        type: 'cache',
+        fn: operation,
+        metadata: { operation: 'multi_set', keyPattern: '[key1, key2, key3]' },
+      });
+    });
+
+    it('should monitor multi-set with TTL', async () => {
+      const operation = vi.fn().mockResolvedValue('OK');
+      const metadata = { ttl: 3600 };
+
+      await CachePerformanceWrapper.monitorMultiSet(['x', 'y'], operation, metadata);
+
+      expect(mockMonitor.measureAsync).toHaveBeenCalled();
+    });
+  });
+
+  describe('monitorIncrement', () => {
+    it('should monitor increment operation', async () => {
+      const operation = vi.fn().mockResolvedValue(42);
+
+      const result = await CachePerformanceWrapper.monitorIncrement('counter', operation);
+
+      expect(result).toBe(42);
+      expect(mockMonitor.measureAsync).toHaveBeenCalledWith({
+        name: 'increment.counter',
+        type: 'cache',
+        fn: operation,
+        metadata: { operation: 'increment', key: 'counter' },
+      });
+    });
+
+    it('should monitor increment with metadata', async () => {
+      const operation = vi.fn().mockResolvedValue(100);
+      const metadata = { size: 1 };
+
+      await CachePerformanceWrapper.monitorIncrement('views', operation, metadata);
+
+      expect(mockMonitor.measureAsync).toHaveBeenCalled();
+    });
+  });
+
+  describe('monitorDecrement', () => {
+    it('should monitor decrement operation', async () => {
+      const operation = vi.fn().mockResolvedValue(10);
+
+      const result = await CachePerformanceWrapper.monitorDecrement('countdown', operation);
+
+      expect(result).toBe(10);
+      expect(mockMonitor.measureAsync).toHaveBeenCalledWith({
+        name: 'decrement.countdown',
+        type: 'cache',
+        fn: operation,
+        metadata: { operation: 'decrement', key: 'countdown' },
+      });
+    });
+
+    it('should monitor decrement with metadata', async () => {
+      const operation = vi.fn().mockResolvedValue(0);
+      const metadata = { size: 1 };
+
+      await CachePerformanceWrapper.monitorDecrement('stock', operation, metadata);
+
+      expect(mockMonitor.measureAsync).toHaveBeenCalled();
+    });
+  });
 });

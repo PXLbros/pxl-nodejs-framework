@@ -82,4 +82,79 @@ describe('CacheManager (ioredis unified)', () => {
     await manager.setItem({ key: 'z', value: 1 });
     expect(mockRedisManager.connect).toHaveBeenCalledTimes(1);
   });
+
+  it('reuses redis instance once acquired', async () => {
+    mockRedisManager.instances = [];
+    const manager = new CacheManager({ redisManager: mockRedisManager });
+
+    // First call triggers connection
+    await manager.setItem({ key: 'first', value: 1 });
+    expect(mockRedisManager.connect).toHaveBeenCalledTimes(1);
+
+    // Second call reuses instance
+    await manager.setItem({ key: 'second', value: 2 });
+    expect(mockRedisManager.connect).toHaveBeenCalledTimes(1); // Still 1
+  });
+
+  it('throws error when cached value is not a string', async () => {
+    mockRedisInstance.getCache.mockResolvedValue(123); // Number instead of string
+    const manager = new CacheManager({ redisManager: mockRedisManager });
+
+    await expect(manager.getItem({ key: 'invalid' })).rejects.toThrow(
+      'Cache value for key "invalid" must be a string, got number',
+    );
+  });
+
+  it('handles complex JSON objects', async () => {
+    const complexObject = {
+      nested: { data: { value: 42 } },
+      array: [1, 2, 3],
+      string: 'test',
+    };
+
+    mockRedisInstance.getCache.mockResolvedValue(JSON.stringify(complexObject));
+    const manager = new CacheManager({ redisManager: mockRedisManager });
+
+    const result = await manager.getItem({ key: 'complex' });
+    expect(result).toEqual(complexObject);
+  });
+
+  it('handles arrays as cached values', async () => {
+    const array = [1, 2, 3, 'test', { nested: true }];
+    mockRedisInstance.getCache.mockResolvedValue(JSON.stringify(array));
+    const manager = new CacheManager({ redisManager: mockRedisManager });
+
+    const result = await manager.getItem({ key: 'array' });
+    expect(result).toEqual(array);
+  });
+
+  it('close method does nothing (no-op)', async () => {
+    const manager = new CacheManager({ redisManager: mockRedisManager });
+    await expect(manager.close()).resolves.toBeUndefined();
+  });
+
+  it('getItem handles non-Error exceptions', async () => {
+    mockRedisInstance.getCache.mockResolvedValue('{{invalid json');
+    const manager = new CacheManager({ redisManager: mockRedisManager });
+
+    await expect(manager.getItem({ key: 'bad' })).rejects.toThrow(/Failed to parse cached value for key "bad"/);
+  });
+
+  it('lazy connects for getItem when no instances exist', async () => {
+    mockRedisManager.instances = [];
+    mockRedisInstance.getCache.mockResolvedValue(null);
+
+    const manager = new CacheManager({ redisManager: mockRedisManager });
+    await manager.getItem({ key: 'test' });
+
+    expect(mockRedisManager.connect).toHaveBeenCalledTimes(1);
+  });
+
+  it('lazy connects for clearItem when no instances exist', async () => {
+    mockRedisManager.instances = [];
+    const manager = new CacheManager({ redisManager: mockRedisManager });
+
+    await manager.clearItem({ key: 'test' });
+    expect(mockRedisManager.connect).toHaveBeenCalledTimes(1);
+  });
 });

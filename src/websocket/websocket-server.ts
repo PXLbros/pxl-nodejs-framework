@@ -638,7 +638,7 @@ export default class WebSocketServer extends WebSocketBase {
       return;
     }
 
-    const maxInactiveTime = this.options.disconnectInactiveClients.maxInactiveTime;
+    const maxInactiveTime = this.options.disconnectInactiveClients.inactiveTime;
 
     if (!maxInactiveTime) {
       return;
@@ -652,7 +652,7 @@ export default class WebSocketServer extends WebSocketBase {
       if (inactiveTime > maxInactiveTime) {
         this.clientManager.disconnectClient(client.clientId);
 
-        if (this.options.disconnectInactiveClients.log) {
+        if (this.options.disconnectInactiveClients?.log) {
           log('Disconnected inactive client', {
             'Client ID': client.clientId,
             'Inactive Time': `${inactiveTime}ms`,
@@ -747,7 +747,7 @@ export default class WebSocketServer extends WebSocketBase {
     }
 
     // Check if client can join multiple rooms
-    const canJoinMultipleRooms = this.options.clientCanJoinMultipleRooms ?? true; // Default to true for backward compatibility
+    const canJoinMultipleRooms = this.options.rooms?.clientCanJoinMultipleRooms ?? true; // Default to true for backward compatibility
 
     if (!canJoinMultipleRooms && client.roomName) {
       // Remove client from current room before joining new one

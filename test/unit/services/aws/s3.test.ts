@@ -31,6 +31,7 @@ vi.mock('../../../../src/util/index.js', async () => {
     },
     File: {
       pathExists: vi.fn().mockResolvedValue(true),
+      ensureDir: vi.fn().mockResolvedValue(undefined),
     },
   };
 });
@@ -274,6 +275,100 @@ describe('AwsS3', () => {
       // Just test that the function exists
       expect(s3.downloadFile).toBeDefined();
       expect(typeof s3.downloadFile).toBe('function');
+    });
+
+    it('should call all lifecycle callbacks during download', async () => {
+      const { Readable } = await import('stream');
+      const mockReadable = new Readable();
+      mockReadable._read = () => {};
+
+      // Mock S3Client.send to return a stream
+      const s3 = new AwsS3({});
+      vi.spyOn(s3.client, 'send').mockResolvedValue({
+        Body: mockReadable,
+        ContentLength: 1000,
+      } as any);
+
+      const onStart = vi.fn();
+      const onProgress = vi.fn();
+      const onComplete = vi.fn();
+
+      const downloadPromise = s3.downloadFile({
+        bucketName: 'test-bucket',
+        key: 'test/file.txt',
+        destinationFilePath: '/tmp/test-file.txt',
+        onStart,
+        onProgress,
+        onComplete,
+      });
+
+      // Emit data and end
+      mockReadable.push(Buffer.from('test content'));
+      mockReadable.push(null);
+
+      await downloadPromise;
+
+      expect(onStart).toHaveBeenCalled();
+      expect(onComplete).toHaveBeenCalled();
+    });
+
+    it('should call onError when download fails', async () => {
+      const s3 = new AwsS3({});
+      const testError = new Error('Download failed');
+      vi.spyOn(s3.client, 'send').mockRejectedValue(testError);
+
+      const onError = vi.fn();
+
+      await expect(
+        s3.downloadFile({
+          bucketName: 'test-bucket',
+          key: 'test/file.txt',
+          destinationFilePath: '/tmp/test-file.txt',
+          onError,
+        }),
+      ).rejects.toThrow('Download failed');
+
+      expect(onError).toHaveBeenCalledWith(testError);
+    });
+
+    it('should throw error when response body is not readable', async () => {
+      const s3 = new AwsS3({});
+      vi.spyOn(s3.client, 'send').mockResolvedValue({
+        Body: null,
+      } as any);
+
+      await expect(
+        s3.downloadFile({
+          bucketName: 'test-bucket',
+          key: 'test/file.txt',
+          destinationFilePath: '/tmp/test-file.txt',
+        }),
+      ).rejects.toThrow('Expected Body to be a readable stream!');
+    });
+
+    it('should decode URI-encoded keys', async () => {
+      const { Readable } = await import('stream');
+      const mockReadable = new Readable();
+      mockReadable._read = () => {};
+
+      const s3 = new AwsS3({});
+      const sendSpy = vi.spyOn(s3.client, 'send').mockResolvedValue({
+        Body: mockReadable,
+        ContentLength: 100,
+      } as any);
+
+      const downloadPromise = s3.downloadFile({
+        bucketName: 'test-bucket',
+        key: 'test%20file%20with%20spaces.txt',
+        destinationFilePath: '/tmp/test-file.txt',
+      });
+
+      mockReadable.push(Buffer.from('test'));
+      mockReadable.push(null);
+
+      await downloadPromise;
+
+      expect(sendSpy).toHaveBeenCalled();
     });
   });
 

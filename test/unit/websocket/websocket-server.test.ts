@@ -758,7 +758,7 @@ describe('WebSocketServer', () => {
           disconnectInactiveClients: {
             enabled: true,
             intervalCheckTime: 60000,
-            maxInactiveTime: 300000,
+            inactiveTime: 300000,
           },
         },
       });
@@ -790,7 +790,7 @@ describe('WebSocketServer', () => {
           disconnectInactiveClients: {
             enabled: true,
             intervalCheckTime: 60000,
-            maxInactiveTime: 300000,
+            inactiveTime: 300000,
           },
         },
       });
@@ -1029,6 +1029,46 @@ describe('WebSocketServer', () => {
       expect(onServerStarted).toHaveBeenCalledWith({
         webSocketServer: expect.anything(),
       });
+    });
+
+    it('should throw error if server not started when handleServerStart called', () => {
+      const { server } = createServer();
+
+      expect(() => {
+        (server as any).handleServerStart();
+      }).toThrow('WebSocket server not started');
+    });
+  });
+
+  describe('Debug Options', () => {
+    it('should return false for shouldPrintRoutes when debug.printRoutes is false', () => {
+      const { server } = createServer({
+        options: {
+          debug: {
+            printRoutes: false,
+          },
+        },
+      });
+
+      expect((server as any).shouldPrintRoutes()).toBe(false);
+    });
+
+    it('should return true for shouldPrintRoutes when debug.printRoutes is true', () => {
+      const { server } = createServer({
+        options: {
+          debug: {
+            printRoutes: true,
+          },
+        },
+      });
+
+      expect((server as any).shouldPrintRoutes()).toBe(true);
+    });
+
+    it('should return false for shouldPrintRoutes when debug is undefined', () => {
+      const { server } = createServer();
+
+      expect((server as any).shouldPrintRoutes()).toBe(false);
     });
   });
 });

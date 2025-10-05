@@ -21,6 +21,18 @@ interface InMemoryRedisSharedState {
   subscriptions: Map<string, Set<InMemoryRedisClient>>;
 }
 
+// Global singleton shared state for in-memory Redis
+let globalInMemoryRedisState: InMemoryRedisSharedState | null = null;
+
+function getGlobalInMemoryRedisState(): InMemoryRedisSharedState {
+  globalInMemoryRedisState ??= {
+    store: new Map<string, string | Buffer>(),
+    expirations: new Map<string, NodeJS.Timeout>(),
+    subscriptions: new Map<string, Set<InMemoryRedisClient>>(),
+  };
+  return globalInMemoryRedisState;
+}
+
 class InMemoryRedisClient extends EventEmitter {
   private shared: InMemoryRedisSharedState;
 
@@ -128,15 +140,15 @@ class InMemoryRedisClient extends EventEmitter {
 
   public async quit(): Promise<'OK'> {
     this.cleanupSubscriptions();
-    this.removeAllListeners();
     this.emit('end');
+    this.removeAllListeners();
     return 'OK';
   }
 
   public disconnect(): void {
     this.cleanupSubscriptions();
-    this.removeAllListeners();
     this.emit('end');
+    this.removeAllListeners();
   }
 }
 
@@ -168,21 +180,9 @@ export default class RedisManager {
           truthyPattern.test(process.env.PXL_REDIS_IN_MEMORY ?? '') ||
           truthyPattern.test(process.env.REDIS_IN_MEMORY ?? '');
 
-        let sharedState: InMemoryRedisSharedState | undefined;
-        if (useInMemoryRedis) {
-          sharedState = {
-            store: new Map<string, string | Buffer>(),
-            expirations: new Map<string, NodeJS.Timeout>(),
-            subscriptions: new Map<string, Set<InMemoryRedisClient>>(),
-          };
-        }
-
         const createClient = (): Redis => {
           if (useInMemoryRedis) {
-            if (!sharedState) {
-              throw new Error('In-memory Redis shared state not initialized');
-            }
-            return new InMemoryRedisClient(sharedState) as unknown as Redis;
+            return new InMemoryRedisClient(getGlobalInMemoryRedisState()) as unknown as Redis;
           }
 
           return new Redis(redisOptions);

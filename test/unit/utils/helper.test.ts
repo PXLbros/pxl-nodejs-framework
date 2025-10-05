@@ -392,3 +392,37 @@ describe('Helper.getScriptFileExtension', () => {
     process.env.NODE_ENV = originalEnv;
   });
 });
+
+describe('Helper.defaultsDeep - Security', () => {
+  it('should skip dangerous __proto__ keys when merging', () => {
+    const target: any = { safe: 'value' };
+    const source: any = { __proto__: { polluted: 'bad' }, normal: 'good' };
+
+    const result = Helper.defaultsDeep(target, source);
+
+    expect(result.safe).toBe('value');
+    expect(result.normal).toBe('good');
+    expect(result.polluted).toBeUndefined();
+    expect(({} as any).polluted).toBeUndefined();
+  });
+
+  it('should skip dangerous constructor keys when merging', () => {
+    const target: any = { safe: 'value' };
+    const source: any = { constructor: { bad: 'value' }, normal: 'good' };
+
+    const result = Helper.defaultsDeep(target, source);
+
+    expect(result.safe).toBe('value');
+    expect(result.normal).toBe('good');
+  });
+
+  it('should skip dangerous prototype keys when merging', () => {
+    const target: any = { safe: 'value' };
+    const source: any = { prototype: { bad: 'value' }, normal: 'good' };
+
+    const result = Helper.defaultsDeep(target, source);
+
+    expect(result.safe).toBe('value');
+    expect(result.normal).toBe('good');
+  });
+});

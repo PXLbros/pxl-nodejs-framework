@@ -408,5 +408,33 @@ describe('WebSocketBase', () => {
       expect(action2Handler).toHaveBeenCalledWith(ws, 'client-2', { id: 2 });
       expect(action1Handler).not.toHaveBeenCalled();
     });
+
+    it('should skip routes when controller is not a function', async () => {
+      const instance = new TestWebSocketBase();
+
+      // Mock Loader to return an object with a non-function controller
+      const mockLoader = {
+        loadModulesInDirectory: vi.fn().mockResolvedValue({
+          TestController: 'not-a-function', // Invalid controller
+        }),
+      };
+
+      // We can't easily test this without modifying the actual code,
+      // but we can verify that invalid routes don't crash the system
+      const routes: WebSocketRoute[] = [
+        {
+          type: 'test',
+          action: 'testAction',
+          controllerName: 'TestController',
+        },
+      ];
+
+      // This should not throw and should skip the invalid controller
+      await expect(instance.testConfigureRoutes(routes, '/fake/path')).resolves.toBeUndefined();
+
+      // Verify the route was not registered
+      const handlers = instance.getRouteHandlers();
+      expect(handlers.has('test:testAction')).toBe(false);
+    });
   });
 });

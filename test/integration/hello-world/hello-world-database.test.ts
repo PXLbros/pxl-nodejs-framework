@@ -32,7 +32,7 @@ describe('Hello World Database CRUD', () => {
       ...process.env,
       PORT: testPort.toString(),
       HOST: testHost,
-      NODE_ENV: 'test',
+      NODE_ENV: 'integration-test',
       DB_ENABLED: 'true',
       DB_HOST: process.env.TEST_DB_HOST || 'localhost',
       DB_PORT: process.env.TEST_DB_PORT || '5432',
@@ -94,10 +94,23 @@ describe('Hello World Database CRUD', () => {
 
   afterAll(async () => {
     if (backendProcess && dbEnabled) {
+      // Send SIGTERM and wait for graceful shutdown
       backendProcess.kill('SIGTERM');
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      if (!backendProcess.killed) {
+
+      // Wait for process to exit with timeout
+      const exitPromise = new Promise<void>(resolve => {
+        backendProcess.once('exit', () => resolve());
+      });
+
+      const timeoutPromise = new Promise<void>(resolve => setTimeout(resolve, 3000));
+
+      await Promise.race([exitPromise, timeoutPromise]);
+
+      // If still running after timeout, force kill
+      if (backendProcess.exitCode === null) {
+        console.warn('Process did not exit gracefully, forcing SIGKILL');
         backendProcess.kill('SIGKILL');
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
     }
   }, 10000);

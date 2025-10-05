@@ -32,7 +32,7 @@ describe('Hello World Example End-to-End', () => {
       ...process.env,
       PORT: testPort.toString(),
       HOST: testHost,
-      NODE_ENV: 'test',
+      NODE_ENV: 'integration-test',
       PXL_REDIS_IN_MEMORY: 'true',
       DB_ENABLED: 'false',
       DB_HOST: 'localhost',
@@ -102,11 +102,23 @@ describe('Hello World Example End-to-End', () => {
 
   afterAll(async () => {
     if (backendProcess) {
+      // Send SIGTERM and wait for graceful shutdown
       backendProcess.kill('SIGTERM');
-      // Wait for process to exit
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      if (!backendProcess.killed) {
+
+      // Wait for process to exit with timeout
+      const exitPromise = new Promise<void>(resolve => {
+        backendProcess.once('exit', () => resolve());
+      });
+
+      const timeoutPromise = new Promise<void>(resolve => setTimeout(resolve, 3000));
+
+      await Promise.race([exitPromise, timeoutPromise]);
+
+      // If still running after timeout, force kill
+      if (backendProcess.exitCode === null) {
+        console.warn('Process did not exit gracefully, forcing SIGKILL');
         backendProcess.kill('SIGKILL');
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
     }
 
