@@ -51,12 +51,17 @@ function getEntityRouteDefinitions({
     validationSchema: entityValidationSchema,
   });
 
-  // Update one
+  // Update one - merge params and body validation
+  const updateOneValidationSchemas: RouteValidationSchema[] = [idValidationSchema];
+  if (entityValidationSchema) {
+    updateOneValidationSchemas.push(entityValidationSchema);
+  }
+
   routeDefinitions.push({
     path: `${basePath}/:id`,
     method: 'PUT' as HTTPMethods,
     action: 'updateOne',
-    validationSchema: entityValidationSchema, // TODO: Need to merge with idValidationSchema
+    validationSchema: updateOneValidationSchemas,
   });
 
   // Delete one

@@ -672,10 +672,15 @@ class WebServer {
     routeAction?: string;
     routeSchema?: AnyRouteSchemaDefinition;
     handlerOverride?: ControllerAction<any>;
-    legacyValidation?: {
-      type: 'body' | 'query' | 'params';
-      schema: { [key: string]: any };
-    };
+    legacyValidation?:
+      | {
+          type: 'body' | 'query' | 'params';
+          schema: { [key: string]: any };
+        }
+      | Array<{
+          type: 'body' | 'query' | 'params';
+          schema: { [key: string]: any };
+        }>;
   }): Promise<void> {
     let handler = handlerOverride;
 
@@ -776,26 +781,38 @@ class WebServer {
     return schema;
   }
 
-  private buildLegacySchema(legacyValidation?: {
-    type: 'body' | 'query' | 'params';
-    schema: { [key: string]: any };
-  }): FastifySchema | undefined {
+  private buildLegacySchema(
+    legacyValidation?:
+      | {
+          type: 'body' | 'query' | 'params';
+          schema: { [key: string]: any };
+        }
+      | Array<{
+          type: 'body' | 'query' | 'params';
+          schema: { [key: string]: any };
+        }>,
+  ): FastifySchema | undefined {
     if (!legacyValidation) {
       return undefined;
     }
 
     const schema: FastifySchema = {};
 
-    switch (legacyValidation.type) {
-      case 'body':
-        schema.body = legacyValidation.schema;
-        break;
-      case 'query':
-        schema.querystring = legacyValidation.schema;
-        break;
-      case 'params':
-        schema.params = legacyValidation.schema;
-        break;
+    // Handle both single validation schema and array of validation schemas
+    const validations = Array.isArray(legacyValidation) ? legacyValidation : [legacyValidation];
+
+    for (const validation of validations) {
+      switch (validation.type) {
+        case 'body':
+          schema.body = validation.schema;
+          break;
+        case 'query':
+          schema.querystring = validation.schema;
+          break;
+        case 'params':
+          schema.params = validation.schema;
+          break;
+      }
     }
 
     return schema;

@@ -155,7 +155,7 @@ export interface EntityRouteDefinition {
   path: string;
   method: HTTPMethods | HTTPMethods[];
   action: string;
-  validationSchema?: RouteValidationSchema;
+  validationSchema?: RouteValidationSchema | RouteValidationSchema[];
 }
 
 export interface WebServerLogConfig {

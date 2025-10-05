@@ -9,7 +9,7 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "pxl": "./pxl.js"
+    "pxl": "./dist/cli/index.js"
   },
   "exports": {
     ".": {
@@ -87,7 +87,6 @@
   },
   "files": [
     "dist",
-    "pxl.js",
     "README.md"
   ],
   "scripts": {

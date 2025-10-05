@@ -2,11 +2,12 @@ import { build } from 'esbuild';
 import { glob } from 'glob';
 import { execSync } from 'child_process';
 
-// Get all TypeScript files in src directory
-const entryPoints = glob.sync('src/**/*.ts');
+// All library TypeScript files except CLI (we build CLI separately)
+const allTs = glob.sync('src/**/*.ts');
+const cliEntry = 'src/cli/index.ts';
+const libEntryPoints = allTs.filter(p => p !== cliEntry);
 
-const config = {
-  entryPoints,
+const baseConfig = {
   bundle: false,
   outdir: 'dist',
   platform: 'node',
@@ -14,9 +15,7 @@ const config = {
   format: 'esm',
   sourcemap: true,
   keepNames: true,
-  loader: {
-    '.ts': 'ts',
-  },
+  loader: { '.ts': 'ts' },
   tsconfig: './tsconfig.json',
   logLevel: 'info',
   minify: false,
@@ -33,8 +32,25 @@ async function buildProject() {
   const start = Date.now();
 
   try {
-    // Build JavaScript with esbuild
-    await build(config);
+    // Build library sources
+    await build({
+      ...baseConfig,
+      entryPoints: libEntryPoints,
+    });
+
+    // Build/bundle CLI with explicit banner & single output
+    if (allTs.includes(cliEntry)) {
+      await build({
+        ...baseConfig,
+        // Remove properties incompatible with single-file output
+        outdir: undefined,
+        entryPoints: [cliEntry],
+        bundle: true,
+        outfile: 'dist/cli/index.js',
+        banner: { js: '#!/usr/bin/env node' },
+        external: [],
+      });
+    }
     const esbuildDuration = Date.now() - start;
     console.log(`✅ JavaScript build completed in ${esbuildDuration}ms`);
 

@@ -43,7 +43,17 @@ describe('webserver util', () => {
         path: '/users/:id',
         method: 'PUT',
         action: 'updateOne',
-        validationSchema: entitySchema,
+        validationSchema: [
+          {
+            type: 'params',
+            schema: {
+              type: 'object',
+              required: ['id'],
+              properties: { id: { type: 'integer' } },
+            },
+          },
+          entitySchema,
+        ],
       },
       {
         path: '/users/:id',

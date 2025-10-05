@@ -143,5 +143,4 @@ Applications are configured through an `ApplicationConfig` object that includes:
 
 - `src/` - Source code
 - `dist/` - Compiled output (gitignored)
-- `bin/` - CLI executable
-- `pxl.js` - Main CLI entry point
+- `dist/cli/index.js` - Bundled CLI entry point (built from `src/cli/index.ts`)

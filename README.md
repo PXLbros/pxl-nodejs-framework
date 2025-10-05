@@ -352,6 +352,51 @@ See [examples/README.md](examples/README.md) for more details.
 
 ## 🛠️ Development
 
+### CLI (`pxl`)
+
+The framework now ships with a bundled CLI executable exposed as `pxl` when the package is installed.
+
+Current capabilities:
+
+- `pxl --version` / `pxl -v` / `pxl version` – Print framework version
+- `pxl info` (or just `pxl`) – Display banner + roadmap
+
+Planned subcommands (roadmap):
+
+- `pxl doctor` – Environment diagnostics (Node version, dependency checks, Redis/Postgres availability)
+- `pxl generate` – Scaffolding for applications, routes, commands, processors
+- `pxl analyze` – Project inspection (unused files, dependency graph summary)
+
+Usage examples:
+
+```bash
+# Show version
+pxl --version
+
+# Show framework banner and roadmap
+pxl info
+
+# (Future) Run doctor diagnostics
+pxl doctor
+```
+
+Development Note:
+
+When iterating locally, rebuild after CLI changes:
+
+```bash
+npm run build && pxl info
+```
+
+To test unpublished changes in another project via yalc:
+
+```bash
+npm run build:local
+yalc add @scpxl/nodejs-framework
+```
+
+For contributions adding new subcommands, implement them in `src/cli/` and register via the yargs builder in `src/cli/index.ts`.
+
 ### Build Commands
 
 ```bash
