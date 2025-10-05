@@ -56,6 +56,12 @@ export interface WebSocketEventsConfig {
     queueManager: QueueManager;
     databaseInstance: DatabaseInstance;
   }) => void;
+  /** Fired when attempting to reconnect */
+  onReconnecting?: ({ attempt, delay }: { attempt: number; delay: number }) => void;
+  /** Fired when reconnection is successful */
+  onReconnected?: ({ clientId }: { clientId?: string }) => void;
+  /** Fired when max reconnection attempts are reached */
+  onReconnectFailed?: ({ attempts }: { attempts: number }) => void;
 }
 
 export interface WebSocketOptions {

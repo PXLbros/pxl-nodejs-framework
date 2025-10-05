@@ -27,6 +27,11 @@ export default class WebSocketClient extends WebSocketBase {
   private ws?: WebSocket;
   private clientId?: string;
   private isConnected: boolean = false;
+  private reconnectAttempts: number = 0;
+  private maxReconnectAttempts: number = 10;
+  private reconnectDelay: number = 1000; // Start with 1 second
+  private reconnectTimer?: NodeJS.Timeout;
+  private shouldReconnect: boolean = true;
 
   constructor(props: WebSocketClientProps) {
     super();
@@ -99,9 +104,9 @@ export default class WebSocketClient extends WebSocketBase {
 
       ws.on('message', this.handleIncomingMessage);
 
-      ws.on('close', () => {
+      ws.on('close', code => {
         this.isConnected = false;
-        log('Connection to server closed');
+        log('Connection to server closed', { Code: code });
 
         if (this.options.events?.onDisconnected) {
           this.options.events.onDisconnected({ clientId: this.clientId });
@@ -111,6 +116,11 @@ export default class WebSocketClient extends WebSocketBase {
         ws.removeAllListeners();
         this.ws = undefined;
         this.clientId = undefined;
+
+        // Attempt to reconnect if not manually disconnected
+        if (this.shouldReconnect) {
+          this.scheduleReconnect();
+        }
       });
 
       ws.on('error', error => {
@@ -188,6 +198,15 @@ export default class WebSocketClient extends WebSocketBase {
   };
 
   public disconnect(): void {
+    // Disable auto-reconnect on manual disconnect
+    this.shouldReconnect = false;
+
+    // Clear any pending reconnect timer
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = undefined;
+    }
+
     if (this.ws && this.isConnected) {
       this.ws.removeAllListeners();
       this.ws.close();
@@ -200,5 +219,110 @@ export default class WebSocketClient extends WebSocketBase {
 
   public isClientConnected(): boolean {
     return this.isConnected && this.ws?.readyState === WebSocket.OPEN;
+  }
+
+  /**
+   * Schedule a reconnection attempt with exponential backoff
+   */
+  private scheduleReconnect(): void {
+    // Don't reconnect if we've exceeded max attempts
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      log('Max reconnection attempts reached', {
+        Attempts: this.reconnectAttempts,
+      });
+
+      if (this.options.events?.onReconnectFailed) {
+        this.options.events.onReconnectFailed({
+          attempts: this.reconnectAttempts,
+        });
+      }
+
+      return;
+    }
+
+    // Calculate delay with exponential backoff (max 30 seconds)
+    const delay = Math.min(this.reconnectDelay * Math.pow(2, this.reconnectAttempts), 30000);
+    this.reconnectAttempts++;
+
+    log('Scheduling reconnection', {
+      Attempt: this.reconnectAttempts,
+      Delay: `${delay}ms`,
+    });
+
+    if (this.options.events?.onReconnecting) {
+      this.options.events.onReconnecting({
+        attempt: this.reconnectAttempts,
+        delay,
+      });
+    }
+
+    this.reconnectTimer = setTimeout(() => {
+      this.attemptReconnect();
+    }, delay);
+  }
+
+  /**
+   * Attempt to reconnect to the server
+   */
+  private async attemptReconnect(): Promise<void> {
+    try {
+      log('Attempting to reconnect...', {
+        Attempt: this.reconnectAttempts,
+      });
+
+      await this.connectToServer();
+
+      // Reset reconnect attempts on successful connection
+      this.reconnectAttempts = 0;
+
+      log('Reconnection successful');
+
+      if (this.options.events?.onReconnected) {
+        this.options.events.onReconnected({
+          clientId: this.clientId,
+        });
+      }
+    } catch (error) {
+      log('Reconnection failed', {
+        Error: error instanceof Error ? error.message : String(error),
+      });
+
+      // Schedule next attempt
+      this.scheduleReconnect();
+    }
+  }
+
+  /**
+   * Enable auto-reconnection
+   */
+  public enableAutoReconnect(): void {
+    this.shouldReconnect = true;
+  }
+
+  /**
+   * Disable auto-reconnection
+   */
+  public disableAutoReconnect(): void {
+    this.shouldReconnect = false;
+
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = undefined;
+    }
+  }
+
+  /**
+   * Get connection status
+   */
+  public getConnectionStatus(): {
+    isConnected: boolean;
+    reconnectAttempts: number;
+    autoReconnectEnabled: boolean;
+  } {
+    return {
+      isConnected: this.isConnected,
+      reconnectAttempts: this.reconnectAttempts,
+      autoReconnectEnabled: this.shouldReconnect,
+    };
   }
 }

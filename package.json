@@ -90,12 +90,14 @@
     "README.md"
   ],
   "scripts": {
-    "dev": "node scripts/hmr-watcher.js",
+    "dev": "node scripts/hmr-watcher-enhanced.js",
+    "dev:legacy": "node scripts/hmr-watcher.js",
     "dev:import-map": "tsx src/index.ts",
     "clean": "del-cli dist",
     "build": "npm run clean && node esbuild.config.js",
     "build:tsc": "npm run clean && tsc",
     "build:local": "npm run clean && node esbuild.config.js && yalc push",
+    "build:watch": "node esbuild.config.js --watch",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs",

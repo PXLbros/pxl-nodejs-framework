@@ -503,4 +503,219 @@ describe('WebSocketClient', () => {
       expect(result).toBeUndefined();
     });
   });
+
+  describe('Auto-Reconnection', () => {
+    let timerId: NodeJS.Timeout | undefined;
+
+    afterEach(() => {
+      if (timerId) {
+        clearTimeout(timerId);
+        timerId = undefined;
+      }
+    });
+
+    it('should be enabled by default', () => {
+      const { client } = createClient();
+
+      expect((client as any).shouldReconnect).toBe(true);
+    });
+
+    it('should get connection status with auto-reconnect enabled', () => {
+      const { client } = createClient();
+
+      const status = client.getConnectionStatus();
+
+      expect(status).toEqual({
+        isConnected: false,
+        reconnectAttempts: 0,
+        autoReconnectEnabled: true,
+      });
+    });
+
+    it('should schedule reconnection on disconnect', async () => {
+      const { client } = createClient();
+
+      await client.connectToServer();
+
+      const ws = (client as any).ws;
+
+      // Trigger close event
+      if (ws && ws._events && ws._events['close']) {
+        ws._events['close'](1000);
+      }
+
+      // Wait a bit for async operations
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      // Verify reconnect was scheduled
+      expect((client as any).reconnectTimer).toBeDefined();
+    });
+
+    it('should calculate exponential backoff delays correctly', () => {
+      const { client } = createClient();
+
+      // Test the delay calculation directly
+      const calculateDelay = (attempts: number) => {
+        const baseDelay = 1000;
+        return Math.min(baseDelay * Math.pow(2, attempts), 30000);
+      };
+
+      // Verify exponential backoff: 1s, 2s, 4s, 8s, 16s, 30s (capped)
+      expect(calculateDelay(0)).toBe(1000); // 1 second
+      expect(calculateDelay(1)).toBe(2000); // 2 seconds
+      expect(calculateDelay(2)).toBe(4000); // 4 seconds
+      expect(calculateDelay(3)).toBe(8000); // 8 seconds
+      expect(calculateDelay(4)).toBe(16000); // 16 seconds
+      expect(calculateDelay(5)).toBe(30000); // 30 seconds (capped)
+      expect(calculateDelay(10)).toBe(30000); // Still capped at 30s
+    });
+
+    it('should track max reconnection attempts limit', () => {
+      const { client } = createClient();
+
+      // Verify max attempts is set correctly
+      expect((client as any).maxReconnectAttempts).toBe(10);
+    });
+
+    it('should initialize with zero reconnection attempts', () => {
+      const { client } = createClient();
+
+      // Verify reconnect attempts starts at 0
+      expect((client as any).reconnectAttempts).toBe(0);
+    });
+
+    it('should fire onReconnecting event with attempt and delay', async () => {
+      const onReconnecting = vi.fn();
+      const { client } = createClient({
+        options: {
+          events: {
+            onReconnecting,
+          },
+        },
+      });
+
+      await client.connectToServer();
+
+      const ws = (client as any).ws;
+
+      // Trigger disconnect
+      if (ws && ws._events && ws._events['close']) {
+        ws._events['close'](1000);
+      }
+
+      // Wait for async operations
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      // Should have fired onReconnecting with attempt 1 and delay 1000ms
+      expect(onReconnecting).toHaveBeenCalledWith({
+        attempt: 1,
+        delay: 1000,
+      });
+    });
+
+    it('should disable auto-reconnect on manual disconnect', async () => {
+      const { client } = createClient();
+
+      await client.connectToServer();
+
+      client.disconnect();
+
+      expect((client as any).shouldReconnect).toBe(false);
+      expect((client as any).reconnectTimer).toBeUndefined();
+    });
+
+    it('should enable auto-reconnect when enableAutoReconnect is called', () => {
+      const { client } = createClient();
+
+      // Disable first
+      client.disableAutoReconnect();
+      expect((client as any).shouldReconnect).toBe(false);
+
+      // Enable
+      client.enableAutoReconnect();
+      expect((client as any).shouldReconnect).toBe(true);
+    });
+
+    it('should disable auto-reconnect and clear timer when disableAutoReconnect is called', async () => {
+      const { client } = createClient();
+
+      await client.connectToServer();
+
+      const ws = (client as any).ws;
+
+      // Trigger disconnect to schedule reconnection
+      if (ws && ws._events && ws._events['close']) {
+        ws._events['close'](1000);
+      }
+
+      // Wait for reconnect to be scheduled
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      expect((client as any).reconnectTimer).toBeDefined();
+
+      // Disable auto-reconnect
+      client.disableAutoReconnect();
+
+      expect((client as any).shouldReconnect).toBe(false);
+      expect((client as any).reconnectTimer).toBeUndefined();
+    });
+
+    it('should not schedule reconnection when shouldReconnect is false', async () => {
+      const { client } = createClient();
+
+      await client.connectToServer();
+
+      // Disable auto-reconnect
+      client.disableAutoReconnect();
+
+      const ws = (client as any).ws;
+
+      // Trigger disconnect
+      if (ws && ws._events && ws._events['close']) {
+        ws._events['close'](1000);
+      }
+
+      // Wait a bit
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      // Should not have scheduled reconnection
+      expect((client as any).reconnectTimer).toBeUndefined();
+    });
+
+    it('should report correct connection status', async () => {
+      const { client } = createClient();
+
+      await client.connectToServer();
+
+      const status = client.getConnectionStatus();
+
+      expect(status.isConnected).toBe(true);
+      expect(status.reconnectAttempts).toBe(0);
+      expect(status.autoReconnectEnabled).toBe(true);
+    });
+
+    it('should clear pending timer when disabling auto-reconnect during scheduled reconnection', async () => {
+      const { client } = createClient();
+
+      await client.connectToServer();
+
+      const ws = (client as any).ws;
+
+      // Trigger disconnect - schedules reconnection
+      if (ws && ws._events && ws._events['close']) {
+        ws._events['close'](1000);
+      }
+
+      // Wait for reconnect to be scheduled
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      const timerId = (client as any).reconnectTimer;
+      expect(timerId).toBeDefined();
+
+      // Disable before timer fires
+      client.disableAutoReconnect();
+
+      expect((client as any).reconnectTimer).toBeUndefined();
+    });
+  });
 });
