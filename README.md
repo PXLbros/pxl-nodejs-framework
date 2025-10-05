@@ -170,30 +170,127 @@ The script reports latency percentiles, status code counts, and a few failure sa
 
 ### WebSocket Server
 
+Real-time bidirectional communication with room support and authentication:
+
 ```typescript
 import { WebApplication } from '@scpxl/nodejs-framework';
+import { WebSocketServerBaseController } from '@scpxl/nodejs-framework/websocket';
+import type { WebSocket } from 'ws';
+
+// Create WebSocket controller
+class ChatController extends WebSocketServerBaseController {
+  public send = (ws: WebSocket, clientId: string, data: any) => {
+    // Broadcast to all clients
+    this.webSocketServer.sendMessageToAll({
+      data: {
+        type: 'chat',
+        action: 'message',
+        data: {
+          clientId,
+          text: data.text,
+          timestamp: new Date().toISOString(),
+        },
+      },
+    });
+
+    return { success: true };
+  };
+}
 
 const app = new WebApplication({
   name: 'chat-app',
   webserver: { port: 3000 },
-  websocket: { enabled: true },
+  websocket: {
+    enabled: true,
+    type: 'server',
+    url: 'ws://localhost:3000/ws',
+    controllersDirectory: './controllers',
+    routes: [
+      {
+        type: 'chat',
+        action: 'send',
+        controllerName: 'chat',
+        controller: ChatController,
+      },
+    ],
+    // Optional: JWT authentication
+    // Clients connect with: ws://localhost:3000/ws?token=<jwt>
+    events: {
+      onConnected: ({ ws, clientId }) => {
+        console.log('Client connected:', clientId);
+        ws.send(
+          JSON.stringify({
+            type: 'system',
+            action: 'connected',
+            data: { clientId, message: 'Welcome!' },
+          }),
+        );
+      },
+    },
+  },
   redis: { host: '127.0.0.1', port: 6379 },
+  auth: {
+    jwtSecretKey: process.env.JWT_SECRET || 'your-secret-key',
+  },
 });
 
 await app.start();
+console.log('WebSocket server running at ws://localhost:3000/ws');
+```
 
-// Handle WebSocket connections
-app.websocket.server.onConnection(client => {
-  console.log('Client connected:', client.id);
+#### Using Rooms
 
-  client.sendJSON({ type: 'welcome', message: 'Connected to chat server' });
+```typescript
+// Client joins a room (built-in system controller)
+// Send from client: { type: 'system', action: 'joinRoom', data: { roomName: 'general', username: 'Alice' } }
 
-  client.on('message', data => {
-    // Broadcast to all clients
-    app.websocket.server.broadcast({ type: 'chat', data });
-  });
+// Server-side: Broadcast to room members
+const roomClients = app.websocket.server.rooms.get('general');
+roomClients?.forEach(clientId => {
+  const client = app.websocket.server.clientManager.getClient({ clientId });
+  if (client?.ws) {
+    app.websocket.server.sendClientMessage(client.ws, {
+      type: 'room',
+      action: 'message',
+      data: { text: 'Room-specific announcement' },
+    });
+  }
 });
 ```
+
+#### Using WebSocket Service
+
+Simplified API for common operations:
+
+```typescript
+import { WebSocketService } from '@scpxl/nodejs-framework/websocket';
+
+const wsService = new WebSocketService({
+  webSocketServer: app.websocket.server,
+  redisInstance: app.redis.instance,
+  workerId: String(process.pid),
+});
+
+// Broadcast to all clients
+await wsService.broadcast({
+  type: 'notification',
+  action: 'alert',
+  data: { message: 'New features available!' },
+});
+
+// Send to specific rooms
+await wsService.sendToRooms(['vip', 'premium'], {
+  type: 'offer',
+  action: 'new',
+  data: { discount: 20 },
+});
+
+// Convenience methods
+await wsService.sendUserMessage('profileUpdated', { userId: 123 });
+await wsService.sendSystemMessage('maintenance', { minutes: 5 });
+```
+
+See the [WebSocket Guide](./docs/guides/websocket.md) for complete documentation.
 
 ---
 
