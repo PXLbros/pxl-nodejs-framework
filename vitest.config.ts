@@ -6,6 +6,7 @@ export default defineConfig({
     environment: 'node',
     coverage: {
       provider: 'v8',
+      include: ['src/**/*.{js,ts}'],
       reporter: ['text', 'json', 'html'],
       thresholds: {
         lines: 80,

@@ -5,13 +5,53 @@ import { execFile } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 
+import fastFolderSizeModule from 'fast-folder-size';
+import ignore from 'ignore';
+import simpleGit from 'simple-git';
+
 const execFileAsync = promisify(execFile);
+const fastFolderSizeCallback =
+  typeof fastFolderSizeModule === 'function' ? fastFolderSizeModule : fastFolderSizeModule?.default;
+
+if (typeof fastFolderSizeCallback !== 'function') {
+  throw new TypeError('fast-folder-size did not provide an executable function');
+}
+
+const fastFolderSizeAsync = promisify(fastFolderSizeCallback);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..');
 
 const numberFormatter = new Intl.NumberFormat('en-US');
 const supportsColor = process.stdout.isTTY && !process.env.NO_COLOR;
+const git = simpleGit({ baseDir: rootDir, maxConcurrentProcesses: 1 });
+
+const DEFAULT_EXCLUDE_PATTERNS = Object.freeze([
+  'coverage/',
+  '**/coverage/',
+  '**/coverage/**',
+  'fixtures/',
+  '**/fixtures/',
+  '**/fixtures/**',
+  '**/*.snap',
+]);
+
+const ALWAYS_INCLUDE_TOP_LEVEL = new Set(['dist', 'node_modules']);
+
+function toPosixPath(p) {
+  return p.split(path.sep).join('/');
+}
+
+function isCachePath(normalizedPath) {
+  return (
+    normalizedPath === '.turbo' ||
+    normalizedPath.startsWith('.turbo/') ||
+    normalizedPath.includes('/.turbo/') ||
+    normalizedPath === '.next/cache' ||
+    normalizedPath.startsWith('.next/cache/') ||
+    normalizedPath.includes('/.next/cache')
+  );
+}
 
 const colors = {
   title: text => (supportsColor ? `\u001b[36;1m${text}\u001b[0m` : text),
@@ -19,6 +59,174 @@ const colors = {
   dim: text => (supportsColor ? `\u001b[2m${text}\u001b[0m` : text),
   value: text => (supportsColor ? `\u001b[35m${text}\u001b[0m` : text),
 };
+
+function parseCliOptions(argv) {
+  const options = {
+    includeCache: false,
+    excludePatterns: [],
+  };
+
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+    if (arg === '--include-cache') {
+      options.includeCache = true;
+      continue;
+    }
+    if (arg === '--exclude') {
+      const next = argv[index + 1];
+      if (next) {
+        options.excludePatterns.push(
+          ...next
+            .split(',')
+            .map(part => part.trim())
+            .filter(Boolean),
+        );
+      }
+      index += 1;
+      continue;
+    }
+    if (arg.startsWith('--exclude=')) {
+      const value = arg.slice('--exclude='.length);
+      if (value) {
+        options.excludePatterns.push(
+          ...value
+            .split(',')
+            .map(part => part.trim())
+            .filter(Boolean),
+        );
+      }
+      continue;
+    }
+  }
+
+  options.excludePatterns = options.excludePatterns.map(pattern => pattern.replace(/\\/g, '/')).filter(Boolean);
+
+  return options;
+}
+
+async function loadIgnoreConfig(extraExcludePatterns) {
+  const gitignoreMatcher = ignore();
+  let gitPatternCount = 0;
+  for (const filename of ['.gitignore', '.npmignore']) {
+    const filePath = path.join(rootDir, filename);
+    try {
+      const raw = await fs.promises.readFile(filePath, 'utf8');
+      const lines = raw
+        .split(/\r?\n/)
+        .map(line => line.trim())
+        .filter(line => line && !line.startsWith('#'));
+      if (lines.length > 0) {
+        gitignoreMatcher.add(lines);
+        gitPatternCount += lines.length;
+      }
+    } catch (error) {
+      if (error?.code === 'ENOENT') {
+        continue;
+      }
+      throw error;
+    }
+  }
+
+  const gitMatcher = gitPatternCount > 0 ? gitignoreMatcher : null;
+
+  const excludeMatcher = ignore();
+  const seen = new Set();
+  const patterns = [];
+  for (const pattern of [...DEFAULT_EXCLUDE_PATTERNS, ...extraExcludePatterns]) {
+    const trimmed = pattern.trim();
+    if (!trimmed || seen.has(trimmed)) {
+      continue;
+    }
+    seen.add(trimmed);
+    patterns.push(trimmed);
+  }
+
+  if (patterns.length > 0) {
+    excludeMatcher.add(patterns);
+  }
+
+  const appliesToNodeModules = extraExcludePatterns.some(pattern => pattern.includes('node_modules'));
+  const excludeMatcherFinal = patterns.length > 0 ? excludeMatcher : null;
+
+  return {
+    gitMatcher,
+    excludeMatcher: excludeMatcherFinal,
+    appliesToNodeModules,
+  };
+}
+
+function createPathFilter({ gitMatcher, excludeMatcher, includeCache, appliesToNodeModules }) {
+  const skipCache = !includeCache;
+
+  const shouldSkip = (relativePath, { isDir = false, rootLabel } = {}) => {
+    if (!relativePath) {
+      return false;
+    }
+
+    const normalized = toPosixPath(relativePath);
+    if (skipCache && isCachePath(normalized)) {
+      return true;
+    }
+
+    const lookupPath = isDir ? `${normalized}/` : normalized;
+    const topLevel = rootLabel ?? normalized.split('/')[0] ?? normalized;
+
+    if (excludeMatcher) {
+      const shouldApplyExcludes = topLevel === 'node_modules' ? appliesToNodeModules : true;
+      if (shouldApplyExcludes && excludeMatcher.ignores(lookupPath)) {
+        return true;
+      }
+    }
+
+    if (!ALWAYS_INCLUDE_TOP_LEVEL.has(topLevel) && gitMatcher && gitMatcher.ignores(lookupPath)) {
+      return true;
+    }
+
+    return false;
+  };
+
+  const requiresFiltering = rootLabel => {
+    if (rootLabel === 'node_modules') {
+      return appliesToNodeModules && !!excludeMatcher;
+    }
+    if (skipCache) {
+      return true;
+    }
+    if (excludeMatcher) {
+      return true;
+    }
+    if (gitMatcher && !ALWAYS_INCLUDE_TOP_LEVEL.has(rootLabel)) {
+      return true;
+    }
+    return false;
+  };
+
+  return { shouldSkip, requiresFiltering };
+}
+
+function formatRelativeTime(targetDate) {
+  if (!(targetDate instanceof Date) || Number.isNaN(targetDate.getTime())) {
+    return null;
+  }
+
+  const diffMs = Date.now() - targetDate.getTime();
+  const absDiff = Math.abs(diffMs);
+  const units = [
+    { label: 'day', ms: 24 * 60 * 60 * 1000 },
+    { label: 'hour', ms: 60 * 60 * 1000 },
+    { label: 'minute', ms: 60 * 1000 },
+  ];
+
+  for (const { label, ms } of units) {
+    if (absDiff >= ms) {
+      const value = Math.floor(absDiff / ms);
+      const suffix = value === 1 ? label : `${label}s`;
+      return `${value} ${suffix} ${diffMs >= 0 ? 'ago' : 'from now'}`;
+    }
+  }
+
+  return diffMs >= 0 ? 'seconds ago' : 'seconds from now';
+}
 
 function formatBytes(bytes) {
   if (!Number.isFinite(bytes) || bytes < 0) {
@@ -40,14 +248,24 @@ async function readPackageJson() {
   return JSON.parse(raw);
 }
 
-async function walkDirectory(dir, stats) {
+async function walkDirectory(dir, stats, shouldSkip, rootLabel) {
   const directory = await fs.promises.opendir(dir);
   const pending = [];
   for await (const entry of directory) {
     const entryPath = path.join(dir, entry.name);
+    const relativePath = toPosixPath(path.relative(rootDir, entryPath));
+
+    if (shouldSkip?.(relativePath, { isDir: entry.isDirectory(), rootLabel })) {
+      continue;
+    }
+
+    if (entry.isSymbolicLink?.()) {
+      continue;
+    }
+
     if (entry.isDirectory()) {
       stats.dirs += 1;
-      pending.push(walkDirectory(entryPath, stats));
+      pending.push(walkDirectory(entryPath, stats, shouldSkip, rootLabel));
     } else if (entry.isFile()) {
       stats.files += 1;
       pending.push(
@@ -63,18 +281,8 @@ async function walkDirectory(dir, stats) {
   await Promise.all(pending);
 }
 
-async function getDirectorySizeWithDu(dir) {
-  try {
-    const { stdout } = await execFileAsync('du', ['-sb', dir], { cwd: rootDir });
-    const size = parseInt(stdout.split('\t')[0], 10);
-    return Number.isFinite(size) ? size : null;
-  } catch (error) {
-    return null;
-  }
-}
-
 async function getDirectoryStats(dir, options = {}) {
-  const { includeCounts = true } = options;
+  const { includeCounts = true, pathFilter } = options;
   try {
     const details = await fs.promises.stat(dir);
     if (!details.isDirectory()) {
@@ -87,15 +295,26 @@ async function getDirectoryStats(dir, options = {}) {
     throw error;
   }
 
-  if (!includeCounts) {
-    const size = await getDirectorySizeWithDu(dir);
-    if (size !== null) {
-      return { size };
+  const stats = { size: 0, files: 0, dirs: 0 };
+  const relativeRoot = toPosixPath(path.relative(rootDir, dir)) || path.basename(dir);
+  const rootLabel = relativeRoot.split('/')[0] || relativeRoot;
+  const requiresFilter = pathFilter?.requiresFiltering(rootLabel) ?? false;
+
+  if (!includeCounts && !requiresFilter) {
+    try {
+      const size = await fastFolderSizeAsync(dir);
+      if (Number.isFinite(size)) {
+        return { size };
+      }
+    } catch (error) {
+      // fall through to manual walk on failure
+      if (process.env.DEBUG?.includes('framework-status')) {
+        console.debug('fast-folder-size failed for', dir, error);
+      }
     }
   }
 
-  const stats = { size: 0, files: 0, dirs: 0 };
-  await walkDirectory(dir, stats);
+  await walkDirectory(dir, stats, pathFilter?.shouldSkip, rootLabel);
   if (!includeCounts) {
     return { size: stats.size };
   }
@@ -104,8 +323,8 @@ async function getDirectoryStats(dir, options = {}) {
 
 async function getGitBranch() {
   try {
-    const { stdout } = await execFileAsync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], { cwd: rootDir });
-    return stdout.trim();
+    const branch = await git.revparse(['--abbrev-ref', 'HEAD']);
+    return branch.trim();
   } catch (error) {
     return null;
   }
@@ -113,8 +332,15 @@ async function getGitBranch() {
 
 async function getGitSummary() {
   try {
-    const { stdout } = await execFileAsync('git', ['log', '-1', '--pretty=format:%h %s (%cr)'], { cwd: rootDir });
-    return stdout.trim();
+    const log = await git.log({ n: 1 });
+    const latest = log?.latest;
+    if (!latest) {
+      return null;
+    }
+    const commitDate = latest.date ? new Date(latest.date) : null;
+    const relative = formatRelativeTime(commitDate);
+    const shortHash = latest.hash ? latest.hash.slice(0, 7) : '';
+    return relative ? `${shortHash} ${latest.message} (${relative})` : `${shortHash} ${latest.message}`;
   } catch (error) {
     return null;
   }
@@ -122,12 +348,9 @@ async function getGitSummary() {
 
 async function getGitStatusCounts() {
   try {
-    const { stdout } = await execFileAsync('git', ['status', '--porcelain'], { cwd: rootDir });
-    const lines = stdout
-      .split('\n')
-      .map(line => line.trimEnd())
-      .filter(Boolean);
-    if (lines.length === 0) {
+    const status = await git.status();
+    const files = status?.files ?? [];
+    if (files.length === 0) {
       return { staged: 0, unstaged: 0, untracked: 0, total: 0 };
     }
 
@@ -135,22 +358,22 @@ async function getGitStatusCounts() {
     let unstaged = 0;
     let untracked = 0;
 
-    for (const line of lines) {
-      if (line.startsWith('??')) {
+    for (const file of files) {
+      const indexStatus = (file.index ?? '').trim();
+      const worktreeStatus = (file.working_dir ?? '').trim();
+      if (indexStatus === '?' && worktreeStatus === '?') {
         untracked += 1;
         continue;
       }
-      const indexStatus = line[0];
-      const worktreeStatus = line[1];
-      if (indexStatus && indexStatus !== ' ') {
+      if (indexStatus && indexStatus !== '?') {
         staged += 1;
       }
-      if (worktreeStatus && worktreeStatus !== ' ') {
+      if (worktreeStatus && worktreeStatus !== '?') {
         unstaged += 1;
       }
     }
 
-    return { staged, unstaged, untracked, total: lines.length };
+    return { staged, unstaged, untracked, total: files.length };
   } catch (error) {
     return null;
   }
@@ -202,7 +425,7 @@ async function getNodeModulePackages(dir) {
   return packages;
 }
 
-async function getLargestNodeModulePackages(dir, limit = 8) {
+async function getLargestNodeModulePackages(dir, pathFilter, limit = 8) {
   const packages = await getNodeModulePackages(dir);
   if (packages.length === 0) {
     return [];
@@ -217,9 +440,9 @@ async function getLargestNodeModulePackages(dir, limit = 8) {
       const currentIndex = index;
       index += 1;
       const pkg = packages[currentIndex];
-      const size = await getDirectorySizeWithDu(pkg.path);
-      if (size !== null) {
-        results.push({ name: pkg.name, size });
+      const stats = await getDirectoryStats(pkg.path, { includeCounts: false, pathFilter });
+      if (stats?.size != null) {
+        results.push({ name: pkg.name, size: stats.size });
       }
     }
   }
@@ -415,7 +638,16 @@ function median(nums) {
   return arr.length % 2 ? arr[mid] : Math.round((arr[mid - 1] + arr[mid]) / 2);
 }
 
-async function main() {
+export async function main() {
+  const cliOptions = parseCliOptions(process.argv.slice(2));
+  const ignoreConfig = await loadIgnoreConfig(cliOptions.excludePatterns);
+  const pathFilter = createPathFilter({
+    gitMatcher: ignoreConfig.gitMatcher,
+    excludeMatcher: ignoreConfig.excludeMatcher,
+    includeCache: cliOptions.includeCache,
+    appliesToNodeModules: ignoreConfig.appliesToNodeModules,
+  });
+
   const pkg = await readPackageJson();
   const dependencyCount = Object.keys(pkg.dependencies || {}).length;
   const devDependencyCount = Object.keys(pkg.devDependencies || {}).length;
@@ -466,7 +698,10 @@ async function main() {
   ];
 
   for (const item of dirsToInspect) {
-    const stats = await getDirectoryStats(item.path, { includeCounts: item.includeCounts });
+    const stats = await getDirectoryStats(item.path, {
+      includeCounts: item.includeCounts,
+      pathFilter,
+    });
     if (!stats) {
       console.log(`${item.label}: not found`);
       continue;
@@ -480,7 +715,7 @@ async function main() {
     console.log(details.join(' '));
   }
 
-  const nodeModulesPackages = await getLargestNodeModulePackages(path.join(rootDir, 'node_modules'));
+  const nodeModulesPackages = await getLargestNodeModulePackages(path.join(rootDir, 'node_modules'), pathFilter);
   if (nodeModulesPackages.length > 0) {
     section('Largest node_modules packages', '🧱');
     nodeModulesPackages.forEach((pkgInfo, index) => {
@@ -586,8 +821,14 @@ async function main() {
   }
 }
 
-main().catch(error => {
-  console.error('Failed to generate framework status report.');
-  console.error(error);
-  process.exitCode = 1;
-});
+// Only execute automatically if run directly via CLI (e.g. `node scripts/framework-status.js`)
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main().catch(error => {
+    console.error('Failed to generate framework status report.');
+    console.error(error);
+    process.exitCode = 1;
+  });
+}
+
+// Export selected internals for testing (kept minimal & stable-ish)
+export { parseCliOptions, formatBytes, formatRelativeTime, loadIgnoreConfig, createPathFilter, getDirectoryStats };

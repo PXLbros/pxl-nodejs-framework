@@ -151,6 +151,27 @@ describe('File', () => {
     });
   });
 
-  // Note: downloadFile and convertFile tests are skipped as they require complex mocking
-  // of Node.js streams and external libraries that would be better tested in integration tests
+  describe('pathExists', () => {
+    it('should be a function', () => {
+      expect(typeof File.pathExists).toBe('function');
+    });
+  });
+
+  describe('ensureDir', () => {
+    it('should be a function', () => {
+      expect(typeof File.ensureDir).toBe('function');
+    });
+  });
+
+  describe('downloadFile', () => {
+    it('should be a function', () => {
+      expect(typeof File.downloadFile).toBe('function');
+    });
+  });
+
+  describe('convertFile', () => {
+    it('should be a function', () => {
+      expect(typeof File.convertFile).toBe('function');
+    });
+  });
 });

@@ -248,5 +248,119 @@ describe('AwsS3', () => {
 
       expect(result).toBeDefined();
     });
+
+    it('should complete multipart upload with multiple parts', async () => {
+      const s3 = new AwsS3({});
+
+      const result = await s3.completeMultipartUpload({
+        bucketName: 'test-bucket',
+        path: 'test/large-file.mp4',
+        uploadId: 'test-upload-id',
+        parts: [
+          { ETag: 'etag1', PartNumber: 1 },
+          { ETag: 'etag2', PartNumber: 2 },
+          { ETag: 'etag3', PartNumber: 3 },
+        ],
+      });
+
+      expect(result).toBeDefined();
+    });
+  });
+
+  describe('downloadFile', () => {
+    it('should have downloadFile method', async () => {
+      const s3 = new AwsS3({});
+
+      // Just test that the function exists
+      expect(s3.downloadFile).toBeDefined();
+      expect(typeof s3.downloadFile).toBe('function');
+    });
+  });
+
+  describe('multipart upload flow', () => {
+    it('should expose multipart upload methods', async () => {
+      const s3 = new AwsS3({});
+
+      // Just verify methods exist
+      expect(typeof s3.startMultipartUpload).toBe('function');
+      expect(typeof s3.uploadPart).toBe('function');
+      expect(typeof s3.completeMultipartUpload).toBe('function');
+    });
+  });
+
+  describe('configuration options', () => {
+    it('should use default region when not specified', () => {
+      const s3 = new AwsS3({});
+
+      expect(s3).toBeDefined();
+      expect(s3.client).toBeDefined();
+    });
+
+    it('should configure with all options', () => {
+      const s3 = new AwsS3({
+        region: 'eu-west-1',
+        credentials: {
+          accessKeyId: 'test-key',
+          secretAccessKey: 'test-secret',
+        },
+        localstack: {
+          enabled: false,
+          port: 4566,
+        },
+      });
+
+      expect(s3).toBeDefined();
+    });
+
+    it('should handle localstack configuration', () => {
+      const s3 = new AwsS3({
+        region: 'us-east-1',
+        localstack: {
+          enabled: true,
+          port: 4566,
+        },
+        endpoint: 'http://localhost:4566',
+      });
+
+      expect(s3).toBeDefined();
+    });
+  });
+
+  describe('URL generation', () => {
+    it('should generate correct URL for AWS S3', async () => {
+      const s3 = new AwsS3({
+        region: 'us-west-2',
+      });
+      const buffer = Buffer.from('test');
+
+      const url = await s3.uploadFile({
+        bucketName: 'my-bucket',
+        path: 'files/test.txt',
+        body: buffer,
+      });
+
+      expect(url).toContain('s3');
+      expect(url).toContain('amazonaws.com');
+    });
+
+    it('should generate correct URL for LocalStack', async () => {
+      const s3 = new AwsS3({
+        localstack: {
+          enabled: true,
+          port: 4566,
+        },
+        endpoint: 'http://localhost:4566',
+      });
+      const buffer = Buffer.from('test');
+
+      const url = await s3.uploadFile({
+        bucketName: 'local-bucket',
+        path: 'files/test.txt',
+        body: buffer,
+      });
+
+      expect(url).toContain('localhost');
+      expect(url).toContain('4566');
+    });
   });
 });

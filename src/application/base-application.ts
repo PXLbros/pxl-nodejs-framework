@@ -97,6 +97,11 @@ export default abstract class BaseApplication {
     this.uniqueInstanceId = `${config.instanceId}-${computerName}-${OS.getUniqueComputerId()}`;
     this.config = config;
 
+    // Configure logger with application settings
+    if (this.config.log?.showRequestIdInConsole !== undefined) {
+      Logger.configure({ showRequestIdInConsole: this.config.log.showRequestIdInConsole });
+    }
+
     // Initialize lifecycle management
     const lifecycleConfig: Partial<LifecycleConfig> = {
       gracefulShutdown: {

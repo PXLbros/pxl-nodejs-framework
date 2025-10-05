@@ -15,6 +15,7 @@ dist/
 
 # Test coverage
 coverage/
+coverage-temp.json
 
 # Built test files
 test/**/*.d.ts

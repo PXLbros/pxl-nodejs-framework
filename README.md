@@ -396,6 +396,38 @@ npm run test:ui
 
 The framework maintains **80% code coverage** across all metrics (lines, branches, functions, statements) as enforced by Vitest thresholds.
 
+### Framework Status Report
+
+Generate a cross-platform project health snapshot (dependency counts, git status, directory sizes, large packages, outdated/age metrics):
+
+```bash
+npm run status
+```
+
+Optional flags:
+
+```bash
+npm run status -- --include-cache               # Include .turbo/ and .next/cache directories
+npm run status -- --exclude "coverage,fixtures,**/*.snap"  # Additional exclude globs (comma-separated)
+```
+
+What it does:
+
+- Collects repo & package metadata (version, scripts, dependency counts)
+- Summarizes current git branch, last commit, and pending change counts
+- Computes sizes for `src`, `dist`, and `node_modules` using fast native traversal (`fast-folder-size`) with a JS fallback, filtering via `.gitignore` / `.npmignore` plus exclusions
+- Lists the largest packages in `node_modules` (top 8 by size)
+- Ranks outdated dependencies by publish age and major version lag (uses `npm outdated` / `npm view`)
+- Provides age distribution stats for installed top-level packages
+
+Exclusions & Ignore Behavior:
+
+- Always respects patterns found in `.gitignore` and `.npmignore` (except always keeps top-level `dist` & `node_modules`)
+- Built-in default excludes: `coverage/`, `fixtures/`, and `**/*.snap`
+- Skips heavy build caches (`.turbo`, `.next/cache`) unless `--include-cache` is passed
+
+Return codes: exits with non-zero only on unexpected internal errors; missing npm or network failures simply degrade sections gracefully.
+
 ### Local Development with Yalc
 
 For testing changes in consuming applications:

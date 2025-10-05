@@ -27,6 +27,8 @@ export class Logger {
 
   public isSentryInitialized = false;
 
+  private showRequestIdInConsole = true; // Default to true for backward compatibility
+
   private constructor() {
     this.environment = process.env.NODE_ENV;
 
@@ -95,7 +97,7 @@ export class Logger {
     return winston.format.printf(({ level, message, timestamp, ...meta }) => {
       // Auto-inject request ID from AsyncLocalStorage context if available
       const requestId = getRequestId();
-      if (requestId && !meta['requestId']) {
+      if (requestId && !meta['requestId'] && this.showRequestIdInConsole) {
         meta['requestId'] = requestId;
       }
 
@@ -144,6 +146,12 @@ export class Logger {
 
       return `[${timestamp}] ${level}: ${message}${metaString ? ` (${metaString})` : ''}`;
     });
+  }
+
+  public configure({ showRequestIdInConsole }: { showRequestIdInConsole?: boolean }): void {
+    if (showRequestIdInConsole !== undefined) {
+      this.showRequestIdInConsole = showRequestIdInConsole;
+    }
   }
 
   public initSentry({ sentryDsn, environment }: { sentryDsn: string; environment: string }): void {

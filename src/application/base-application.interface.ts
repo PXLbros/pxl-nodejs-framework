@@ -156,6 +156,7 @@ export interface ApplicationCommandsConfig {
 export interface ApplicationLogConfig {
   startUp?: boolean;
   shutdown?: boolean;
+  showRequestIdInConsole?: boolean;
 }
 
 export interface ApplicationPerformanceConfig extends PerformanceMonitorOptions {

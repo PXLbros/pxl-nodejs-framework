@@ -386,11 +386,12 @@ export default class WebSocketServer extends WebSocketBase {
         break;
       }
       case WebSocketRedisSubscriberEvent.QueueJobError: {
-        // const parsedMessage = JSON.parse(message);
-
-        // action and data is separate
-        // TODO: Instead allow to pass anything
-        parsedMessage.data = parsedMessage.error;
+        // For queue job errors, merge error information into data field
+        // This maintains backward compatibility while allowing flexible error data
+        parsedMessage.data = {
+          ...(parsedMessage.data ?? {}),
+          error: parsedMessage.error,
+        };
 
         break;
       }
@@ -627,11 +628,38 @@ export default class WebSocketServer extends WebSocketBase {
   }
 
   private checkInactiveClients(): void {
-    // const now = Date.now();
+    const now = Date.now();
 
     if (this.options.disconnectInactiveClients?.enabled && this.options.disconnectInactiveClients.log) {
       log('Checking inactive clients...');
     }
+
+    if (!this.options.disconnectInactiveClients?.enabled) {
+      return;
+    }
+
+    const maxInactiveTime = this.options.disconnectInactiveClients.maxInactiveTime;
+
+    if (!maxInactiveTime) {
+      return;
+    }
+
+    const clients = this.clientManager.getClients();
+
+    clients.forEach(client => {
+      const inactiveTime = now - client.lastActivity;
+
+      if (inactiveTime > maxInactiveTime) {
+        this.clientManager.disconnectClient(client.clientId);
+
+        if (this.options.disconnectInactiveClients.log) {
+          log('Disconnected inactive client', {
+            'Client ID': client.clientId,
+            'Inactive Time': `${inactiveTime}ms`,
+          });
+        }
+      }
+    });
   }
 
   public broadcastToAllClients({
@@ -705,7 +733,6 @@ export default class WebSocketServer extends WebSocketBase {
   // }
 
   private onJoinRoom({ clientId, roomName, userData }: { clientId: string; roomName: string; userData: any }): void {
-    // TODO: If config clientCanJoinMultipleRooms !== true, then it should remove the user from existing room first
     const client = this.clientManager.getClient({
       clientId,
     });
@@ -719,16 +746,16 @@ export default class WebSocketServer extends WebSocketBase {
       return;
     }
 
-    const clientCanJoinMultipleRooms: any = false;
+    // Check if client can join multiple rooms
+    const canJoinMultipleRooms = this.options.clientCanJoinMultipleRooms ?? true; // Default to true for backward compatibility
 
-    if (clientCanJoinMultipleRooms !== true) {
-      if (client.roomName) {
-        // Remove client from current room
-        this.roomManager.removeClientFromRoom({
-          roomName: client.roomName,
-          clientId,
-        });
-      }
+    if (!canJoinMultipleRooms && client.roomName) {
+      // Remove client from current room before joining new one
+      this.roomManager.removeClientFromRoom({
+        roomName: client.roomName,
+        clientId,
+        broadcast: false, // Don't broadcast here, will broadcast after adding to new room
+      });
     }
 
     // Update client with user in client manager
