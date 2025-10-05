@@ -180,23 +180,18 @@ export class LifecycleManager {
 
     const timeoutMs = this.config.gracefulShutdown.timeoutMs;
     if (timeoutMs > 0) {
-      let completed = false;
-      let timedOut = false;
-      const shutdownPromise = this.performShutdown().then(result => {
-        completed = true;
-        return result;
-      });
-      const timeoutPromise = new Promise<{ errors: unknown[] }>(resolve => {
+      const shutdownPromise = this.performShutdown().then(result => ({
+        ...result,
+        timedOut: false,
+      }));
+      const timeoutPromise = new Promise<{ errors: unknown[]; timedOut: boolean }>(resolve => {
         setTimeout(() => {
-          if (!completed) {
-            timedOut = true;
-            resolve({ errors: ['Shutdown timeout exceeded'] });
-          }
+          resolve({ errors: ['Shutdown timeout exceeded'], timedOut: true });
         }, timeoutMs);
       });
       const result = await Promise.race([shutdownPromise, timeoutPromise]);
       this._phase = LifecyclePhase.STOPPED;
-      return { errors: result.errors, timedOut };
+      return result;
     }
 
     const result = await this.performShutdown();
