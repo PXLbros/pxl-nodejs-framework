@@ -1090,4 +1090,4 @@ ws.onmessage = event => {
 - [WebSocket Concepts](../concepts/websocket.md)
 - [Authentication Guide](./authentication.md)
 - [Performance Monitoring](./performance-monitoring.md)
-- [Hello World Example](../../examples/hello-world/README.md)
+- [Hello World Example](https://github.com/PXLbros/pxl-nodejs-framework/tree/main/examples/hello-world)

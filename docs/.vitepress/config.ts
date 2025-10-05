@@ -69,6 +69,8 @@ export default defineConfig({
           items: [
             { text: 'Commands & CLI', link: '/guides/commands' },
             { text: 'Typed Routes & Schemas', link: '/guides/typed-routes' },
+            { text: 'WebSocket', link: '/guides/websocket' },
+            { text: 'Authentication', link: '/guides/authentication' },
             { text: 'Testing', link: '/guides/testing' },
             { text: 'Simple Load Test', link: '/guides/simple-load-test' },
             { text: 'Deployment', link: '/guides/deployment' },

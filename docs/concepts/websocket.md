@@ -284,4 +284,4 @@ room?.forEach(clientId => {
 
 - [WebSocket Guide](../guides/websocket.md) - Comprehensive implementation guide
 - [WebSocket API Reference](../api/websocket.md) - Complete API documentation
-- [Hello World Example](../../examples/hello-world/README.md) - Working example with Vue 3 frontend
+- [Hello World Example](https://github.com/PXLbros/pxl-nodejs-framework/tree/main/examples/hello-world) - Working example with Vue 3 frontend

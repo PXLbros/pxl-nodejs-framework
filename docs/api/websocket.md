@@ -1077,4 +1077,4 @@ export default class GameController extends WebSocketServerBaseController {
 - [WebSocket Guide](../guides/websocket.md) - Comprehensive implementation guide
 - [WebSocket Concepts](../concepts/websocket.md) - Architecture and design patterns
 - [Configuration Guide](../guides/configuration.md) - Application configuration
-- [Hello World Example](../../examples/hello-world/README.md) - Working example
+- [Hello World Example](https://github.com/PXLbros/pxl-nodejs-framework/tree/main/examples/hello-world) - Working example
