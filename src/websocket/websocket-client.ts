@@ -188,8 +188,6 @@ export default class WebSocketClient extends WebSocketBase {
 
     const webSocketMessage = JSON.stringify(data);
 
-    console.log('SENDING LCIENT MESSAGE: ', webSocketMessage);
-
     this.ws.send(webSocketMessage, { binary });
   };
 

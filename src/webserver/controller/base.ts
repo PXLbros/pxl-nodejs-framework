@@ -128,8 +128,7 @@ export default abstract class BaseController<
       }
     }
 
-    Logger.custom({ level: 'webServer', message: error });
-    console.error(error);
+    Logger.error({ error });
 
     const apiError: ApiError = {
       message: publicErrorMessage,

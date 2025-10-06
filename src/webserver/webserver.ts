@@ -514,9 +514,7 @@ class WebServer {
     }
 
     if (this.options.debug?.printRoutes) {
-      this.log('Routes:');
-
-      console.log(this.fastifyServer.printRoutes());
+      this.log(`Routes:\n${this.fastifyServer.printRoutes()}`);
     }
   }
 

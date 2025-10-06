@@ -231,10 +231,10 @@ export interface WebServerOptions {
   /** Web server port */
   port: number;
 
-  /** Maximum request body size in bytes (default: 100MB) */
+  /** Maximum request body size in bytes (default: 25MB) */
   bodyLimit?: number;
 
-  /** Connection timeout in milliseconds (default: 30s) */
+  /** Connection timeout in milliseconds (default: 10s) */
   connectionTimeout?: number;
 
   /** Web server CORS options */

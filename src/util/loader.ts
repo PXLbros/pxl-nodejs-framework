@@ -75,6 +75,7 @@ const loadModulesInDirectory = async <T = unknown>({
         Reflect.set(loadedModules, moduleName, moduleExport);
       }
     } catch (error) {
+      // Note: console.error used here as Logger may not be initialized during early bootstrap
       console.error(`Failed to import module ${filePath}:`, error);
     }
   }

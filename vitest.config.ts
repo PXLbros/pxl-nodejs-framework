@@ -14,7 +14,15 @@ export default defineConfig({
         branches: 80,
         statements: 80,
       },
-      exclude: ['node_modules/**', 'dist/**', 'coverage/**', '**/*.d.ts', '**/*.config.{js,ts}', 'test/**'],
+      exclude: [
+        'node_modules/**',
+        'dist/**',
+        'coverage/**',
+        '**/*.d.ts',
+        '**/*.interface.ts', // Exclude interface files from coverage
+        '**/*.config.{js,ts}',
+        'test/**',
+      ],
     },
     testTimeout: 20000,
     hookTimeout: 20000,

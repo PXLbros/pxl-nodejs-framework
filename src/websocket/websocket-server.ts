@@ -328,12 +328,6 @@ export default class WebSocketServer extends WebSocketBase {
           // requireWs: true,
         });
 
-        log(
-          `GOT A REQUEST TO POTENTIALLY DISCONNECT LCIENT IF THIS CLIENT IS CONNETED HERE, GET CLIENT ------------------------- ${clientToDisconnect ?? 'NO CLIENT'}`,
-        );
-
-        console.log('clientToDisconnect', clientToDisconnect, 'workerId: ', this.workerId);
-
         if (clientToDisconnect) {
           this.clientManager.disconnectClient({
             clientId: parsedMessage.clientId,
@@ -944,8 +938,6 @@ export default class WebSocketServer extends WebSocketBase {
       ...(data as object),
       workerId: this.workerId,
     };
-
-    console.log('SEND CUSTOM MESSAGE:', formattedData);
 
     this.redisInstance.publisherClient.publish(WebSocketRedisSubscriberEvent.Custom, JSON.stringify(formattedData));
   };

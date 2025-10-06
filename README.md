@@ -464,15 +464,15 @@ A full-stack example with:
 **Run the example:**
 
 ```bash
-# Install dependencies for examples (one-time setup)
-npm run example:install
+# Install dependencies (one-time setup)
+cd examples/hello-world/backend && npm install
+cd ../frontend && npm install
 
-# Run backend + frontend together with hot-reload
-npm run example:hello-world
+# Run backend
+npm run example --example=hello-world/backend
 
-# Or run individually
-npm run example:hello-world:backend
-npm run example:hello-world:frontend
+# Or run frontend (in another terminal)
+npm run example --example=hello-world/frontend
 ```
 
 Then open http://localhost:5173 to see the app.
@@ -482,17 +482,13 @@ Then open http://localhost:5173 to see the app.
 Demonstrates the command framework with examples:
 
 ```bash
-# Install dependencies
-npm run example:commands:install
+# Install dependencies (one-time setup)
+cd examples/commands && npm install
 
-# Run hello command
-npm run example:commands:hello
-
-# Run database seed command
-npm run example:commands:seed
-
-# Run queue processing command
-npm run example:commands:queue
+# Run commands from repository root
+npm run example --example=commands -- hello
+npm run example --example=commands -- database-seed
+npm run example --example=commands -- queue-process
 ```
 
 See [examples/README.md](examples/README.md) for more details.

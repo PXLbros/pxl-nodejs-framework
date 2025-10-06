@@ -41,9 +41,11 @@ describe('WebSocketClientManager', () => {
     const ws = new FakeWebSocket();
     manager.addClient({ clientId: 'client-1', ws, lastActivity: 1000, user: null });
 
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const broadcastSpy = vi.spyOn(manager, 'broadcastClientList').mockImplementation(() => undefined);
     const printSpy = vi.spyOn(manager, 'printClients').mockImplementation(() => undefined);
+
+    // Clear previous log spy calls
+    logSpy.mockClear();
 
     manager.updateClient({ clientId: 'client-1', key: 'username', data: 'ada' });
     expect(manager.getClient({ clientId: 'client-1' })?.username).toBe('ada');
@@ -53,9 +55,9 @@ describe('WebSocketClientManager', () => {
     manager.updateClient({ clientId: 'client-1', key: '__proto__', data: 'bad' });
     manager.updateClient({ clientId: 'client-1', key: 'notAllowed', data: 1 });
 
-    expect(warnSpy).toHaveBeenCalledTimes(2);
-
-    warnSpy.mockRestore();
+    // Now checking log spy instead of console.warn
+    expect(logSpy).toHaveBeenCalledWith('Blocked attempt to modify dangerous property', { Property: '__proto__' });
+    expect(logSpy).toHaveBeenCalledWith('Blocked attempt to modify unauthorized property', { Property: 'notAllowed' });
   });
 
   it('removes and disconnects clients', () => {

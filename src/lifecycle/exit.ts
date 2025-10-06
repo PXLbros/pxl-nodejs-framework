@@ -27,6 +27,7 @@ export function requestExit(outcome: ExitOutcome) {
 
   if (isTestEnv) {
     // Suppress real process exit during tests; vitest intercepts and would throw otherwise.
+    // Note: Using console here intentionally as Logger may not be available during test teardown
     console.info(`[exit] (test env) code=${outcome.code} reason=${outcome.reason}`);
     return;
   }
@@ -34,6 +35,7 @@ export function requestExit(outcome: ExitOutcome) {
   try {
     handler(outcome);
   } catch (err) {
+    // Note: Using console here intentionally as this is a critical failure path
     console.error('Exit handler failure', err);
     process.exit(outcome.code);
   }

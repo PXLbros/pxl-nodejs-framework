@@ -73,7 +73,7 @@ export default class WebSocketClientManager {
 
     // Prevent prototype pollution attacks
     if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
-      console.warn(`Blocked attempt to modify dangerous property: ${key}`);
+      log('Blocked attempt to modify dangerous property', { Property: key });
       return;
     }
 
@@ -92,7 +92,7 @@ export default class WebSocketClientManager {
     ];
 
     if (!allowedClientProperties.includes(key)) {
-      console.warn(`Blocked attempt to modify unauthorized property: ${key}`);
+      log('Blocked attempt to modify unauthorized property', { Property: key });
       return;
     }
 

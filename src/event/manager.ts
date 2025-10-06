@@ -121,11 +121,10 @@ export default class EventManager {
     });
 
     if (this.options.debug?.printEvents) {
-      this.log('Registered Events:');
-
-      for (const eventName of registeredEvents) {
-        console.log(`- ${eventName}`);
-      }
+      this.logger.custom({
+        level: 'event',
+        message: `Registered Events:\n${registeredEvents.map(e => `- ${e}`).join('\n')}`,
+      });
     }
   }
 
