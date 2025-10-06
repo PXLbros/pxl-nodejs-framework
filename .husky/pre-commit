@@ -1,3 +1,6 @@
 # Check linting
 npm run lint
 npm run prettier
+
+# Check documentation builds without dead links
+npm run docs:build

@@ -465,7 +465,10 @@ const PasswordSchema = z
 
 ## Examples
 
-See the [hello-world example](../../examples/hello-world/backend/src/routes/) for complete working examples using common schemas.
+See the hello-world example routes for complete working examples using common schemas:
+
+- [greetings.routes.ts](../../examples/hello-world/backend/src/routes/greetings.routes.ts)
+- [hello.routes.ts](../../examples/hello-world/backend/src/routes/hello.routes.ts)
 
 ## Related
 
