@@ -49,20 +49,4 @@ export default class HealthController extends BaseController {
 
     reply.send({ ready: true, phase, probes, aggregatedReadiness: true });
   };
-
-  private async checkDatabaseConnection(): Promise<boolean> {
-    try {
-      return await this.databaseInstance.isConnected();
-    } catch {
-      return false;
-    }
-  }
-
-  private async checkRedisConnection(): Promise<boolean> {
-    try {
-      return await this.redisInstance.isConnected();
-    } catch {
-      return false;
-    }
-  }
 }

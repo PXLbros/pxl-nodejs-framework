@@ -18,8 +18,7 @@ import { type WebApplicationConfig, baseDir } from '../index.js';
 import WebSocketRoomManager from './websocket-room-manager.js';
 import logger from '../logger/logger.js';
 import type { FastifyInstance } from 'fastify';
-import { URL } from 'url';
-import Jwt from '../auth/jwt.js';
+import { WebSocketAuthService } from './websocket-auth.js';
 
 export default class WebSocketServer extends WebSocketBase {
   protected defaultRoutes: WebSocketRoute[] = [
@@ -46,6 +45,7 @@ export default class WebSocketServer extends WebSocketBase {
   private roomManager = new WebSocketRoomManager({
     clientManager: this.clientManager,
   });
+  private authService: WebSocketAuthService;
 
   public get rooms() {
     return this.roomManager.rooms;
@@ -80,6 +80,7 @@ export default class WebSocketServer extends WebSocketBase {
     this.databaseInstance = props.databaseInstance;
     this.routes = props.routes;
     this.workerId = props.workerId;
+    this.authService = new WebSocketAuthService(props.applicationConfig);
   }
 
   public get type(): WebSocketType {
@@ -89,39 +90,7 @@ export default class WebSocketServer extends WebSocketBase {
   private async validateWebSocketAuth(
     url: string,
   ): Promise<{ userId: number; payload: Record<string, unknown> } | null> {
-    try {
-      const parsedUrl = new URL(url, 'ws://localhost');
-      const token = parsedUrl.searchParams.get('token');
-
-      if (!token) {
-        return null; // No token provided, allow unauthenticated connection
-      }
-
-      // Get JWT secret key from application config
-      const jwtSecretKey = this.applicationConfig.auth?.jwtSecretKey;
-
-      if (!jwtSecretKey) {
-        throw new Error('JWT secret key not configured');
-      }
-
-      // Import JWT secret key
-      const importedJwtSecretKey = await Jwt.importJwtSecretKey({
-        jwtSecretKey,
-      });
-
-      // Verify JWT token
-      const { payload } = await Jwt.jwtVerify(token, importedJwtSecretKey);
-
-      const userId = parseInt(payload.sub as string);
-
-      if (isNaN(userId)) {
-        throw new Error('Invalid user ID in token');
-      }
-
-      return { userId, payload };
-    } catch (error: any) {
-      throw new Error(`JWT verification failed: ${error.message}`);
-    }
+    return this.authService.validateAuth(url);
   }
 
   public async load(): Promise<void> {
