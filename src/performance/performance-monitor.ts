@@ -1,5 +1,6 @@
 import { PerformanceObserver, performance } from 'perf_hooks';
 import { Logger } from '../logger/index.js';
+import { safeSerializeError } from '../error/error-reporter.js';
 
 export interface PerformanceMetrics {
   name: string;
@@ -185,7 +186,7 @@ export class PerformanceMonitor {
       performance.clearMarks(endMark);
     } catch (error) {
       Logger.error({
-        error: error instanceof Error ? error : new Error(String(error)),
+        error: error instanceof Error ? error : new Error(safeSerializeError(error)),
         message: 'Error measuring performance',
       });
     }
@@ -213,7 +214,10 @@ export class PerformanceMonitor {
       this.endMeasure(startMark, metadata);
       return result;
     } catch (error) {
-      this.endMeasure(startMark, { ...metadata, error: error instanceof Error ? error.message : String(error) });
+      this.endMeasure(startMark, {
+        ...metadata,
+        error: error instanceof Error ? error.message : safeSerializeError(error),
+      });
       throw error;
     }
   }
@@ -235,7 +239,10 @@ export class PerformanceMonitor {
       this.endMeasure(startMark, metadata);
       return result;
     } catch (error) {
-      this.endMeasure(startMark, { ...metadata, error: error instanceof Error ? error.message : String(error) });
+      this.endMeasure(startMark, {
+        ...metadata,
+        error: error instanceof Error ? error.message : safeSerializeError(error),
+      });
       throw error;
     }
   }

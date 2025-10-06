@@ -164,7 +164,7 @@ describe('BaseProcessor', () => {
         message: 'Object error',
         meta: {
           additional: 'meta',
-          error: '[object Object]',
+          error: '{"weird":"object"}',
           stack: undefined,
         },
       });

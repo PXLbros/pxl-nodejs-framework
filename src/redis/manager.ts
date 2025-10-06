@@ -4,6 +4,7 @@ import type { RedisManagerConfig as RedisManagerOptions } from './manager.interf
 import RedisInstance from './instance.js';
 import { Logger } from '../logger/index.js';
 import { CachePerformanceWrapper } from '../performance/index.js';
+import { safeSerializeError } from '../error/error-reporter.js';
 
 const truthyPattern = /^(1|true|yes|on)$/i;
 const scheduleMicrotask =
@@ -244,7 +245,7 @@ export default class RedisManager {
           await Promise.allSettled([client.quit(), publisherClient.quit(), subscriberClient.quit()]);
 
           this.logger.error({
-            error: error instanceof Error ? error : new Error(String(error)),
+            error: error instanceof Error ? error : new Error(safeSerializeError(error)),
             message: 'Redis connection failed',
             meta: {
               Host: this.options.host,
@@ -293,7 +294,7 @@ export default class RedisManager {
           const duration = performance.now() - startTime;
 
           this.logger.error({
-            error: error instanceof Error ? error : new Error(String(error)),
+            error: error instanceof Error ? error : new Error(safeSerializeError(error)),
             message: 'Redis disconnection failed',
             meta: {
               Host: this.options.host,

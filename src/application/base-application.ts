@@ -23,6 +23,7 @@ import { PerformanceMonitorPlugin } from '../performance/performance-monitor.plu
 import { type LifecycleConfig, LifecycleManager, ShutdownController } from '../lifecycle/index.js';
 import { ConfigValidationError, formatConfigIssues, validateFrameworkConfig } from '../config/schema.js';
 import { type ExitOutcome, requestExit } from '../lifecycle/exit.js';
+import { safeSerializeError } from '../error/error-reporter.js';
 
 // Re-export types for external use
 export type { ApplicationConfig } from './base-application.interface.js';
@@ -365,7 +366,7 @@ export default abstract class BaseApplication {
       }
     } catch (error) {
       Logger.error({
-        error: error instanceof Error ? error : new Error(String(error)),
+        error: error instanceof Error ? error : new Error(safeSerializeError(error)),
         message: 'startInstance failure',
       });
       throw error;
@@ -465,7 +466,7 @@ export default abstract class BaseApplication {
       }
     } catch (error) {
       Logger.error({
-        error: error instanceof Error ? error : new Error(String(error)),
+        error: error instanceof Error ? error : new Error(safeSerializeError(error)),
         message: 'Error during graceful shutdown',
       });
       this.finalizeExit({ code: 1, reason: 'graceful-shutdown-error', error });
@@ -504,7 +505,7 @@ export default abstract class BaseApplication {
       }
     } catch (error) {
       Logger.error({
-        error: error instanceof Error ? error : new Error(String(error)),
+        error: error instanceof Error ? error : new Error(safeSerializeError(error)),
         message: 'Error during shutdown',
       });
       this.finalizeExit({ code: 1, reason: 'shutdown-error', error });

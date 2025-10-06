@@ -4,6 +4,7 @@ import cluster from 'node:cluster';
 import winston from 'winston';
 import type { LogOptions } from '../websocket/utils.js';
 import { getRequestId } from '../request-context/index.js';
+import { safeSerializeError } from '../error/error-reporter.js';
 
 export type LoggerLevels =
   | 'error'
@@ -311,7 +312,7 @@ export class Logger {
       };
 
       if (objMessage) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorMessage = error instanceof Error ? error.message : safeSerializeError(error);
         const combinedMessage = `${objMessage}: ${errorMessage}`;
         this.log({ level: 'error', message: combinedMessage, meta: objMeta, options: objOptions });
         if (error instanceof Error && this.isSentryInitialized) {
@@ -329,7 +330,7 @@ export class Logger {
     // New positional signature: Logger.error(error, message?, meta?, options?)
     const errorObj = arg1;
     if (message) {
-      const errorMessage = errorObj instanceof Error ? errorObj.message : String(errorObj);
+      const errorMessage = errorObj instanceof Error ? errorObj.message : safeSerializeError(errorObj);
       const combinedMessage = `${message}: ${errorMessage}`;
       this.log({ level: 'error', message: combinedMessage, meta, options });
     } else {

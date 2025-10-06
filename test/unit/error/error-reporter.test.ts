@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ErrorReporter, ErrorCode, ErrorSeverity, FrameworkError } from '../../../src/error/index.js';
+import {
+  ErrorReporter,
+  ErrorCode,
+  ErrorSeverity,
+  FrameworkError,
+  safeSerializeError,
+} from '../../../src/error/index.js';
 import { runWithContext } from '../../../src/request-context/index.js';
 
 describe('ErrorReporter', () => {
@@ -186,6 +192,94 @@ describe('ErrorReporter', () => {
         userId: '123',
         action: 'fetchData',
       });
+    });
+  });
+
+  describe('safeSerializeError', () => {
+    it('should return "null" for null', () => {
+      expect(safeSerializeError(null)).toBe('null');
+    });
+
+    it('should return "undefined" for undefined', () => {
+      expect(safeSerializeError(undefined)).toBe('undefined');
+    });
+
+    it('should extract message from Error instances', () => {
+      const error = new Error('Test error message');
+      expect(safeSerializeError(error)).toBe('Test error message');
+    });
+
+    it('should extract message from objects with message property', () => {
+      const obj = { message: 'Custom error message', code: 500 };
+      expect(safeSerializeError(obj)).toBe('Custom error message');
+    });
+
+    it('should use toString() if available and not [object Object]', () => {
+      const obj = { toString: () => 'CustomError: Something went wrong' };
+      expect(safeSerializeError(obj)).toBe('CustomError: Something went wrong');
+    });
+
+    it('should handle circular references gracefully', () => {
+      // Create an object with circular reference (like MikroORM errors)
+      const circular: any = { name: 'CircularError' };
+      circular.self = circular;
+      circular.nested = { parent: circular };
+
+      const result = safeSerializeError(circular);
+      expect(result).toBe('[object Object] (circular reference detected)');
+    });
+
+    it('should handle complex MikroORM-like error structure', () => {
+      // Simulate MikroORM error with entity metadata circular references
+      const entity: any = { id: 1, name: 'User' };
+      const metadata: any = { entity, className: 'User' };
+      entity.__meta = metadata;
+      metadata.properties = { user: { entity } };
+
+      const mikroOrmLikeError = {
+        message: 'Entity discovery failed',
+        metadata,
+        entity,
+      };
+
+      const result = safeSerializeError(mikroOrmLikeError);
+      // Should extract message since it's a string property
+      expect(result).toBe('Entity discovery failed');
+    });
+
+    it('should handle objects with broken toString()', () => {
+      const obj = {
+        toString: () => {
+          throw new Error('toString failed');
+        },
+      };
+
+      const result = safeSerializeError(obj);
+      // Should fall back to JSON.stringify, which will succeed and exclude the toString function
+      expect(result).toBe('{}');
+    });
+
+    it('should serialize simple objects without circular references', () => {
+      const obj = { error: 'Something failed', code: 500 };
+      expect(safeSerializeError(obj)).toBe('{"error":"Something failed","code":500}');
+    });
+
+    it('should convert primitives to strings', () => {
+      expect(safeSerializeError(42)).toBe('42');
+      expect(safeSerializeError(true)).toBe('true');
+      expect(safeSerializeError('simple string')).toBe('simple string');
+    });
+
+    it('should handle errors with message and circular refs', () => {
+      const errorObj: any = {
+        message: 'Database connection failed',
+        metadata: {},
+      };
+      errorObj.metadata.error = errorObj;
+
+      const result = safeSerializeError(errorObj);
+      // Should extract the message property
+      expect(result).toBe('Database connection failed');
     });
   });
 });

@@ -7,6 +7,9 @@ describe('Hello World - Typed Routes Integration', () => {
   let baseUrl: string;
 
   beforeAll(async () => {
+    // Use in-memory Redis for testing to avoid requiring external Redis instance
+    process.env.PXL_REDIS_IN_MEMORY = 'true';
+
     const port = 4100; // Use different port to avoid conflicts
     baseUrl = `http://localhost:${port}`;
 

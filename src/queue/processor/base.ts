@@ -6,6 +6,7 @@ import { Logger } from '../../logger/index.js';
 import type { RedisInstance } from '../../redis/index.js';
 import type EventManager from '../../event/manager.js';
 import type { QueueJobData } from '../job.interface.js';
+import { safeSerializeError } from '../../error/error-reporter.js';
 
 export default abstract class BaseProcessor<
   TQueueManager extends QueueManager = QueueManager,
@@ -32,7 +33,7 @@ export default abstract class BaseProcessor<
       if (message) {
         const errorMeta = {
           ...(meta ?? {}),
-          error: error instanceof Error ? error.message : String(error),
+          error: error instanceof Error ? error.message : safeSerializeError(error),
           stack: error instanceof Error ? error.stack : undefined,
         };
         this.logger.custom({ level: 'queueJob', message, meta: errorMeta });

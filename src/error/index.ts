@@ -1,6 +1,6 @@
 export type { ErrorEnvelope, ErrorReportOptions } from './error.interface.js';
 export { ErrorCode, ErrorSeverity } from './error.interface.js';
-export { ErrorReporter } from './error-reporter.js';
+export { ErrorReporter, safeSerializeError } from './error-reporter.js';
 export {
   FrameworkError,
   ConfigurationError,

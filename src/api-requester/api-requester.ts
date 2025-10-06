@@ -1,3 +1,5 @@
+import { safeSerializeError } from '../error/error-reporter.js';
+
 export interface ApiRequestConfig extends Omit<RequestInit, 'method' | 'body' | 'headers'> {
   headers?: Record<string, string | undefined>;
   params?: Record<string, string | number | boolean | null | undefined>;
@@ -234,7 +236,7 @@ export default class ApiRequester {
     try {
       return JSON.parse(body) as T;
     } catch (error) {
-      const reason = error instanceof Error ? error.message : String(error);
+      const reason = error instanceof Error ? error.message : safeSerializeError(error);
       throw new Error(`Failed to parse JSON response: ${reason}`);
     }
   }

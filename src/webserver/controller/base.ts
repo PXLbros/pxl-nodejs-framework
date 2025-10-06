@@ -11,6 +11,7 @@ import cluster from 'cluster';
 import type { WebServerOptions } from '../webserver.interface.js';
 import type { LifecycleManager } from '../../lifecycle/lifecycle-manager.js';
 import Jwt from '../../auth/jwt.js';
+import { safeSerializeError } from '../../error/error-reporter.js';
 
 export interface AuthenticatedUser<TPayload = Record<string, unknown>> {
   userId: number;
@@ -107,7 +108,7 @@ export default abstract class BaseController<
         publicErrorMessage = error.stack ?? error.message;
         errorDetails = { stack: error.stack, name: error.name };
       } else {
-        publicErrorMessage = String(error);
+        publicErrorMessage = safeSerializeError(error);
       }
     } else {
       if (process.env.NODE_ENV === 'production') {
@@ -123,7 +124,7 @@ export default abstract class BaseController<
           publicErrorMessage = error.stack ?? error.message;
           errorDetails = { stack: error.stack, name: error.name };
         } else {
-          publicErrorMessage = String(error);
+          publicErrorMessage = safeSerializeError(error);
         }
       }
     }

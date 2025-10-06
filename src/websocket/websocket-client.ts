@@ -8,6 +8,7 @@ import { generateClientId, log, parseServerMessage } from './utils.js';
 import WebSocketBase from './websocket-base.js';
 import type { ApplicationConfig } from '../application/base-application.interface.js';
 import path from 'path';
+import { safeSerializeError } from '../error/error-reporter.js';
 import { baseDir } from '../index.js';
 
 export default class WebSocketClient extends WebSocketBase {
@@ -282,7 +283,7 @@ export default class WebSocketClient extends WebSocketBase {
       }
     } catch (error) {
       log('Reconnection failed', {
-        Error: error instanceof Error ? error.message : String(error),
+        Error: error instanceof Error ? error.message : safeSerializeError(error),
       });
 
       // Schedule next attempt

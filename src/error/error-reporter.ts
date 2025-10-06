@@ -5,6 +5,60 @@ import { ErrorCode, type ErrorEnvelope, type ErrorReportOptions, ErrorSeverity }
 import { FrameworkError } from './framework-errors.js';
 
 /**
+ * Safely serialize any error to a string, handling circular references gracefully
+ *
+ * This utility handles MikroORM errors and other complex error objects that may
+ * contain circular references which would cause String(error) or JSON.stringify
+ * to fail.
+ *
+ * @param error - The error to serialize
+ * @returns String representation of the error
+ *
+ * @example
+ * ```typescript
+ * // Safe for MikroORM errors with circular entity metadata
+ * const message = safeSerializeError(mikroOrmError);
+ *
+ * // Works with any error type
+ * const message = safeSerializeError(unknownError);
+ * ```
+ */
+export function safeSerializeError(error: unknown): string {
+  try {
+    if (error === null) return 'null';
+    if (error === undefined) return 'undefined';
+
+    if (typeof error === 'object') {
+      // Try to extract meaningful properties
+      if ('message' in error && typeof error.message === 'string') {
+        return error.message;
+      }
+      if ('toString' in error && typeof error.toString === 'function') {
+        try {
+          const str = error.toString();
+          if (str !== '[object Object]') {
+            return str;
+          }
+        } catch {
+          // toString() itself may throw
+        }
+      }
+      // Fallback to JSON stringification with circular reference handling
+      try {
+        return JSON.stringify(error);
+      } catch {
+        // JSON.stringify can fail on circular references
+        return '[object Object] (circular reference detected)';
+      }
+    }
+
+    return String(error);
+  } catch {
+    return 'Unknown error (serialization failed)';
+  }
+}
+
+/**
  * Centralized error reporter for the framework
  *
  * Provides a unified interface for error reporting, normalization, logging,
@@ -133,7 +187,7 @@ export class ErrorReporter {
 
     // Handle unknown error types
     return {
-      message: this.serializeUnknownError(error),
+      message: safeSerializeError(error),
       code: options?.code ?? ErrorCode.UNKNOWN,
       severity: options?.severity ?? ErrorSeverity.ERROR,
       requestId,
@@ -260,38 +314,6 @@ export class ErrorReporter {
         return 'info';
       default:
         return 'error';
-    }
-  }
-
-  /**
-   * Serialize unknown error types to string
-   *
-   * @param error - Unknown error
-   * @returns String representation
-   */
-  private serializeUnknownError(error: unknown): string {
-    try {
-      if (error === null) return 'null';
-      if (error === undefined) return 'undefined';
-
-      if (typeof error === 'object') {
-        // Try to extract meaningful properties
-        if ('message' in error && typeof error.message === 'string') {
-          return error.message;
-        }
-        if ('toString' in error && typeof error.toString === 'function') {
-          const str = error.toString();
-          if (str !== '[object Object]') {
-            return str;
-          }
-        }
-        // Fallback to JSON stringification
-        return JSON.stringify(error);
-      }
-
-      return String(error);
-    } catch {
-      return 'Unknown error (serialization failed)';
     }
   }
 }

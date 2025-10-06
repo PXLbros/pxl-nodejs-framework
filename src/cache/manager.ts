@@ -1,5 +1,6 @@
 import type RedisManager from '../redis/manager.js';
 import type RedisInstance from '../redis/instance.js';
+import { safeSerializeError } from '../error/error-reporter.js';
 
 /**
  * CacheManager
@@ -91,7 +92,7 @@ export default class CacheManager {
     try {
       return JSON.parse(raw) as T;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage = error instanceof Error ? error.message : safeSerializeError(error);
       throw new Error(`Failed to parse cached value for key "${key}": ${errorMessage}`);
     }
   }

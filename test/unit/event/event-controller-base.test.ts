@@ -218,7 +218,8 @@ describe('BaseEventController', () => {
         level: 'event',
         message: 'Object error',
         meta: expect.objectContaining({
-          error: '[object Object]',
+          error: '{"code":"ERR123","details":"Something went wrong"}',
+          stack: undefined,
         }),
       });
     });

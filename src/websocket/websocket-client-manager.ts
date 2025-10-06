@@ -3,6 +3,7 @@ import { log } from './utils.js';
 import type { WebSocketClientData } from './websocket-client-manager.interface.js';
 import { Helper, Time } from '../util/index.js';
 import cluster from 'cluster';
+import { safeSerializeError } from '../error/error-reporter.js';
 
 export default class WebSocketClientManager {
   private clients: Map<string, WebSocketClientData> = new Map();
@@ -119,7 +120,7 @@ export default class WebSocketClientManager {
         }
       } catch (error) {
         log('Error cleaning up WebSocket connection', {
-          error: error instanceof Error ? error.message : String(error),
+          error: error instanceof Error ? error.message : safeSerializeError(error),
         });
       }
     }
@@ -268,7 +269,7 @@ export default class WebSocketClientManager {
       } catch (error) {
         // Handle send errors (e.g., connection closed)
         log('Error broadcasting client list', {
-          error: error instanceof Error ? error.message : String(error),
+          error: error instanceof Error ? error.message : safeSerializeError(error),
         });
       }
     });
@@ -286,7 +287,7 @@ export default class WebSocketClientManager {
         } catch (error) {
           log('Error cleaning up client connection', {
             clientId,
-            error: error instanceof Error ? error.message : String(error),
+            error: error instanceof Error ? error.message : safeSerializeError(error),
           });
         }
       }

@@ -3,6 +3,7 @@ import DatabaseInstance from './instance.js';
 import type { ApplicationDatabaseOptions } from './manager.interface.js';
 import { Logger } from '../logger/index.js';
 import { DatabasePerformanceWrapper } from '../performance/index.js';
+import { safeSerializeError } from '../error/error-reporter.js';
 
 /**
  * Database manager
@@ -59,7 +60,7 @@ export default class DatabaseManager {
         const duration = performance.now() - startTime;
 
         this.logger.error({
-          error: error instanceof Error ? error : new Error(String(error)),
+          error: error instanceof Error ? error : new Error(safeSerializeError(error)),
           message: 'Database connection failed',
           meta: {
             Host: this.options.host,
@@ -105,7 +106,7 @@ export default class DatabaseManager {
         const duration = performance.now() - startTime;
 
         this.logger.error({
-          error: error instanceof Error ? error : new Error(String(error)),
+          error: error instanceof Error ? error : new Error(safeSerializeError(error)),
           message: 'Database disconnection failed',
           meta: {
             Host: this.options.host,

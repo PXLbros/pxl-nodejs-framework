@@ -4,6 +4,7 @@ import type { RedisInstance } from '../../redis/index.js';
 import type { EventControllerConstructorParams } from './base.interface.js';
 import { Logger } from '../../logger/index.js';
 import type { ApplicationConfig } from '../../application/base-application.interface.js';
+import { safeSerializeError } from '../../error/error-reporter.js';
 
 export default abstract class BaseEventController {
   protected logger: typeof Logger = Logger;
@@ -34,7 +35,7 @@ export default abstract class BaseEventController {
       if (message) {
         const errorMeta = {
           ...(meta ?? {}),
-          error: error instanceof Error ? error.message : String(error),
+          error: error instanceof Error ? error.message : safeSerializeError(error),
           stack: error instanceof Error ? error.stack : undefined,
         };
         this.logger.custom({ level: 'event', message, meta: errorMeta });
