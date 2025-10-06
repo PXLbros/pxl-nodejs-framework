@@ -1,21 +1,22 @@
 import { z } from 'zod';
 import { defineRoute } from '@scpxl/nodejs-framework/webserver';
 import type { RouteSchemaDefinition } from '@scpxl/nodejs-framework/webserver';
+import { NonEmptyStringSchema, DateStringSchema } from '@scpxl/nodejs-framework/schemas';
 
 /**
  * Hello routes demonstrating typed route definitions with Zod schemas
+ * Uses common schemas from the framework for consistency
  */
 
-// Define schema inline to avoid relative import issues
 const helloSchema = {
   body: z.object({
-    name: z.string().min(1).max(100).optional().default('World'),
+    name: NonEmptyStringSchema.max(100).optional().default('World'),
   }),
   response: {
     200: z.object({
-      message: z.string(),
-      timestamp: z.string(),
-      receivedName: z.string(),
+      message: NonEmptyStringSchema,
+      timestamp: DateStringSchema,
+      receivedName: NonEmptyStringSchema,
     }),
   },
 } satisfies RouteSchemaDefinition;

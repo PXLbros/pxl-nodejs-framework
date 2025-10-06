@@ -1,51 +1,47 @@
 import { z } from 'zod';
 import { defineRoute } from '@scpxl/nodejs-framework/webserver';
 import type { RouteSchemaDefinition } from '@scpxl/nodejs-framework/webserver';
+import {
+  NumericIdSchema,
+  NonEmptyStringSchema,
+  TimestampSchema,
+  ErrorResponseSchema,
+} from '@scpxl/nodejs-framework/schemas';
 
 /**
  * Greetings routes demonstrating typed CRUD operations with Zod schemas
- * These routes use inline handlers with full type inference
+ * These routes use common reusable schemas from the framework for consistency
  */
 
-// Define schemas inline to avoid relative import issues
+// Reusable Greeting schema using common framework schemas
+const GreetingSchema = z
+  .object({
+    id: NumericIdSchema,
+    name: NonEmptyStringSchema.max(100),
+    message: NonEmptyStringSchema.max(500),
+  })
+  .merge(TimestampSchema);
+
+// Define schemas using common framework patterns
 const getGreetingSchema = {
   params: z.object({
     id: z.string().regex(/^\d+$/, 'ID must be a number'),
   }),
   response: {
     200: z.object({
-      greeting: z.object({
-        id: z.number(),
-        name: z.string(),
-        message: z.string(),
-        createdAt: z.date(),
-        updatedAt: z.date(),
-      }),
+      greeting: GreetingSchema,
     }),
-    404: z.object({
-      error: z.string(),
-    }),
+    404: ErrorResponseSchema,
   },
 } satisfies RouteSchemaDefinition;
 
 const createGreetingSchema = {
-  body: z.object({
-    name: z.string().min(1).max(100),
-    message: z.string().min(1).max(500),
-  }),
+  body: GreetingSchema.omit({ id: true, createdAt: true, updatedAt: true }),
   response: {
     201: z.object({
-      greeting: z.object({
-        id: z.number(),
-        name: z.string(),
-        message: z.string(),
-        createdAt: z.date(),
-        updatedAt: z.date(),
-      }),
+      greeting: GreetingSchema,
     }),
-    400: z.object({
-      error: z.string(),
-    }),
+    400: ErrorResponseSchema,
   },
 } satisfies RouteSchemaDefinition;
 
@@ -53,23 +49,12 @@ const updateGreetingSchema = {
   params: z.object({
     id: z.string().regex(/^\d+$/, 'ID must be a number'),
   }),
-  body: z.object({
-    name: z.string().min(1).max(100).optional(),
-    message: z.string().min(1).max(500).optional(),
-  }),
+  body: GreetingSchema.omit({ id: true, createdAt: true, updatedAt: true }).partial(),
   response: {
     200: z.object({
-      greeting: z.object({
-        id: z.number(),
-        name: z.string(),
-        message: z.string(),
-        createdAt: z.date(),
-        updatedAt: z.date(),
-      }),
+      greeting: GreetingSchema,
     }),
-    404: z.object({
-      error: z.string(),
-    }),
+    404: ErrorResponseSchema,
   },
 } satisfies RouteSchemaDefinition;
 
@@ -79,9 +64,7 @@ const deleteGreetingSchema = {
   }),
   response: {
     204: z.undefined(),
-    404: z.object({
-      error: z.string(),
-    }),
+    404: ErrorResponseSchema,
   },
 } satisfies RouteSchemaDefinition;
 

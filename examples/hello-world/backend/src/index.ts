@@ -286,15 +286,31 @@ const webSocketPort = parseInt(process.env.WS_PORT || String(webServerPort), 10)
 const publicWebSocketHost = process.env.WS_PUBLIC_HOST || (webSocketHost === '0.0.0.0' ? 'localhost' : webSocketHost);
 const webSocketUrl = process.env.WS_URL || `ws://${publicWebSocketHost}:${webSocketPort}/ws`;
 
+/**
+ * Security Configuration
+ *
+ * The framework enables Helmet and Rate Limiting by default for security:
+ * - Helmet: Adds security headers (CSP, HSTS, X-Frame-Options, etc.)
+ * - Rate Limiting: Prevents abuse (default: 1000 requests/minute per IP)
+ *
+ * You can customize or disable these features via the security config.
+ * Set RATE_LIMIT_ENABLED=false in .env to disable rate limiting for development.
+ */
 const rateLimitEnv = process.env.RATE_LIMIT_ENABLED?.toLowerCase();
 const rateLimitEnabled = rateLimitEnv === 'true' ? true : rateLimitEnv === 'false' ? false : undefined;
 
 const webServerSecurity: WebApplicationConfig['webServer']['security'] =
   rateLimitEnabled === undefined
-    ? undefined
+    ? undefined // Use framework defaults (helmet + rate limiting enabled)
     : {
+        // Custom security configuration
+        helmet: {
+          enabled: true, // Keep helmet enabled (recommended for production)
+        },
         rateLimit: {
           enabled: rateLimitEnabled,
+          max: 100, // Max 100 requests per timeWindow
+          timeWindow: '1 minute', // Time window for rate limiting
         },
       };
 

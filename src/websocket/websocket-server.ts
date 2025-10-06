@@ -602,9 +602,15 @@ export default class WebSocketServer extends WebSocketBase {
           typeof serverMessageResponse.response === 'object' &&
           'error' in serverMessageResponse.response
         ) {
-          // throw new Error(serverMessageResponse?.response?.error);
-
-          Logger.error({ error: serverMessageResponse.response.error });
+          // Log error but don't throw to prevent connection disruption
+          Logger.error({
+            error: serverMessageResponse.response.error,
+            meta: {
+              clientId,
+              type: serverMessageResponse.type,
+              action: serverMessageResponse.action,
+            },
+          });
         }
       }
     } catch (error) {
@@ -627,41 +633,45 @@ export default class WebSocketServer extends WebSocketBase {
     );
   }
 
+  /**
+   * Check and disconnect inactive clients based on configuration
+   * This helps prevent stale connections from accumulating
+   */
   private checkInactiveClients(): void {
-    const now = Date.now();
+    const config = this.options.disconnectInactiveClients;
 
-    if (this.options.disconnectInactiveClients?.enabled && this.options.disconnectInactiveClients.log) {
+    if (!config?.enabled || !config.inactiveTime) {
+      return;
+    }
+
+    if (config.log) {
       log('Checking inactive clients...');
     }
 
-    if (!this.options.disconnectInactiveClients?.enabled) {
-      return;
-    }
-
-    const maxInactiveTime = this.options.disconnectInactiveClients.inactiveTime;
-
-    if (!maxInactiveTime) {
-      return;
-    }
-
+    const now = Date.now();
     const clients = this.clientManager.getClients();
 
-    clients.forEach(client => {
+    for (const client of clients) {
       const inactiveTime = now - client.lastActivity;
 
-      if (inactiveTime > maxInactiveTime) {
+      if (inactiveTime > config.inactiveTime) {
         this.clientManager.disconnectClient(client.clientId);
 
-        if (this.options.disconnectInactiveClients?.log) {
+        if (config.log) {
           log('Disconnected inactive client', {
             'Client ID': client.clientId,
             'Inactive Time': `${inactiveTime}ms`,
           });
         }
       }
-    });
+    }
   }
 
+  /**
+   * Broadcast a message to all connected WebSocket clients
+   * @param data - The data to broadcast (will be JSON stringified)
+   * @param excludeClientId - Optional client ID to exclude from broadcast
+   */
   public broadcastToAllClients({
     data,
     excludeClientId,
@@ -671,25 +681,24 @@ export default class WebSocketServer extends WebSocketBase {
   }): void {
     if (!this.server) {
       log('Server not started when broadcasting to all clients');
-
       return;
     }
 
-    this.server.clients.forEach(client => {
-      let excludeClient = false;
+    for (const client of this.server.clients) {
+      if (client.readyState !== WebSocket.OPEN) {
+        continue;
+      }
 
+      // Skip excluded client if specified
       if (excludeClientId) {
-        const clientId = this.clientManager.getClientId({
-          ws: client,
-        });
-
-        excludeClient = clientId === excludeClientId;
+        const clientId = this.clientManager.getClientId({ ws: client });
+        if (clientId === excludeClientId) {
+          continue;
+        }
       }
 
-      if (client.readyState === WebSocket.OPEN && !excludeClient) {
-        client.send(JSON.stringify(data));
-      }
-    });
+      client.send(JSON.stringify(data));
+    }
   }
 
   public sendMessageError({ webSocketClientId, error }: { webSocketClientId: string; error: string }): void {
