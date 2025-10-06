@@ -471,7 +471,7 @@ export default abstract class EntityController extends BaseController {
         return this.sendErrorResponse({ reply, error: error.message });
       }
 
-      const item = this.entityManager.create(this.entityName, value);
+      const item = this.entityManager.create(this.entityName, value as object);
 
       await this.entityManager.persistAndFlush(item);
 
@@ -519,7 +519,7 @@ export default abstract class EntityController extends BaseController {
         return this.sendNotFoundResponse(reply, `${EntityClass.singularNameCapitalized} not found`);
       }
 
-      this.entityManager.assign(item, value);
+      this.entityManager.assign(item, value as object);
 
       await this.entityManager.persistAndFlush(item);
 

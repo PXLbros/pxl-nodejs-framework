@@ -157,9 +157,15 @@ describe('ClusterManager', () => {
         workerCount: 1,
       };
 
+      const mockWorker = {
+        id: 1,
+        process: { pid: 1234 },
+      };
+
       vi.spyOn(cluster, 'on').mockImplementation((event: string, callback: any) => {
         if (event === 'exit') {
-          callback();
+          // Pass worker, exitCode, and signal to match the updated signature
+          callback(mockWorker, 1, 'SIGTERM');
         }
         return cluster;
       });
@@ -174,6 +180,17 @@ describe('ClusterManager', () => {
 
       // Should fork initially + fork again on exit
       expect(cluster.fork).toHaveBeenCalled();
+      expect(Logger.warn).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: 'Cluster worker died unexpectedly, restarting',
+          meta: expect.objectContaining({
+            ID: 1,
+            PID: 1234,
+            exitCode: 1,
+            signal: 'SIGTERM',
+          }),
+        }),
+      );
     });
   });
 

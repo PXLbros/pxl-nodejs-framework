@@ -16,6 +16,9 @@ export default class ClusterManager {
 
   private shutdownSignals: NodeJS.Signals[] = ['SIGTERM', 'SIGINT'];
   private isShuttingDown = false;
+  private initialWorkerCount = 0;
+  private shutdownTimeout = 30000; // 30 seconds
+  private shutdownTimer?: NodeJS.Timeout;
 
   constructor({ config, startApplicationCallback, stopApplicationCallback }: ClusterManagerProps) {
     this.config = config;
@@ -40,6 +43,9 @@ export default class ClusterManager {
     const numClusterWorkers =
       this.config.workerMode === 'auto' ? numCPUs : (this.config as ClusterManagerWorkerModeManualConfig).workerCount;
 
+    // Track initial worker count for shutdown
+    this.initialWorkerCount = numClusterWorkers;
+
     for (let workerIndex = 0; workerIndex < numClusterWorkers; workerIndex++) {
       cluster.fork();
     }
@@ -54,9 +60,18 @@ export default class ClusterManager {
       });
     });
 
-    cluster.on('exit', () => {
+    cluster.on('exit', (worker, code, signal) => {
       if (!this.isShuttingDown) {
         // Restart worker on unexpected exit
+        Logger.warn({
+          message: 'Cluster worker died unexpectedly, restarting',
+          meta: {
+            ID: worker.id,
+            PID: worker.process.pid,
+            exitCode: code,
+            signal,
+          },
+        });
         cluster.fork();
       }
     });
@@ -103,21 +118,51 @@ export default class ClusterManager {
     this.isShuttingDown = true;
 
     if (cluster.isPrimary) {
-      Object.values(cluster.workers ?? {}).forEach(worker => {
-        if (worker) {
-          worker.send('shutdown');
-        }
+      Logger.info({
+        message: 'Initiating cluster shutdown',
+        meta: { workerCount: this.initialWorkerCount },
       });
 
       let exitedWorkers = 0;
 
-      cluster.on('exit', () => {
+      // Set up exit handler BEFORE sending shutdown messages to avoid race condition
+      const exitHandler = () => {
         exitedWorkers++;
 
-        const numClusterWorkers = Object.values(cluster.workers ?? {}).filter(Boolean).length;
+        Logger.debug({
+          message: 'Cluster worker exited during shutdown',
+          meta: { exitedWorkers, totalWorkers: this.initialWorkerCount },
+        });
 
-        if (exitedWorkers === numClusterWorkers) {
+        if (exitedWorkers === this.initialWorkerCount) {
+          if (this.shutdownTimer) {
+            clearTimeout(this.shutdownTimer);
+          }
+          Logger.info({ message: 'All cluster workers exited gracefully' });
           requestExit({ code: 0, reason: 'cluster-workers-exited' });
+        }
+      };
+
+      // Attach exit listener first
+      cluster.on('exit', exitHandler);
+
+      // Set shutdown timeout
+      this.shutdownTimer = setTimeout(() => {
+        Logger.warn({
+          message: 'Cluster shutdown timeout reached, forcing exit',
+          meta: {
+            exitedWorkers,
+            totalWorkers: this.initialWorkerCount,
+            timeoutMs: this.shutdownTimeout,
+          },
+        });
+        requestExit({ code: 1, reason: 'cluster-shutdown-timeout' });
+      }, this.shutdownTimeout);
+
+      // Now send shutdown messages to all workers
+      Object.values(cluster.workers ?? {}).forEach(worker => {
+        if (worker) {
+          worker.send('shutdown');
         }
       });
     } else {

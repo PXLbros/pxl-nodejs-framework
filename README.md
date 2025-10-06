@@ -110,6 +110,37 @@ await app.start();
 console.log(`Server running at http://localhost:3000`);
 ```
 
+### Type-Safe Routes with Zod
+
+```typescript
+import { WebApplication } from '@scpxl/nodejs-framework';
+import { defineRoute } from '@scpxl/nodejs-framework/webserver';
+import { z } from 'zod';
+import { PaginationQuerySchema, NumericIdSchema } from '@scpxl/nodejs-framework/schemas';
+
+const app = new WebApplication({
+  /* config */
+});
+
+// Define a typed route with automatic validation
+const getUserRoute = defineRoute({
+  method: 'GET',
+  url: '/users/:id',
+  schema: {
+    params: z.object({ id: NumericIdSchema }),
+    querystring: PaginationQuerySchema,
+  },
+  handler: async (request, reply) => {
+    // TypeScript knows request.params.id is a number
+    // and request.query has page/limit with defaults
+    const user = await db.findUser(request.params.id);
+    return { data: user };
+  },
+});
+
+app.webserver.route(getUserRoute);
+```
+
 ### With Database & Queue
 
 ```typescript
@@ -325,6 +356,27 @@ The framework is built around three main application types:
 | **API Requester**   | HTTP client wrapper (migrated to native `fetch`) | `@scpxl/nodejs-framework/api-requester`   |
 | **Command**         | CLI command framework                            | `@scpxl/nodejs-framework/command`         |
 | **Services**        | Additional service integrations (AWS S3, etc.)   | `@scpxl/nodejs-framework/services`        |
+| **Schemas**         | Reusable Zod validation schemas                  | `@scpxl/nodejs-framework/schemas`         |
+
+### Guides
+
+Comprehensive guides for common tasks and features:
+
+- **[Getting Started](./docs/getting-started.md)** - Installation and first steps
+- **[Configuration](./docs/guides/configuration.md)** - Environment variables and config options
+- **[WebSocket Guide](./docs/guides/websocket.md)** - Real-time communication setup
+- **[Authentication Guide](./docs/guides/authentication.md)** - JWT auth implementation
+- **[Typed Routes](./docs/guides/typed-routes.md)** - Type-safe routing with Zod validation
+- **[Error Handling](./docs/guides/error-handling.md)** - Custom errors and error handling
+- **[Commands](./docs/guides/commands.md)** - Building CLI commands
+- **[Testing](./docs/guides/testing.md)** - Testing strategies and utilities
+- **[Performance Monitoring](./docs/guides/performance-monitoring.md)** - Metrics and observability
+- **[Simple Load Testing](./docs/guides/simple-load-test.md)** - Built-in load testing tool
+- **[Hot Module Reload (HMR)](./docs/guides/hmr.md)** - Development workflow
+- **[Deployment](./docs/guides/deployment.md)** - Production deployment guide
+- **[Scaling](./docs/guides/scaling.md)** - Horizontal scaling strategies
+- **[Logging](./docs/guides/logging.md)** - Structured logging best practices
+- **[Environment Variables](./docs/guides/env.md)** - Managing environment configuration
 
 ### Key Patterns
 

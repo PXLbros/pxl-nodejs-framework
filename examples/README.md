@@ -18,10 +18,15 @@ Perfect for getting started and understanding the framework fundamentals.
 
 ```bash
 # One-time setup: Install dependencies
-npm run example:install
+cd examples/hello-world/backend && npm install
+cd ../frontend && npm install
 
-# Run backend + frontend together with hot-reload
-npm run example:hello-world
+# Run backend only
+npm run example --example=hello-world/backend
+
+# Or run backend + frontend together (requires concurrently)
+cd examples/hello-world/backend && npm run dev &
+cd examples/hello-world/frontend && npm run dev
 ```
 
 Then open http://localhost:5173 to see the app.
@@ -57,12 +62,12 @@ Perfect for building CLI tools, automation scripts, and background jobs.
 
 ```bash
 # One-time setup: Install dependencies
-npm run example:commands:install
+cd examples/commands && npm install
 
 # Run commands
-npm run example:commands:hello
-npm run example:commands:seed
-npm run example:commands:queue
+npm run example --example=commands -- hello
+npm run example --example=commands -- database-seed
+npm run example --example=commands -- queue-process
 ```
 
 **Alternative (manual):**
@@ -79,43 +84,123 @@ npm run dev queue-process -- --action status
 
 ---
 
+### 3. Cluster Mode (`cluster/`)
+
+> ⚠️ **DEPRECATION NOTICE**: Cluster mode is legacy. Use container orchestration (Kubernetes, Docker) for production.
+
+A comprehensive example demonstrating Node.js cluster functionality:
+
+- **Auto & Manual Modes**: Scale across all CPUs or specify worker count
+- **Load Distribution**: See how requests balance across workers
+- **Worker Isolation**: Understand process isolation and memory
+- **Shared State**: Cross-worker data sharing via Redis
+- **CPU Tasks**: Parallel processing demonstration
+- **Crash Recovery**: Automatic worker restart
+- **Testing Tools**: Verification and load testing scripts
+
+Perfect for understanding cluster behavior and testing multi-process scaling.
+
+**Quick Start (from repository root):**
+
+```bash
+# Install dependencies
+cd examples/cluster
+npm install
+
+# Run with auto worker mode (one per CPU)
+npm run cluster:auto
+
+# Run with manual worker count
+npm run cluster:manual
+
+# Verify cluster is working
+npm run verify
+
+# Run load test
+npm run load-test
+```
+
+**See:** `cluster/README.md` for comprehensive documentation, API endpoints, and testing guide.
+
+---
+
 ## Running Examples
 
 ### From Repository Root (Recommended)
 
-The easiest way to run examples is from the repository root:
+The framework provides a unified `npm run example` command that works with all examples:
 
 ```bash
-# Install all example dependencies (one-time setup)
-npm run example:install
+# Generic pattern - runs the default script in any example's package.json
+npm run example --example=<path>
 
 # Hello World Example
-npm run example:hello-world              # Backend + frontend with hot-reload
-npm run example:hello-world:backend      # Backend only
-npm run example:hello-world:frontend     # Frontend only
+npm run example --example=hello-world/backend
+npm run example --example=hello-world/frontend
 
-# Commands Example
-npm run example:commands:install         # Install commands example dependencies
-npm run example:commands:hello           # Run hello command
-npm run example:commands:seed            # Run database-seed command
-npm run example:commands:queue           # Run queue-process command
+# Commands Example - pass additional arguments after --
+npm run example --example=commands
+npm run example --example=commands -- hello
+npm run example --example=commands -- hello --name World --count 3
+npm run example --example=commands -- database-seed --count 100
+npm run example --example=commands -- queue-process --action status
+
+# Cluster Example
+npm run example --example=cluster
+npm run example --example=cluster -- --cluster=auto
+npm run example --example=cluster -- --cluster=manual --workers=4
 ```
 
 **Features:**
 
-- ✅ Single command to start both backend and frontend
-- ✅ Color-coded output (blue for backend, magenta for frontend)
-- ✅ Hot-reload enabled for both
+- ✅ Single unified command pattern for all examples
+- ✅ Easy to pass arguments with `--`
+- ✅ Works with any example's package.json scripts
 - ✅ Framework source changes picked up instantly
 
-### Manual Setup
+**Installation:**
 
-You can also run examples individually:
+Each example manages its own dependencies. Install them individually:
+
+```bash
+cd examples/hello-world/backend && npm install
+cd examples/commands && npm install
+cd examples/cluster && npm install
+```
+
+Or use npm exec to install from root:
+
+```bash
+npm exec --prefix examples/hello-world/backend -- npm install
+npm exec --prefix examples/commands -- npm install
+npm exec --prefix examples/cluster -- npm install
+```
+
+### Alternative: Run Directly in Example Directory
+
+You can also run examples by navigating to their directory:
 
 ```bash
 cd examples/hello-world/backend
 npm install
 npm run dev
+```
+
+Or run specific scripts defined in each example's package.json:
+
+```bash
+# Commands example
+cd examples/commands
+npm run hello              # Run hello command
+npm run seed               # Run database-seed
+npm run queue              # Run queue-process
+
+# Cluster example
+cd examples/cluster
+npm run cluster:auto       # Auto worker mode
+npm run cluster:manual     # Manual worker count
+npm run verify             # Verify cluster
+npm run load-test          # Load testing
 ```
 
 ## Import Strategy

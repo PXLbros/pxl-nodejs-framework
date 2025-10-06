@@ -1,4 +1,4 @@
-import type Joi from 'joi';
+import type { z } from 'zod';
 import 'reflect-metadata';
 
 // @FormField({
@@ -32,7 +32,7 @@ export interface FormFieldOptions {
 
 export interface FormFieldOptionsExtended extends FormFieldOptions {
   name: string;
-  validation: Joi.PartialSchemaMap | null;
+  validation: z.ZodSchema | null;
 }
 
 export const FormField = (options: FormFieldOptions) => {

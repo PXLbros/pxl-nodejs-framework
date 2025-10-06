@@ -1,9 +1,9 @@
 import { BaseEntity } from '@mikro-orm/core';
-import type { Schema, ValidationResult } from 'joi';
+import { z } from 'zod';
 
 export abstract class DynamicEntity extends BaseEntity {
-  public static schema: Schema;
-  public static schemaUpdate: Schema;
+  public static schema: z.ZodSchema;
+  public static schemaUpdate: z.ZodSchema;
 
   public static get singularName(): string {
     return 'Item';
@@ -29,17 +29,27 @@ export abstract class DynamicEntity extends BaseEntity {
     return this.pluralName.charAt(0).toUpperCase() + this.pluralName.slice(1).toLowerCase();
   }
 
-  public static validate<T>(item: T, isCreating: boolean): ValidationResult {
+  public static validate<T>(item: T, isCreating: boolean): { error?: Error; value?: T } {
     const schemaName = isCreating ? 'schema' : 'schemaUpdate';
     // Explicit whitelist of schema properties to prevent object injection
     if (!['schema', 'schemaUpdate'].includes(schemaName)) {
       throw new Error('Invalid schema reference');
     }
-    const selectedSchema: Schema | undefined = schemaName === 'schema' ? this.schema : this.schemaUpdate;
+    const selectedSchema: z.ZodSchema | undefined = schemaName === 'schema' ? this.schema : this.schemaUpdate;
     if (!selectedSchema) {
       throw new Error('Schema not defined in entity.');
     }
-    return selectedSchema.validate(item, { abortEarly: false });
+
+    try {
+      const value = selectedSchema.parse(item);
+      return { value: value as T };
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        const error = new Error(err.issues.map((e: z.ZodIssue) => `${e.path.join('.')}: ${e.message}`).join(', '));
+        return { error };
+      }
+      return { error: err as Error };
+    }
   }
 
   public static getSearchFields(): string[] {

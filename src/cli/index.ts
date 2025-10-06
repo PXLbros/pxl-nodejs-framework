@@ -55,14 +55,18 @@ async function main(argv = hideBin(process.argv)) {
       y => y,
       () => {
         process.stdout.write(banner(pkg));
-        console.log('Commands available soon. Roadmap:');
-        console.log('  • generate      Scaffolding (planned)');
-        console.log('  • doctor        Environment diagnostics (planned)');
-        console.log('  • analyze       Project inspection (planned)');
+        console.log('Available Commands:');
+        console.log('  • routes        List route files in your project');
+        console.log('  • doctor        Run environment diagnostics');
+        console.log('  • version       Show framework version');
+        console.log('\nPlanned Commands:');
+        console.log('  • generate      Scaffolding (coming soon)');
+        console.log('  • analyze       Project inspection (coming soon)');
         console.log('\nExamples:');
+        console.log('  pxl routes');
+        console.log('  pxl routes --path ./src/api --pattern "**/*.ts"');
+        console.log('  pxl doctor');
         console.log('  pxl --version');
-        console.log('  pxl info');
-        console.log('  pxl help');
       },
     )
     .command(
@@ -71,6 +75,58 @@ async function main(argv = hideBin(process.argv)) {
       y => y,
       () => {
         console.log(pkg.version ?? '0.0.0');
+      },
+    )
+    .command(
+      'routes',
+      'List route files in the project',
+      y =>
+        y
+          .option('path', {
+            type: 'string',
+            default: './src',
+            describe: 'Path to search for route files',
+          })
+          .option('pattern', {
+            type: 'string',
+            default: '**/*.route.ts',
+            describe: 'Glob pattern for route files',
+          })
+          .option('json', { type: 'boolean', default: false, describe: 'Output JSON' }),
+      async args => {
+        const { glob } = await import('glob');
+        const searchPath = path.resolve(process.cwd(), args.path);
+        const pattern = path.join(searchPath, args.pattern);
+
+        try {
+          const files = await glob(pattern, {
+            ignore: ['**/node_modules/**', '**/dist/**', '**/*.test.ts', '**/*.spec.ts'],
+          });
+
+          if (args.json) {
+            console.log(JSON.stringify({ routes: files, count: files.length }, null, 2));
+          } else {
+            console.log(`\nFound ${files.length} route file(s) in ${args.path}:\n`);
+            if (files.length === 0) {
+              console.log('  No route files found.');
+              console.log(`  Searched for: ${args.pattern}`);
+              console.log(`  In: ${searchPath}\n`);
+              console.log('Tip: Route files typically follow patterns like:');
+              console.log('  - **/*.route.ts');
+              console.log('  - **/routes/**/*.ts');
+              console.log('  - **/controllers/**/*.ts\n');
+            } else {
+              for (const file of files) {
+                const relative = path.relative(process.cwd(), file);
+                console.log(`  • ${relative}`);
+              }
+              console.log('');
+            }
+          }
+        } catch (err) {
+          console.error('Error searching for routes:', (err as Error).message);
+          process.exit(1);
+        }
       },
     )
     .command(
