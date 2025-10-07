@@ -314,12 +314,32 @@ export class Logger {
       if (objMessage) {
         const errorMessage = error instanceof Error ? error.message : safeSerializeError(error);
         const combinedMessage = `${objMessage}: ${errorMessage}`;
-        this.log({ level: 'error', message: combinedMessage, meta: objMeta, options: objOptions });
+        // Preserve stack & name when Error instance so callers get actionable traces
+        let enhancedMeta = objMeta;
+        if (error instanceof Error) {
+          enhancedMeta = {
+            ...objMeta,
+            name: error.name,
+            stack: error.stack,
+          };
+        }
+        this.log({ level: 'error', message: combinedMessage, meta: enhancedMeta, options: objOptions });
         if (error instanceof Error && this.isSentryInitialized) {
           Sentry.captureException(error);
         }
       } else {
-        this.log({ level: 'error', message: error, meta: objMeta, options: objOptions });
+        // When no custom message, log the raw error. If it's an Error, pass stack & name.
+        if (error instanceof Error) {
+          const enhancedMeta = {
+            ...objMeta,
+            name: error.name,
+            stack: error.stack,
+          };
+          // For consistency use the Error object message as primary message
+          this.log({ level: 'error', message: error, meta: enhancedMeta, options: objOptions });
+        } else {
+          this.log({ level: 'error', message: error, meta: objMeta, options: objOptions });
+        }
         if (error instanceof Error && this.isSentryInitialized) {
           Sentry.captureException(error);
         }

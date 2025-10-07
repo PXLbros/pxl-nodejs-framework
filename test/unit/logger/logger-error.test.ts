@@ -18,7 +18,7 @@ describe('Logger.error overloads', () => {
     expect(logSpy).toHaveBeenCalledWith({
       level: 'error',
       message: expect.stringContaining('Action failed: Boom'),
-      meta: { foo: 'bar' },
+      meta: expect.objectContaining({ foo: 'bar', name: 'Error', stack: expect.any(String) }),
       options: undefined,
     });
   });

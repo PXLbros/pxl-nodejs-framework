@@ -173,7 +173,7 @@ describe('Logger', () => {
       expect(logSpy).toHaveBeenCalledWith({
         level: 'error',
         message: 'Operation failed: Test error',
-        meta: { operation: 'test' },
+        meta: expect.objectContaining({ operation: 'test', name: 'Error', stack: expect.any(String) }),
         options: undefined,
       });
     });
@@ -185,7 +185,7 @@ describe('Logger', () => {
       expect(logSpy).toHaveBeenCalledWith({
         level: 'error',
         message: error,
-        meta: undefined,
+        meta: expect.objectContaining({ name: 'Error', stack: expect.any(String) }),
         options: undefined,
       });
     });
@@ -232,7 +232,12 @@ describe('Logger', () => {
       Logger.error({ error, message: 'Failed operation' });
 
       expect(Sentry.captureException).toHaveBeenCalledWith(error);
-      expect(logSpy).toHaveBeenCalled();
+      expect(logSpy).toHaveBeenCalledWith({
+        level: 'error',
+        message: 'Failed operation: Sentry test',
+        meta: expect.objectContaining({ name: 'Error', stack: expect.any(String) }),
+        options: undefined,
+      });
     });
 
     it('should capture exception in Sentry for positional signature', () => {
@@ -411,8 +416,8 @@ describe('Logger', () => {
   describe('Cluster worker integration', () => {
     it('should add worker ID when running in worker mode', () => {
       const clusterMock = vi.mocked(cluster);
-      clusterMock.isWorker = true;
-      clusterMock.worker = { id: 3 } as any;
+      (clusterMock as any).isWorker = true;
+      (clusterMock as any).worker = { id: 3 } as any;
 
       logSpy.mockRestore();
       const winstonLogSpy = vi.spyOn((instance as any).logger, 'log');
@@ -425,14 +430,14 @@ describe('Logger', () => {
       expect(clusterMock.worker?.id).toBe(3);
 
       // Cleanup
-      clusterMock.isWorker = false;
-      clusterMock.worker = undefined;
+      (clusterMock as any).isWorker = false;
+      (clusterMock as any).worker = undefined;
     });
 
     it('should not add worker ID when not in worker mode', () => {
       const clusterMock = vi.mocked(cluster);
-      clusterMock.isWorker = false;
-      clusterMock.worker = undefined;
+      (clusterMock as any).isWorker = false;
+      (clusterMock as any).worker = undefined;
 
       logSpy.mockRestore();
       const winstonLogSpy = vi.spyOn((instance as any).logger, 'log');
