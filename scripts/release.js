@@ -259,6 +259,9 @@ async function main() {
     updatePackageVersion(newVersion);
     success('Updated package.json');
 
+    // Run typecheck to catch TypeScript errors before committing
+    execCommand('npm run typecheck', 'Running typecheck');
+
     // Git operations
     execCommand('git add package.json', 'Staging package.json');
     execCommand(`git commit -m "chore: release v${newVersion}"`, 'Creating release commit');
