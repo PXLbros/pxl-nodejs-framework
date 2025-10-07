@@ -1,9 +1,14 @@
 import { BaseEntity } from '@mikro-orm/core';
 import { z } from 'zod';
+import { buildEntitySchemas } from '../schemas/entity-builder.js';
 
 export abstract class DynamicEntity extends BaseEntity {
-  public static schema: z.ZodSchema;
-  public static schemaUpdate: z.ZodSchema;
+  /** Required fields for creating a new entity */
+  public static createSchema: z.ZodSchema;
+  /** Allowed (partial) fields for updating an entity */
+  public static updateSchema: z.ZodSchema;
+  /** Optional projection/read schema (includes persistence augment) */
+  public static readSchema?: z.ZodSchema;
 
   public static get singularName(): string {
     return 'Item';
@@ -29,24 +34,23 @@ export abstract class DynamicEntity extends BaseEntity {
     return this.pluralName.charAt(0).toUpperCase() + this.pluralName.slice(1).toLowerCase();
   }
 
-  public static validate<T>(item: T, isCreating: boolean): { error?: Error; value?: T } {
-    const schemaName = isCreating ? 'schema' : 'schemaUpdate';
-    // Explicit whitelist of schema properties to prevent object injection
-    if (!['schema', 'schemaUpdate'].includes(schemaName)) {
-      throw new Error('Invalid schema reference');
-    }
-    const selectedSchema: z.ZodSchema | undefined = schemaName === 'schema' ? this.schema : this.schemaUpdate;
-    if (!selectedSchema) {
-      throw new Error('Schema not defined in entity.');
-    }
-
+  public static validateCreate<T>(item: unknown): { error?: Error; value?: T } {
     try {
-      const value = selectedSchema.parse(item);
-      return { value: value as T };
+      return { value: this.createSchema.parse(item) as T };
     } catch (err) {
       if (err instanceof z.ZodError) {
-        const error = new Error(err.issues.map((e: z.ZodIssue) => `${e.path.join('.')}: ${e.message}`).join(', '));
-        return { error };
+        return { error: new Error(err.issues.map(i => `${i.path.join('.')}: ${i.message}`).join(', ')) };
+      }
+      return { error: err as Error };
+    }
+  }
+
+  public static validateUpdate<T>(item: unknown): { error?: Error; value?: T } {
+    try {
+      return { value: this.updateSchema.parse(item) as T };
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return { error: new Error(err.issues.map(i => `${i.path.join('.')}: ${i.message}`).join(', ')) };
       }
       return { error: err as Error };
     }
@@ -54,5 +58,25 @@ export abstract class DynamicEntity extends BaseEntity {
 
   public static getSearchFields(): string[] {
     return [];
+  }
+
+  public static defineSchemas<Shape extends z.ZodRawShape, Updatable extends readonly (keyof Shape)[]>(options: {
+    shape: Shape;
+    updatableFields?: Updatable;
+    requireAtLeastOneOnUpdate?: boolean;
+    readAugment?: z.ZodRawShape;
+  }): void {
+    const { shape, updatableFields, requireAtLeastOneOnUpdate = true, readAugment } = options;
+    const schemas = buildEntitySchemas({
+      shape,
+      updatableFields: updatableFields as any,
+      requireAtLeastOneOnUpdate,
+      readAugment,
+    });
+    this.createSchema = schemas.create;
+    this.updateSchema = schemas.update;
+    if (readAugment) {
+      this.readSchema = schemas.read;
+    }
   }
 }
