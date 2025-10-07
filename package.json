@@ -1,6 +1,6 @@
 {
   "name": "@scpxl/nodejs-framework",
-  "version": "1.0.26",
+  "version": "1.0.27",
   "description": "PXL Node.js Framework",
   "engines": {
     "node": ">=22.0.0"
