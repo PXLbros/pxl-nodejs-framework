@@ -271,7 +271,23 @@ async function main() {
 
     success(`\n🎉 Release v${newVersion} created successfully!`);
     info(`GitHub Actions will now build and publish the release.`);
-    info(`Monitor the progress at: https://github.com/your-org/pxl-nodejs-framework/actions`);
+
+    // Dynamically derive Actions URL from package.json repository
+    try {
+      const pkg = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8'));
+      let repoUrl = pkg?.repository?.url || pkg?.homepage || '';
+      // Normalize git+https URLs
+      if (repoUrl.startsWith('git+')) repoUrl = repoUrl.slice(4);
+      // Remove trailing .git
+      if (repoUrl.endsWith('.git')) repoUrl = repoUrl.slice(0, -4);
+      if (repoUrl) {
+        info(`Monitor the progress at: ${repoUrl.replace(/\/$/, '')}/actions`);
+      } else {
+        warning('Could not determine repository URL from package.json for Actions link');
+      }
+    } catch (e) {
+      warning(`Failed to read repository info: ${e.message}`);
+    }
   } catch (err) {
     error(`Release failed: ${err.message}`);
     process.exit(1);

@@ -2,6 +2,14 @@
   "name": "@scpxl/nodejs-framework",
   "version": "1.0.28",
   "description": "PXL Node.js Framework",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PXLbros/pxl-nodejs-framework.git"
+  },
+  "homepage": "https://github.com/PXLbros/pxl-nodejs-framework#readme",
+  "bugs": {
+    "url": "https://github.com/PXLbros/pxl-nodejs-framework/issues"
+  },
   "engines": {
     "node": ">=22.0.0"
   },
