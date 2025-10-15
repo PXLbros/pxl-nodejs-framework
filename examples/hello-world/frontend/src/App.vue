@@ -294,7 +294,7 @@ const defaultWsUrl = (() => {
 
     return url.toString();
   } catch {
-    return 'ws://localhost:3000/ws';
+    return 'ws://localhost:4000/ws';
   }
 })();
 

@@ -890,12 +890,10 @@ interface WebSocketOptions {
     onError?: (params: { error: Error }) => void;
   };
 
-  subscriberEventHandler?: (params: {
-    channel: string;
-    message: any;
-    webSocketServer: WebSocketServer;
-    databaseInstance: DatabaseInstance;
-  }) => void;
+  subscriberHandlers?: {
+    directory?: string; // Directory that exports subscriber handlers
+    handlers?: WebSocketSubscriberDefinition[]; // Optional inline handlers
+  };
 }
 ```
 
@@ -924,21 +922,56 @@ interface WebSocketMessage {
 
 Enum of Redis pub/sub event names for cross-worker coordination:
 
-```typescript
+````typescript
 enum WebSocketRedisSubscriberEvent {
-  ClientConnected = 'WebSocket:ClientConnected',
-  ClientDisconnected = 'WebSocket:ClientDisconnected',
-  ClientJoinedRoom = 'WebSocket:ClientJoinedRoom',
-  ClientLeftRoom = 'WebSocket:ClientLeftRoom',
-  DisconnectClient = 'WebSocket:DisconnectClient',
-  SendMessage = 'WebSocket:SendMessage',
-  SendMessageToAll = 'WebSocket:SendMessageToAll',
-  MessageError = 'WebSocket:MessageError',
-  QueueJobCompleted = 'WebSocket:QueueJobCompleted',
-  QueueJobError = 'WebSocket:QueueJobError',
-  Custom = 'WebSocket:Custom',
+  ClientConnected = 'clientConnected',
+  ClientDisconnected = 'clientDisconnected',
+  ClientJoinedRoom = 'clientJoinedRoom',
+  ClientLeftRoom = 'clientLeftRoom',
+  DisconnectClient = 'disconnectClient',
+  SendMessage = 'sendMessage',
+  SendMessageToAll = 'sendMessageToAll',
+  MessageError = 'messageError',
+  QueueJobCompleted = 'queueJobCompleted',
+  QueueJobError = 'queueJobError',
+  Custom = 'custom',
+}
+
+### WebSocketSubscriberDefinition
+
+```typescript
+interface WebSocketSubscriberDefinition {
+  name?: string; // Optional identifier for logging
+  description?: string;
+  priority?: number; // Higher numbers run first
+  channels?: string[]; // Explicit channels to listen to
+  matchers?: (string | RegExp | ((context: WebSocketSubscriberHandlerContext) => boolean))[];
+  handle: (context: WebSocketSubscriberHandlerContext) => unknown | Promise<unknown>;
+}
+````
+
+Use `defineWebSocketSubscriber` to get type inference when authoring handlers:
+
+```typescript
+defineWebSocketSubscriber({
+  channel: 'custom',
+  priority: 10,
+  handle: ({ channel, message, webSocketServer }) => {
+    // ...
+  },
+});
+
+interface WebSocketSubscriberHandlerContext {
+  channel: string;
+  message: any;
+  webSocketServer: WebSocketServer;
+  databaseInstance: DatabaseInstance;
+  redisInstance: RedisInstance;
+  queueManager: QueueManager;
 }
 ```
+
+````
 
 ## Type Definitions
 
@@ -956,7 +989,7 @@ interface WebSocketClient {
   roomName?: string | null;
   [key: string]: any; // Custom metadata
 }
-```
+````
 
 ### WebSocketType
 

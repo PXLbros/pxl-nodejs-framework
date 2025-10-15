@@ -1,4 +1,5 @@
-import type { WebSocket, WebSocketServer } from 'ws';
+import type { WebSocketServer as NativeWebSocketServer, WebSocket } from 'ws';
+import type WebSocketServerInstance from './websocket-server.js';
 import type DatabaseInstance from '../database/instance.js';
 import type QueueManager from '../queue/manager.js';
 import type RedisInstance from '../redis/instance.js';
@@ -6,6 +7,63 @@ import type { WebSocketServerBaseControllerType } from './controller/server/base
 import type { WebSocketClientBaseControllerType } from './controller/client/base.interface.js';
 
 export type WebSocketType = 'server' | 'client';
+
+export interface WebSocketSubscriberHandlerContext<TMessage = any> {
+  /** Redis channel that emitted the message */
+  channel: string;
+
+  /** Parsed message payload */
+  message: TMessage;
+
+  /** Running WebSocket server instance */
+  webSocketServer: WebSocketServerInstance;
+
+  /** Database instance bound to the application */
+  databaseInstance: DatabaseInstance;
+
+  /** Redis instance used by the framework */
+  redisInstance: RedisInstance;
+
+  /** Queue manager instance used by the framework */
+  queueManager: QueueManager;
+}
+
+export type WebSocketSubscriberHandler<TMessage = any> = (
+  context: WebSocketSubscriberHandlerContext<TMessage>,
+) => unknown | Promise<unknown>;
+
+export type WebSocketSubscriberMatcher<TMessage = any> =
+  | string
+  | RegExp
+  | ((context: WebSocketSubscriberHandlerContext<TMessage>) => boolean);
+
+export interface WebSocketSubscriberDefinition<TMessage = any> {
+  /** Optional identifier, used for logging and debugging */
+  name?: string;
+
+  /** Optional description to document the handler */
+  description?: string;
+
+  /** Optional priority to control execution order (higher runs first) */
+  priority?: number;
+
+  /** Optional explicit channel filters */
+  channels?: string[];
+
+  /** Optional matchers that allow advanced filtering */
+  matchers?: WebSocketSubscriberMatcher<TMessage>[];
+
+  /** Handler that will be invoked when the message is matched */
+  handle: WebSocketSubscriberHandler<TMessage>;
+}
+
+export interface WebSocketSubscriberHandlersConfig {
+  /** Directory that contains subscriber handler modules */
+  directory?: string;
+
+  /** Additional handlers defined inline */
+  handlers?: WebSocketSubscriberDefinition[];
+}
 
 export interface WebSocketDebugOptions {
   printRoutes?: boolean;
@@ -19,7 +77,7 @@ export interface WebSocketMessage<TData = unknown> {
 }
 
 export interface WebSocketEventsConfig {
-  onServerStarted?: ({ webSocketServer }: { webSocketServer: WebSocketServer }) => void;
+  onServerStarted?: ({ webSocketServer }: { webSocketServer: NativeWebSocketServer }) => void;
   onConnected?: ({
     ws,
     clientId,
@@ -102,6 +160,9 @@ export interface WebSocketOptions {
 
   /** WebSocket events */
   events?: WebSocketEventsConfig;
+
+  /** WebSocket subscriber handlers configuration */
+  subscriberHandlers?: WebSocketSubscriberHandlersConfig;
 }
 
 export interface WebSocketRoute {

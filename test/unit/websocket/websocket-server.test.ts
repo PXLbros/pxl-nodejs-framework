@@ -639,30 +639,24 @@ describe('WebSocketServer', () => {
       await expect((server as any).handleSubscriberMessage('unknownEvent', message)).resolves.toBeUndefined();
     });
 
-    it('should call custom subscriberEventHandler when provided', async () => {
-      const subscriberEventHandler = vi.fn();
-      const config = {
-        ...baseApplicationConfig,
-        webSocket: {
-          subscriberEventHandler,
+    it('should execute configured subscriber handlers for matching channels', async () => {
+      const handler = vi.fn();
+
+      const { server } = createServer({
+        options: {
+          subscriberHandlers: {
+            handlers: [
+              {
+                name: 'clientConnectedHandler',
+                channels: ['clientConnected'],
+                handle: handler,
+              },
+            ],
+          },
         },
-      };
-
-      const redisInstance = {
-        subscriberClient: createRedisSubscriberMock(),
-        publisherClient: { publish: vi.fn() },
-      } as unknown as RedisInstance;
-
-      const server = new WebSocketServer({
-        uniqueInstanceId: 'test',
-        applicationConfig: config,
-        options: defaultOptions,
-        redisInstance,
-        queueManager: {} as QueueManager,
-        databaseInstance: {} as DatabaseInstance,
-        routes: [],
-        workerId: null,
       });
+
+      await (server as any).loadSubscriberHandlers();
 
       const message = JSON.stringify({
         clientId: 'client-123',
@@ -672,12 +666,77 @@ describe('WebSocketServer', () => {
 
       await (server as any).handleSubscriberMessage('clientConnected', message);
 
-      expect(subscriberEventHandler).toHaveBeenCalledWith(
+      expect(handler).toHaveBeenCalledWith(
         expect.objectContaining({
           channel: 'clientConnected',
           message: expect.any(Object),
           webSocketServer: server,
-          databaseInstance: expect.anything(),
+        }),
+      );
+    });
+
+    it('should execute wildcard subscriber handlers', async () => {
+      const handler = vi.fn();
+
+      const { server } = createServer({
+        options: {
+          subscriberHandlers: {
+            handlers: [
+              {
+                name: 'wildcard',
+                channels: ['*'],
+                handle: handler,
+              },
+            ],
+          },
+        },
+      });
+
+      await (server as any).loadSubscriberHandlers();
+
+      const message = JSON.stringify({
+        data: 'test',
+        workerId: 999,
+      });
+
+      await (server as any).handleSubscriberMessage('custom-channel', message);
+
+      expect(handler).toHaveBeenCalledWith(
+        expect.objectContaining({
+          channel: 'custom-channel',
+        }),
+      );
+    });
+
+    it('should execute matcher-based subscriber handlers', async () => {
+      const handler = vi.fn();
+
+      const { server } = createServer({
+        options: {
+          subscriberHandlers: {
+            handlers: [
+              {
+                name: 'matcher',
+                matchers: [/^queue/],
+                handle: handler,
+              },
+            ],
+          },
+        },
+      });
+
+      await (server as any).loadSubscriberHandlers();
+
+      const message = JSON.stringify({
+        data: { jobId: '123' },
+        workerId: 999,
+      });
+
+      await (server as any).handleSubscriberMessage('queueJobCompleted', message);
+
+      expect(handler).toHaveBeenCalledWith(
+        expect.objectContaining({
+          channel: 'queueJobCompleted',
         }),
       );
     });

@@ -202,6 +202,12 @@ export const WebSocketConfigSchema = z
     type: z.string().default('native'),
     enabled: z.boolean().default(false),
     routes: z.array(WebSocketRouteSchema).default([]),
+    subscriberHandlers: z
+      .object({
+        directory: z.string().optional(),
+        handlers: z.array(z.any()).optional(),
+      })
+      .optional(),
   })
   .partial();
 

@@ -17,6 +17,7 @@ A minimal API built with the PXL Node.js Framework demonstrating basic web serve
 
 - Node.js 22+
 - npm or yarn
+- Redis is optional: the example will auto-start an embedded Redis server if none is reachable locally (set `PXL_EMBEDDED_REDIS=false` to disable)
 
 ## Quick Start
 
@@ -37,7 +38,7 @@ A minimal API built with the PXL Node.js Framework demonstrating basic web serve
    npm run dev
    ```
 
-The API will start at `http://localhost:3000`
+The API will start at `http://localhost:4000`
 
 ## Available Scripts
 
@@ -135,7 +136,7 @@ Broadcasts a greeting message to every connected WebSocket client.
 
 Edit `.env` file to customize:
 
-- `PORT` - Server port (default: 3000)
+- `PORT` - Server port (default: 4000)
 - `HOST` - Server host (default: 0.0.0.0)
 - `WS_HOST` - WebSocket server host (defaults to the HTTP host)
 - `WS_PORT` - WebSocket server port (defaults to the HTTP port)
@@ -144,6 +145,7 @@ Edit `.env` file to customize:
 - `NODE_ENV` - Environment (development/production)
 - `REDIS_HOST` - Redis host (required by framework validation, default: localhost)
 - `REDIS_PORT` - Redis port (required by framework validation, default: 6379)
+- `PXL_EMBEDDED_REDIS` - Set to `false` to prevent the embedded Redis fallback from starting automatically
 - `JWT_SECRET` - JWT secret key (required by framework validation)
 
 **Note:** Redis, Queue, and Auth configs are required by the framework's validation schema even though they're not actively used in this simple example.
@@ -226,15 +228,15 @@ Using curl:
 
 ```bash
 # Ping
-curl http://localhost:3000/api/ping
+curl http://localhost:4000/api/ping
 
 # Hello
-curl -X POST http://localhost:3000/api/hello \
+curl -X POST http://localhost:4000/api/hello \
   -H "Content-Type: application/json" \
   -d '{"name":"Alice"}'
 
 # Info
-curl http://localhost:3000/api/info
+curl http://localhost:4000/api/info
 ```
 
 Using the frontend:

@@ -3,6 +3,9 @@ import {
   type WebSocketOptions,
   WebSocketRedisSubscriberEvent,
   type WebSocketRoute,
+  type WebSocketSubscriberDefinition,
+  type WebSocketSubscriberHandlerContext,
+  type WebSocketSubscriberMatcher,
   type WebSocketType,
 } from './websocket.interface.js';
 import type RedisInstance from '../redis/instance.js';
@@ -19,6 +22,7 @@ import WebSocketRoomManager from './websocket-room-manager.js';
 import logger from '../logger/logger.js';
 import type { FastifyInstance } from 'fastify';
 import { WebSocketAuthService } from './websocket-auth.js';
+import { File, Loader } from '../util/index.js';
 
 export default class WebSocketServer extends WebSocketBase {
   protected defaultRoutes: WebSocketRoute[] = [
@@ -53,6 +57,9 @@ export default class WebSocketServer extends WebSocketBase {
   private redisInstance: RedisInstance;
   private queueManager: QueueManager;
   private databaseInstance: DatabaseInstance;
+  private subscriberHandlersByChannel: Map<string, WebSocketSubscriberDefinition[]> = new Map();
+  private subscriberMatcherHandlers: WebSocketSubscriberDefinition[] = [];
+  private wildcardSubscriberHandlers: WebSocketSubscriberDefinition[] = [];
 
   /** Redis subscriber events */
   private redisSubscriberEvents: string[] = [
@@ -101,6 +108,335 @@ export default class WebSocketServer extends WebSocketBase {
 
     // Configure custom routes
     await this.configureRoutes(this.routes, this.options.controllersDirectory);
+
+    await this.loadSubscriberHandlers();
+  }
+
+  private async loadSubscriberHandlers(): Promise<void> {
+    this.subscriberHandlersByChannel.clear();
+    this.subscriberMatcherHandlers = [];
+    this.wildcardSubscriberHandlers = [];
+
+    const config = this.options.subscriberHandlers;
+
+    if (!config) {
+      return;
+    }
+
+    const definitions: WebSocketSubscriberDefinition[] = [];
+
+    if (config.directory) {
+      const directoryExists = await File.pathExists(config.directory);
+
+      if (!directoryExists) {
+        logger.warn('WebSocket subscriber handlers directory not found', {
+          Directory: config.directory,
+        });
+      } else {
+        const modules = await Loader.loadModulesInDirectory<unknown>({
+          directory: config.directory,
+          extensions: ['.ts', '.js'],
+        });
+
+        for (const [moduleName, moduleExport] of Object.entries(modules)) {
+          definitions.push(
+            ...this.normalizeSubscriberExport(moduleExport, {
+              source: 'file',
+              moduleName,
+              directory: config.directory,
+            }),
+          );
+        }
+      }
+    }
+
+    if (Array.isArray(config.handlers)) {
+      for (const handler of config.handlers) {
+        definitions.push(
+          ...this.normalizeSubscriberExport(handler, {
+            source: 'inline',
+          }),
+        );
+      }
+    }
+
+    for (const definition of definitions) {
+      this.registerSubscriberDefinition(definition);
+    }
+
+    if (definitions.length > 0) {
+      logger.info('WebSocket subscriber handlers loaded', {
+        Channels: Array.from(this.subscriberHandlersByChannel.keys()),
+        Matchers: this.subscriberMatcherHandlers.length,
+        Wildcards: this.wildcardSubscriberHandlers.length,
+      });
+    }
+  }
+
+  private normalizeSubscriberExport(
+    value: unknown,
+    metadata: { source: 'file' | 'inline'; moduleName?: string; directory?: string },
+  ): WebSocketSubscriberDefinition[] {
+    if (!value) {
+      return [];
+    }
+
+    if (Array.isArray(value)) {
+      return value.flatMap(entry => this.normalizeSubscriberExport(entry, metadata));
+    }
+
+    if (typeof value === 'function') {
+      const moduleChannel = metadata.moduleName ?? value.name ?? 'anonymous';
+
+      return [
+        {
+          name: metadata.moduleName ?? value.name,
+          channels: [moduleChannel],
+          handle: async context => {
+            await value(context);
+          },
+        },
+      ];
+    }
+
+    if (typeof value === 'object') {
+      const definition = this.normalizeSubscriberObject(value as Record<string, unknown>, metadata);
+      if (definition) {
+        return [definition];
+      }
+
+      return Object.values(value as Record<string, unknown>).flatMap(entry =>
+        this.normalizeSubscriberExport(entry, metadata),
+      );
+    }
+
+    return [];
+  }
+
+  private normalizeSubscriberObject(
+    value: Record<string, unknown>,
+    metadata: { source: 'file' | 'inline'; moduleName?: string },
+  ): WebSocketSubscriberDefinition | null {
+    const handle = value.handle;
+
+    if (typeof handle !== 'function') {
+      return null;
+    }
+
+    let channelSource: unknown;
+    if (Object.prototype.hasOwnProperty.call(value, 'channel')) {
+      channelSource = value.channel;
+    } else if (Object.prototype.hasOwnProperty.call(value, 'channels')) {
+      channelSource = value.channels;
+    }
+
+    const channels = this.normalizeChannels(channelSource);
+
+    let matcherSource: unknown;
+    if (Object.prototype.hasOwnProperty.call(value, 'match')) {
+      matcherSource = value.match;
+    } else if (Object.prototype.hasOwnProperty.call(value, 'matcher')) {
+      matcherSource = value.matcher;
+    } else if (Object.prototype.hasOwnProperty.call(value, 'matchers')) {
+      matcherSource = value.matchers;
+    }
+
+    const matchers = this.normalizeMatchers(matcherSource);
+
+    if (channels.length === 0 && matchers.length === 0) {
+      logger.warn('Skipping WebSocket subscriber handler without channels or matchers', {
+        Source: metadata.source,
+        Module: metadata.moduleName,
+      });
+
+      return null;
+    }
+
+    const definition: WebSocketSubscriberDefinition = {
+      name: typeof value.name === 'string' ? value.name : metadata.moduleName,
+      description: typeof value.description === 'string' ? value.description : undefined,
+      priority: typeof value.priority === 'number' ? value.priority : undefined,
+      channels,
+      matchers,
+      handle: handle as (context: WebSocketSubscriberHandlerContext) => unknown | Promise<unknown>,
+    };
+
+    return definition;
+  }
+
+  private normalizeChannels(input: unknown): string[] {
+    if (typeof input === 'string') {
+      const trimmed = input.trim();
+      return trimmed.length > 0 ? [trimmed] : [];
+    }
+
+    if (Array.isArray(input)) {
+      return input
+        .filter((channel): channel is string => typeof channel === 'string')
+        .map(channel => channel.trim())
+        .filter(channel => channel.length > 0);
+    }
+
+    return [];
+  }
+
+  private normalizeMatchers(input: unknown): WebSocketSubscriberMatcher[] {
+    if (!input) {
+      return [];
+    }
+
+    const matchers: WebSocketSubscriberMatcher[] = [];
+    const addMatcher = (matcher: unknown) => {
+      if (matcher instanceof RegExp || typeof matcher === 'function') {
+        matchers.push(matcher as WebSocketSubscriberMatcher);
+      } else if (typeof matcher === 'string') {
+        const trimmed = matcher.trim();
+        if (trimmed.length > 0) {
+          matchers.push(trimmed as WebSocketSubscriberMatcher);
+        }
+      }
+    };
+
+    if (Array.isArray(input)) {
+      input.forEach(addMatcher);
+    } else {
+      addMatcher(input);
+    }
+
+    return matchers;
+  }
+
+  private registerSubscriberDefinition(definition: WebSocketSubscriberDefinition): void {
+    const normalizedPriority = definition.priority ?? 0;
+    const channels = definition.channels?.map(channel => channel.trim()).filter(Boolean) ?? [];
+
+    const normalizedDefinition: WebSocketSubscriberDefinition = {
+      ...definition,
+      priority: normalizedPriority,
+      channels,
+      matchers: definition.matchers ?? [],
+    };
+
+    if (channels.length === 0 && normalizedDefinition.matchers?.length === 0) {
+      logger.warn('Skipping WebSocket subscriber handler registration due to missing filters', {
+        Handler: definition.name ?? '(anonymous)',
+      });
+
+      return;
+    }
+
+    if (channels.length > 0) {
+      for (const channel of channels) {
+        if (channel === '*') {
+          this.wildcardSubscriberHandlers.push(normalizedDefinition);
+          continue;
+        }
+
+        const channelHandlers = this.subscriberHandlersByChannel.get(channel) ?? [];
+        channelHandlers.push(normalizedDefinition);
+        this.subscriberHandlersByChannel.set(channel, channelHandlers);
+      }
+    }
+
+    if (normalizedDefinition.matchers && normalizedDefinition.matchers.length > 0) {
+      this.subscriberMatcherHandlers.push(normalizedDefinition);
+    }
+  }
+
+  private doesDefinitionMatch(
+    definition: WebSocketSubscriberDefinition,
+    context: WebSocketSubscriberHandlerContext,
+  ): boolean {
+    if (!definition.matchers || definition.matchers.length === 0) {
+      return false;
+    }
+
+    return definition.matchers.some(matcher => this.evaluateMatcher(matcher, context));
+  }
+
+  private evaluateMatcher(matcher: WebSocketSubscriberMatcher, context: WebSocketSubscriberHandlerContext): boolean {
+    if (typeof matcher === 'string') {
+      if (matcher === '*') {
+        return true;
+      }
+
+      return matcher === context.channel;
+    }
+
+    if (matcher instanceof RegExp) {
+      return matcher.test(context.channel);
+    }
+
+    try {
+      return Boolean(matcher(context));
+    } catch (error) {
+      logger.error({
+        error,
+        message: 'WebSocket subscriber matcher threw an error',
+        meta: {
+          Channel: context.channel,
+          Matcher: String(matcher),
+        },
+      });
+
+      return false;
+    }
+  }
+
+  private async executeSubscriberHandlers(channel: string, message: any): Promise<void> {
+    if (
+      this.subscriberHandlersByChannel.size === 0 &&
+      this.subscriberMatcherHandlers.length === 0 &&
+      this.wildcardSubscriberHandlers.length === 0
+    ) {
+      return;
+    }
+
+    const context: WebSocketSubscriberHandlerContext = {
+      channel,
+      message,
+      webSocketServer: this,
+      databaseInstance: this.databaseInstance,
+      redisInstance: this.redisInstance,
+      queueManager: this.queueManager,
+    };
+
+    const candidates = new Set<WebSocketSubscriberDefinition>();
+
+    const channelHandlers = this.subscriberHandlersByChannel.get(channel);
+
+    if (channelHandlers) {
+      channelHandlers.forEach(handler => candidates.add(handler));
+    }
+
+    this.wildcardSubscriberHandlers.forEach(handler => candidates.add(handler));
+
+    for (const definition of this.subscriberMatcherHandlers) {
+      if (this.doesDefinitionMatch(definition, context)) {
+        candidates.add(definition);
+      }
+    }
+
+    if (candidates.size === 0) {
+      return;
+    }
+
+    const orderedHandlers = Array.from(candidates).sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
+
+    for (const handler of orderedHandlers) {
+      try {
+        await handler.handle(context);
+      } catch (error) {
+        logger.error({
+          error,
+          message: 'WebSocket subscriber handler failed',
+          meta: {
+            Handler: handler.name ?? '(anonymous)',
+            Channel: channel,
+          },
+        });
+      }
+    }
   }
 
   public async start({ fastifyServer }: { fastifyServer: FastifyInstance }): Promise<{ server: WS }> {
@@ -371,15 +707,7 @@ export default class WebSocketServer extends WebSocketBase {
       }
     }
 
-    if (typeof this.applicationConfig.webSocket?.subscriberEventHandler === 'function') {
-      // Execute custom application subscriber event handler
-      this.applicationConfig.webSocket.subscriberEventHandler({
-        channel,
-        message: parsedMessage,
-        webSocketServer: this,
-        databaseInstance: this.databaseInstance,
-      });
-    }
+    await this.executeSubscriberHandlers(channel, parsedMessage);
   };
 
   private handleServerError = (error: Error): void => {

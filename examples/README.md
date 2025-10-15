@@ -22,7 +22,10 @@ cd examples/hello-world/backend && npm install
 cd ../frontend && npm install
 
 # Run backend only
-npm run example --example=hello-world/backend
+npm run example -- hello-world/backend
+
+# Run backend + frontend together (watch mode)
+npm run example:hello-world
 
 # Or run backend + frontend together (requires concurrently)
 cd examples/hello-world/backend && npm run dev &
@@ -65,9 +68,9 @@ Perfect for building CLI tools, automation scripts, and background jobs.
 cd examples/commands && npm install
 
 # Run commands
-npm run example --example=commands -- hello
-npm run example --example=commands -- database-seed
-npm run example --example=commands -- queue-process
+npm run example -- commands -- hello
+npm run example -- commands -- database-seed
+npm run example -- commands -- queue-process
 ```
 
 **Alternative (manual):**
@@ -132,24 +135,28 @@ The framework provides a unified `npm run example` command that works with all e
 
 ```bash
 # Generic pattern - runs the default script in any example's package.json
-npm run example --example=<path>
+npm run example -- <path>
+# or via env
+PXL_EXAMPLE=<path> npm run example
 
 # Hello World Example
-npm run example --example=hello-world/backend
-npm run example --example=hello-world/frontend
+npm run example -- hello-world/backend
+npm run example -- hello-world/frontend
 
 # Commands Example - pass additional arguments after --
-npm run example --example=commands
-npm run example --example=commands -- hello
-npm run example --example=commands -- hello --name World --count 3
-npm run example --example=commands -- database-seed --count 100
-npm run example --example=commands -- queue-process --action status
+npm run example -- commands
+npm run example -- commands -- hello
+npm run example -- commands -- hello --name World --count 3
+npm run example -- commands -- database-seed --count 100
+npm run example -- commands -- queue-process --action status
 
 # Cluster Example
-npm run example --example=cluster
-npm run example --example=cluster -- --cluster=auto
-npm run example --example=cluster -- --cluster=manual --workers=4
+npm run example -- cluster
+npm run example -- cluster -- --cluster=auto
+npm run example -- cluster -- --cluster=manual --workers=4
 ```
+
+> **Heads up:** The hello-world backend automatically launches an embedded Redis instance when none is reachable at `localhost:6379`. Set `PXL_EMBEDDED_REDIS=false` and start your own Redis if you prefer to manage infrastructure yourself.
 
 **Features:**
 

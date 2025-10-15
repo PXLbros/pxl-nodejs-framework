@@ -469,10 +469,17 @@ cd examples/hello-world/backend && npm install
 cd ../frontend && npm install
 
 # Run backend
-npm run example --example=hello-world/backend
+npm run example -- hello-world/backend
+# or
+PXL_EXAMPLE=hello-world/backend npm run example
+# The backend auto-starts an embedded Redis instance if none is available locally.
+# Disable this behaviour with PXL_EMBEDDED_REDIS=false when you want to supply your own Redis.
 
-# Or run frontend (in another terminal)
-npm run example --example=hello-world/frontend
+# Run backend + frontend together (watch mode)
+npm run example:hello-world
+
+# Run frontend (in another terminal)
+npm run example -- hello-world/frontend
 ```
 
 Then open http://localhost:5173 to see the app.
@@ -486,9 +493,9 @@ Demonstrates the command framework with examples:
 cd examples/commands && npm install
 
 # Run commands from repository root
-npm run example --example=commands -- hello
-npm run example --example=commands -- database-seed
-npm run example --example=commands -- queue-process
+npm run example -- commands -- hello
+npm run example -- commands -- database-seed
+npm run example -- commands -- queue-process
 ```
 
 See [examples/README.md](examples/README.md) for more details.

@@ -176,9 +176,8 @@ const config = {
       },
     },
 
-    // Custom subscriber event handler (for Redis pub/sub)
-    subscriberEventHandler: ({ channel, message, webSocketServer }) => {
-      // Handle custom Redis events
+    subscriberHandlers: {
+      directory: path.join(baseDir, 'websocket', 'subscribers'),
     },
   },
 };
@@ -626,28 +625,26 @@ app.websocket.server.sendCustomMessage({
   },
 });
 
-// Handle custom messages
-const config = {
-  webSocket: {
-    subscriberEventHandler: ({ channel, message, webSocketServer }) => {
-      if (channel === 'WebSocket:Custom') {
-        if (message.type === 'custom' && message.action === 'userStatusChanged') {
-          // Update UI for all connected clients
-          webSocketServer.sendMessageToAll({
-            data: {
-              type: 'status',
-              action: 'update',
-              data: {
-                userId: message.userId,
-                status: message.status,
-              },
-            },
-          });
-        }
-      }
-    },
+// src/websocket/subscribers/custom.ts
+import { defineWebSocketSubscriber, WebSocketRedisSubscriberEvent } from '@scpxl/nodejs-framework/websocket';
+
+export default defineWebSocketSubscriber({
+  channel: WebSocketRedisSubscriberEvent.Custom,
+  handle: ({ message, webSocketServer }) => {
+    if (message.type === 'custom' && message.action === 'userStatusChanged') {
+      webSocketServer.sendMessageToAll({
+        data: {
+          type: 'status',
+          action: 'update',
+          data: {
+            userId: message.userId,
+            status: message.status,
+          },
+        },
+      });
+    }
   },
-};
+});
 ```
 
 ## Advanced Features
@@ -981,8 +978,15 @@ const config = {
 // Debug Redis pub/sub
 const config = {
   webSocket: {
-    subscriberEventHandler: ({ channel, message }) => {
-      console.log('Redis event received:', channel, message);
+    subscriberHandlers: {
+      handlers: [
+        {
+          channels: ['*'],
+          handle: ({ channel, message }) => {
+            console.log('Redis event received:', channel, message);
+          },
+        },
+      ],
     },
   },
 };

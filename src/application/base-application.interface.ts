@@ -1,5 +1,4 @@
 import type { ClusterManagerConfig } from '../cluster/cluster-manager.interface.js';
-import type DatabaseInstance from '../database/instance.js';
 import type { EventDefinition } from '../event/manager.interface.js';
 import type { PerformanceMonitorOptions, PerformanceThresholds } from '../performance/performance-monitor.js';
 import type { QueueItem } from '../queue/index.interface.js';
@@ -9,7 +8,6 @@ import type {
   WebServerOptions,
   WebServerRoute,
 } from '../webserver/webserver.interface.js';
-import type WebSocketServer from '../websocket/websocket-server.js';
 import type { WebSocketOptions, WebSocketRoute, WebSocketType } from '../websocket/websocket.interface.js';
 
 export type OnStartedEvent = ({ startupTime }: { startupTime: number }) => void;
@@ -115,14 +113,6 @@ export interface ApplicationWebSocketConfig extends WebSocketOptions {
 
   /** WebSocket server message handler */
   serverMessageHandler?: (options: { ws: WebSocket; clientId: string; parsedMessage: any }) => void;
-
-  /** WebSocket subscriber event handler */
-  subscriberEventHandler?: (options: {
-    channel: string;
-    message: any;
-    webSocketServer: WebSocketServer;
-    databaseInstance: DatabaseInstance;
-  }) => void;
 }
 
 export interface ApplicationWebServerConfig extends WebServerOptions {

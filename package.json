@@ -135,7 +135,8 @@
     "yalc:publish": "yalc publish",
     "yalc:push": "yalc push",
     "dev:yalc": "npm run build && npm run yalc:push",
-    "example": "npm run --prefix examples/${npm_config_example:-hello-world/backend}"
+    "example": "node scripts/run-example.js",
+    "example:hello-world": "concurrently --kill-others-on-fail \"npm run example -- hello-world/backend\" \"npm run example -- hello-world/frontend\""
   },
   "keywords": [],
   "author": "PXL <devops@pxlagency.com>",

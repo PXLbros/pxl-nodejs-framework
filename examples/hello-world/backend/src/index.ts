@@ -8,10 +8,128 @@
 import 'dotenv/config';
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import type { WebSocket } from 'ws';
+import { StatusCodes } from 'http-status-codes';
+import type { EntityManager } from '@mikro-orm/postgresql';
+import Redis from 'ioredis';
+import { RedisMemoryServer } from 'redis-memory-server';
 import { WebApplication, type WebApplicationConfig } from '../../../../src/application/index.js';
 import { WebServerBaseController, WebServerRouteType } from '../../../../src/webserver/index.js';
-import { WebSocketServerBaseController } from '../../../../src/websocket/index.js';
+import { WebSocketRedisSubscriberEvent, WebSocketServerBaseController } from '../../../../src/websocket/index.js';
 import { Greeting } from './entities/Greeting.js';
+
+type RedisConnectionDetails = {
+  host: string;
+  port: number;
+  isEmbedded: boolean;
+};
+
+let embeddedRedis: RedisMemoryServer | null = null;
+let embeddedRedisCleanupRegistered = false;
+
+async function canConnectToRedis(host: string, port: number): Promise<boolean> {
+  const client = new Redis({
+    host,
+    port,
+    lazyConnect: true,
+    retryStrategy: null,
+    maxRetriesPerRequest: 0,
+  });
+
+  try {
+    await client.connect();
+    await client.ping();
+
+    return true;
+  } catch {
+    return false;
+  } finally {
+    if (client.status === 'ready') {
+      try {
+        await client.quit();
+      } catch {
+        client.disconnect();
+      }
+    } else {
+      client.disconnect();
+    }
+  }
+}
+
+function registerEmbeddedRedisCleanup(): void {
+  if (embeddedRedisCleanupRegistered) {
+    return;
+  }
+
+  const cleanup = async () => {
+    if (!embeddedRedis) {
+      return;
+    }
+
+    try {
+      await embeddedRedis.stop();
+    } catch {
+      // ignore cleanup errors
+    } finally {
+      embeddedRedis = null;
+    }
+  };
+
+  process.once('exit', () => {
+    cleanup().catch(() => undefined);
+  });
+
+  for (const signal of ['SIGINT', 'SIGTERM'] as const) {
+    process.once(signal, () => {
+      cleanup()
+        .catch(() => undefined)
+        .finally(() => process.exit(0));
+    });
+  }
+
+  embeddedRedisCleanupRegistered = true;
+}
+
+async function ensureRedisAvailability(): Promise<RedisConnectionDetails> {
+  const requestedHost = process.env.REDIS_HOST ?? 'localhost';
+  const requestedPort = Number.parseInt(process.env.REDIS_PORT ?? '6379', 10);
+
+  if (await canConnectToRedis(requestedHost, requestedPort)) {
+    return {
+      host: requestedHost,
+      port: requestedPort,
+      isEmbedded: false,
+    };
+  }
+
+  const embeddedRedisEnabled = (process.env.PXL_EMBEDDED_REDIS ?? 'true').toLowerCase() !== 'false';
+  const usingDefaultHost =
+    !process.env.REDIS_HOST || ['localhost', '127.0.0.1'].includes(process.env.REDIS_HOST.toLowerCase());
+
+  if (!embeddedRedisEnabled || !usingDefaultHost) {
+    throw new Error(
+      `Unable to connect to Redis at ${requestedHost}:${requestedPort}.` +
+        (embeddedRedisEnabled
+          ? ' Provide a reachable Redis instance or allow the example to manage its own by setting REDIS_HOST to localhost.'
+          : ' Set PXL_EMBEDDED_REDIS=true (default) to allow the example to start an embedded Redis automatically.'),
+    );
+  }
+
+  embeddedRedis = new RedisMemoryServer();
+  await embeddedRedis.start();
+
+  const host = await embeddedRedis.getHost();
+  const port = await embeddedRedis.getPort();
+
+  registerEmbeddedRedisCleanup();
+
+  console.log(`[pxl] Started embedded Redis for the Hello World example at ${host}:${port}`);
+
+  return {
+    host,
+    port,
+    isEmbedded: true,
+  };
+}
 
 /**
  * API Controller
@@ -159,11 +277,35 @@ class ApiController extends WebServerBaseController {
  * Handles CRUD operations for Greeting entity
  */
 class GreetingsController extends WebServerBaseController {
+  private getEntityManagerOrRespond(reply: FastifyReply): EntityManager | null {
+    const databaseInstance = this.databaseInstance as unknown as { getEntityManager?: () => EntityManager } | null;
+
+    const entityManager = databaseInstance?.getEntityManager?.();
+
+    if (!entityManager) {
+      this.sendErrorResponse({
+        reply,
+        error:
+          'Database is disabled for this example. Set DB_ENABLED=true in backend/.env and restart the backend to enable greeting persistence.',
+        statusCode: StatusCodes.SERVICE_UNAVAILABLE,
+        errorType: 'server_error',
+      });
+
+      return null;
+    }
+
+    return entityManager;
+  }
+
   /**
    * GET /api/greetings - List all greetings
    */
   public list = async (request: FastifyRequest, reply: FastifyReply) => {
-    const em = this.databaseInstance.getEntityManager();
+    const em = this.getEntityManagerOrRespond(reply);
+    if (!em) {
+      return;
+    }
+
     const greetings = await em.find(Greeting, {});
     return reply.send({ greetings });
   };
@@ -173,7 +315,10 @@ class GreetingsController extends WebServerBaseController {
    */
   public get = async (request: FastifyRequest, reply: FastifyReply) => {
     const { id } = request.params as { id: string };
-    const em = this.databaseInstance.getEntityManager();
+    const em = this.getEntityManagerOrRespond(reply);
+    if (!em) {
+      return;
+    }
 
     const greeting = await em.findOne(Greeting, { id: parseInt(id, 10) });
 
@@ -194,7 +339,11 @@ class GreetingsController extends WebServerBaseController {
       return reply.status(400).send({ error: 'Name and message are required' });
     }
 
-    const em = this.databaseInstance.getEntityManager();
+    const em = this.getEntityManagerOrRespond(reply);
+    if (!em) {
+      return;
+    }
+
     const greeting = em.create(Greeting, {
       name: body.name,
       message: body.message,
@@ -211,7 +360,10 @@ class GreetingsController extends WebServerBaseController {
   public update = async (request: FastifyRequest, reply: FastifyReply) => {
     const { id } = request.params as { id: string };
     const body = request.body as { name?: string; message?: string };
-    const em = this.databaseInstance.getEntityManager();
+    const em = this.getEntityManagerOrRespond(reply);
+    if (!em) {
+      return;
+    }
 
     const greeting = await em.findOne(Greeting, { id: parseInt(id, 10) });
 
@@ -232,7 +384,10 @@ class GreetingsController extends WebServerBaseController {
    */
   public delete = async (request: FastifyRequest, reply: FastifyReply) => {
     const { id } = request.params as { id: string };
-    const em = this.databaseInstance.getEntityManager();
+    const em = this.getEntityManagerOrRespond(reply);
+    if (!em) {
+      return;
+    }
 
     const greeting = await em.findOne(Greeting, { id: parseInt(id, 10) });
 
@@ -270,6 +425,18 @@ class HelloWebSocketController extends WebSocketServerBaseController {
     // Broadcast the greeting to every connected client (including the sender)
     this.webSocketServer.sendMessageToAll({
       data: payload,
+    });
+
+    // Publish a cross-worker update that our subscriber example can observe
+    this.webSocketServer.sendCustomMessage({
+      data: {
+        includeSender: true,
+        type: 'system',
+        action: 'statusUpdate',
+        data: {
+          status: `${name} just sent a hello`,
+        },
+      },
     });
 
     // Return an acknowledgement that the message was accepted
@@ -314,162 +481,187 @@ const webServerSecurity: WebApplicationConfig['webServer']['security'] =
         },
       };
 
-// Create application configuration
-const config: WebApplicationConfig = {
-  name: 'hello-world-api',
-  instanceId: `hello-world-${process.pid}`,
-  rootDirectory: process.cwd(),
+function buildConfig({ redisHost, redisPort }: { redisHost: string; redisPort: number }): WebApplicationConfig {
+  return {
+    name: 'hello-world-api',
+    instanceId: `hello-world-${process.pid}`,
+    rootDirectory: process.cwd(),
 
-  // Web server configuration
-  webServer: {
-    enabled: true,
-    host: webServerHost,
-    port: webServerPort,
-    cors: {
+    // Web server configuration
+    webServer: {
       enabled: true,
-      urls: ['*'], // Allow all origins for development
+      host: webServerHost,
+      port: webServerPort,
+      cors: {
+        enabled: true,
+        urls: ['*'], // Allow all origins for development
+      },
+      controllersDirectory: './controllers', // Required by framework
+      security: webServerSecurity,
+      routesDirectory: './src/routes', // Auto-load typed routes from this directory
+      debug: {
+        printRoutes: false,
+      },
+      routes: [
+        {
+          type: WebServerRouteType.Default,
+          method: 'GET',
+          path: '/',
+          controller: ApiController,
+          action: 'home',
+        },
+        {
+          type: WebServerRouteType.Default,
+          method: 'GET',
+          path: '/api/ping',
+          controller: ApiController,
+          action: 'ping',
+        },
+        {
+          type: WebServerRouteType.Default,
+          method: 'POST',
+          path: '/api/hello',
+          controller: ApiController,
+          action: 'hello',
+        },
+        {
+          type: WebServerRouteType.Default,
+          method: 'GET',
+          path: '/api/info',
+          controller: ApiController,
+          action: 'info',
+        },
+        // Greetings CRUD routes
+        {
+          type: WebServerRouteType.Default,
+          method: 'GET',
+          path: '/api/greetings',
+          controller: GreetingsController,
+          action: 'list',
+        },
+        {
+          type: WebServerRouteType.Default,
+          method: 'GET',
+          path: '/api/greetings/:id',
+          controller: GreetingsController,
+          action: 'get',
+        },
+        {
+          type: WebServerRouteType.Default,
+          method: 'POST',
+          path: '/api/greetings',
+          controller: GreetingsController,
+          action: 'create',
+        },
+        {
+          type: WebServerRouteType.Default,
+          method: 'PUT',
+          path: '/api/greetings/:id',
+          controller: GreetingsController,
+          action: 'update',
+        },
+        {
+          type: WebServerRouteType.Default,
+          method: 'DELETE',
+          path: '/api/greetings/:id',
+          controller: GreetingsController,
+          action: 'delete',
+        },
+      ],
     },
-    controllersDirectory: './controllers', // Required by framework
-    security: webServerSecurity,
-    routesDirectory: './src/routes', // Auto-load typed routes from this directory
-    debug: {
-      printRoutes: false,
-    },
-    routes: [
-      {
-        type: WebServerRouteType.Default,
-        method: 'GET',
-        path: '/',
-        controller: ApiController,
-        action: 'home',
-      },
-      {
-        type: WebServerRouteType.Default,
-        method: 'GET',
-        path: '/api/ping',
-        controller: ApiController,
-        action: 'ping',
-      },
-      {
-        type: WebServerRouteType.Default,
-        method: 'POST',
-        path: '/api/hello',
-        controller: ApiController,
-        action: 'hello',
-      },
-      {
-        type: WebServerRouteType.Default,
-        method: 'GET',
-        path: '/api/info',
-        controller: ApiController,
-        action: 'info',
-      },
-      // Greetings CRUD routes
-      {
-        type: WebServerRouteType.Default,
-        method: 'GET',
-        path: '/api/greetings',
-        controller: GreetingsController,
-        action: 'list',
-      },
-      {
-        type: WebServerRouteType.Default,
-        method: 'GET',
-        path: '/api/greetings/:id',
-        controller: GreetingsController,
-        action: 'get',
-      },
-      {
-        type: WebServerRouteType.Default,
-        method: 'POST',
-        path: '/api/greetings',
-        controller: GreetingsController,
-        action: 'create',
-      },
-      {
-        type: WebServerRouteType.Default,
-        method: 'PUT',
-        path: '/api/greetings/:id',
-        controller: GreetingsController,
-        action: 'update',
-      },
-      {
-        type: WebServerRouteType.Default,
-        method: 'DELETE',
-        path: '/api/greetings/:id',
-        controller: GreetingsController,
-        action: 'delete',
-      },
-    ],
-  },
 
-  // WebSocket server configuration
-  webSocket: {
-    enabled: true,
-    type: 'server',
-    host: webSocketHost,
-    url: webSocketUrl,
-    controllersDirectory: './controllers',
-    routes: [
-      {
-        type: 'hello',
-        action: 'greet',
-        controllerName: 'hello',
-        controller: HelloWebSocketController,
+    // WebSocket server configuration
+    webSocket: {
+      enabled: true,
+      type: 'server',
+      host: webSocketHost,
+      url: webSocketUrl,
+      controllersDirectory: './controllers',
+      routes: [
+        {
+          type: 'hello',
+          action: 'greet',
+          controllerName: 'hello',
+          controller: HelloWebSocketController,
+        },
+      ],
+      events: {
+        onConnected: ({ ws, clientId }) => {
+          ws.send(
+            JSON.stringify({
+              type: 'hello',
+              action: 'connected',
+              data: {
+                message: 'Connected to the PXL Hello World WebSocket!',
+                clientId,
+                timestamp: new Date().toISOString(),
+              },
+            }),
+          );
+        },
       },
-    ],
-    events: {
-      onConnected: ({ ws, clientId }) => {
-        ws.send(
-          JSON.stringify({
-            type: 'hello',
-            action: 'connected',
-            data: {
-              message: 'Connected to the PXL Hello World WebSocket!',
-              clientId,
-              timestamp: new Date().toISOString(),
+      subscriberHandlers: {
+        directory: './websocket/subscribers',
+        handlers: [
+          {
+            name: 'logCustomRedisEvents',
+            channels: [WebSocketRedisSubscriberEvent.Custom],
+            priority: -10,
+            handle: ({ channel, message }) => {
+              console.log('[subscriber] Redis event received', { channel, message });
             },
-          }),
-        );
+          },
+        ],
       },
     },
-  },
 
-  // Database configuration
-  database: {
-    enabled: process.env.DB_ENABLED === 'true',
-    host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT || '5432', 10),
-    username: process.env.DB_USERNAME || 'postgres',
-    password: process.env.DB_PASSWORD || 'postgres',
-    databaseName: process.env.DB_DATABASE_NAME || 'hello_world',
-    entitiesDirectory: './src/entities',
-  },
+    // Database configuration
+    database: {
+      enabled: process.env.DB_ENABLED === 'true',
+      host: process.env.DB_HOST || 'localhost',
+      port: parseInt(process.env.DB_PORT || '5432', 10),
+      username: process.env.DB_USERNAME || 'postgres',
+      password: process.env.DB_PASSWORD || 'postgres',
+      databaseName: process.env.DB_DATABASE_NAME || 'hello_world',
+      entitiesDirectory: './src/entities',
+    },
 
-  // Redis - required by framework validation
-  redis: {
-    host: process.env.REDIS_HOST || 'localhost',
-    port: parseInt(process.env.REDIS_PORT || '6379', 10),
-  },
+    // Redis - required by framework validation
+    redis: {
+      host: redisHost,
+      port: redisPort,
+    },
 
-  // Queue - required by framework validation
-  queue: {
-    processorsDirectory: './processors',
-    queues: [],
-  },
+    // Queue - required by framework validation
+    queue: {
+      processorsDirectory: './processors',
+      queues: [],
+    },
 
-  // Auth - required by framework validation
-  auth: {
-    jwtSecretKey: process.env.JWT_SECRET || 'dev-secret-change-in-production',
-  },
+    // Auth - required by framework validation
+    auth: {
+      jwtSecretKey: process.env.JWT_SECRET || 'dev-secret-change-in-production',
+    },
 
-  // Performance monitoring (optional)
-  performanceMonitoring: {
-    enabled: true,
-  },
-};
+    // Performance monitoring (optional)
+    performanceMonitoring: {
+      enabled: true,
+    },
+  };
+}
 
 async function main() {
+  const redisConnection = await ensureRedisAvailability();
+
+  // Expose resolved Redis details so dependent libraries/processes see accurate values
+  process.env.REDIS_HOST = redisConnection.host;
+  process.env.REDIS_PORT = String(redisConnection.port);
+
+  const config = buildConfig({
+    redisHost: redisConnection.host,
+    redisPort: redisConnection.port,
+  });
+
   // Create and configure the application
   const app = new WebApplication(config);
 
@@ -484,6 +676,7 @@ async function main() {
 
   URL: http://${displayHost}:${webServerPort}
   WS:  ${webSocketUrl}
+  Redis: ${redisConnection.host}:${redisConnection.port}${redisConnection.isEmbedded ? ' (embedded)' : ''}
 
   Try these endpoints:
   - GET  http://localhost:${webServerPort}/api/ping
