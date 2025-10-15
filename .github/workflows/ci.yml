@@ -17,10 +17,27 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  run-check:
+    name: Evaluate Run Conditions
+    runs-on: ubuntu-latest
+    outputs:
+      should-run: ${{ steps.evaluate.outputs.should-run }}
+    steps:
+      - id: evaluate
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const isPush = context.eventName === 'push';
+            const message = context.payload.head_commit?.message ?? '';
+            const isReleaseCommit = isPush && message.startsWith('chore: release');
+            core.setOutput('should-run', (!isReleaseCommit).toString());
+
   # Shared dependency installation and caching
   setup:
     name: Setup Dependencies
     runs-on: ubuntu-latest
+    needs: run-check
+    if: ${{ needs.run-check.outputs.should-run == 'true' }}
     outputs:
       cache-hit: ${{ steps.cache-deps.outputs.cache-hit }}
     steps:
