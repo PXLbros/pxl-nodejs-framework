@@ -247,7 +247,7 @@ async function main() {
     console.log('\nWould execute the following steps:');
     console.log(`1. Update package.json version to ${newVersion}`);
     console.log(`2. Git add package.json`);
-    console.log(`3. Git commit -m "chore: release v${newVersion}"`);
+    console.log(`3. Git commit -m "chore: release v${newVersion} [skip ci]"`);
     console.log(`4. Git tag v${newVersion}`);
     console.log(`5. Git push origin ${currentBranch}`);
     console.log(`6. Git push origin v${newVersion}`);
@@ -264,7 +264,8 @@ async function main() {
 
     // Git operations
     execCommand('git add package.json', 'Staging package.json');
-    execCommand(`git commit -m "chore: release v${newVersion}"`, 'Creating release commit');
+    const commitMessage = `chore: release v${newVersion} [skip ci]`;
+    execCommand(`git commit -m "${commitMessage}"`, 'Creating release commit');
     execCommand(`git tag v${newVersion}`, 'Creating git tag');
     execCommand(`git push origin ${currentBranch}`, 'Pushing branch to origin');
     execCommand(`git push origin v${newVersion}`, 'Pushing tag to origin');
