@@ -189,6 +189,43 @@ describe('WebSocketBase', () => {
       expect(printSpy).not.toHaveBeenCalled();
     });
 
+    it('binds controller methods to preserve instance context', async () => {
+      const instance = new TestWebSocketBase();
+
+      class StatefulController {
+        count = 0;
+
+        constructor(_: any) {}
+
+        increment() {
+          this.count += 1;
+          return { count: this.count };
+        }
+      }
+
+      const routes: WebSocketRoute[] = [
+        {
+          type: 'binding',
+          action: 'increment',
+          controller: StatefulController,
+        },
+      ];
+
+      const __filename = fileURLToPath(import.meta.url);
+      const __dirname = path.dirname(__filename);
+
+      await instance.testConfigureRoutes(routes, __dirname);
+
+      const handler = instance.getRouteHandlers().get('binding:increment');
+      expect(handler).toBeDefined();
+
+      const first = await handler?.({} as WebSocket, 'client-1', {});
+      const second = await handler?.({} as WebSocket, 'client-1', {});
+
+      expect(first).toEqual({ count: 1 });
+      expect(second).toEqual({ count: 2 });
+    });
+
     it('should provide controller dependencies', () => {
       const instance = new TestWebSocketBase();
       const mockDeps = { foo: 'bar', baz: 123 };

@@ -40,6 +40,8 @@ export default abstract class BaseApplication {
 
   /** Cache for application version to avoid repeated imports */
   private static applicationVersionCache: string | undefined;
+  private static globalErrorHandlersRegistered = false;
+  private static readonly instances = new Set<WeakRef<BaseApplication>>();
 
   /** Cluster worker ID */
   protected workerId = cluster.isWorker && cluster.worker ? cluster.worker.id : null;
@@ -135,8 +137,8 @@ export default abstract class BaseApplication {
     // Register performance monitor plugin (idempotent & opt-in)
     PerformanceMonitorPlugin.register(this);
 
-    // Set up global error handlers
-    this.setupGlobalErrorHandlers();
+    // Track instance and ensure global error handlers are registered once
+    BaseApplication.registerInstance(this);
 
     if (this.config.database && this.config.database.enabled === true) {
       const defaultEntitiesDirectory = join(this.config.rootDirectory, 'src', 'database', 'entities');
@@ -397,25 +399,73 @@ export default abstract class BaseApplication {
 
   protected abstract stopCallback(): void;
 
-  /**
-   * Set up global error handlers
-   */
-  private setupGlobalErrorHandlers(): void {
-    // Handle uncaught exceptions
+  private static registerInstance(instance: BaseApplication): void {
+    BaseApplication.pruneStaleInstances();
+    BaseApplication.instances.add(new WeakRef(instance));
+    BaseApplication.registerGlobalErrorHandlers();
+  }
+
+  private static unregisterInstance(instance: BaseApplication): void {
+    for (const ref of Array.from(BaseApplication.instances)) {
+      const current = ref.deref();
+      if (!current || current === instance) {
+        BaseApplication.instances.delete(ref);
+      }
+    }
+  }
+
+  private static pruneStaleInstances(): void {
+    for (const ref of Array.from(BaseApplication.instances)) {
+      if (!ref.deref()) {
+        BaseApplication.instances.delete(ref);
+      }
+    }
+  }
+
+  private static getActiveInstances(): BaseApplication[] {
+    const active: BaseApplication[] = [];
+    const stale: WeakRef<BaseApplication>[] = [];
+
+    for (const ref of BaseApplication.instances) {
+      const instance = ref.deref();
+      if (instance) {
+        active.push(instance);
+      } else {
+        stale.push(ref);
+      }
+    }
+
+    for (const ref of stale) {
+      BaseApplication.instances.delete(ref);
+    }
+
+    return active;
+  }
+
+  private static registerGlobalErrorHandlers(): void {
+    if (BaseApplication.globalErrorHandlersRegistered) {
+      return;
+    }
+
     process.on('uncaughtException', error => {
       Logger.error({ error, message: 'Uncaught Exception' });
-      this.initiateGracefulShutdown();
+      for (const app of BaseApplication.getActiveInstances()) {
+        app.initiateGracefulShutdown();
+      }
     });
 
-    // Handle unhandled promise rejections
     process.on('unhandledRejection', (reason, promise) => {
       Logger.error({
         error: reason instanceof Error ? reason : new Error(String(reason)),
         message: 'Unhandled Rejection',
         meta: { promise: String(promise) },
       });
-      this.initiateGracefulShutdown();
+      for (const app of BaseApplication.getActiveInstances()) {
+        app.initiateGracefulShutdown();
+      }
     });
+
+    BaseApplication.globalErrorHandlersRegistered = true;
   }
 
   /**
@@ -423,6 +473,10 @@ export default abstract class BaseApplication {
    */
   private registerShutdownHooks(): void {
     // Register shutdown hooks in reverse dependency order
+    this.lifecycle.onShutdown(() => {
+      BaseApplication.unregisterInstance(this);
+    });
+
     this.lifecycle.onShutdown(async () => {
       Logger.info({ message: 'Executing custom stop callback' });
       await this.stopCallback();

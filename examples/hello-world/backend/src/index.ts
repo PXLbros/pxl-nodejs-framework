@@ -16,6 +16,8 @@ import { WebApplication, type WebApplicationConfig } from '../../../../src/appli
 import { WebServerBaseController, WebServerRouteType } from '../../../../src/webserver/index.js';
 import { WebSocketRedisSubscriberEvent, WebSocketServerBaseController } from '../../../../src/websocket/index.js';
 import { Greeting } from './entities/Greeting.js';
+import { routes as helloTypedRoutes } from './routes/hello.routes.js';
+import { routes as greetingsTypedRoutes } from './routes/greetings.routes.js';
 
 type RedisConnectionDetails = {
   host: string;
@@ -498,7 +500,6 @@ function buildConfig({ redisHost, redisPort }: { redisHost: string; redisPort: n
       },
       controllersDirectory: './controllers', // Required by framework
       security: webServerSecurity,
-      routesDirectory: './src/routes', // Auto-load typed routes from this directory
       debug: {
         printRoutes: false,
       },
@@ -567,6 +568,9 @@ function buildConfig({ redisHost, redisPort }: { redisHost: string; redisPort: n
           controller: GreetingsController,
           action: 'delete',
         },
+        // Include typed routes from ./src/routes directory
+        ...helloTypedRoutes,
+        ...greetingsTypedRoutes,
       ],
     },
 

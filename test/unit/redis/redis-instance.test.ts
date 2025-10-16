@@ -210,11 +210,29 @@ describe('RedisInstance', () => {
       expect(mockClient.set).toHaveBeenCalledWith('test-key', JSON.stringify(objValue), 'EX', 600);
     });
 
+    it('should set boolean value as string', async () => {
+      await redisInstance.setCache({
+        key: 'bool-key',
+        value: true,
+      });
+
+      expect(mockClient.set).toHaveBeenCalledWith('bool-key', 'true');
+    });
+
+    it('should set bigint value as string', async () => {
+      await redisInstance.setCache({
+        key: 'bigint-key',
+        value: BigInt(42),
+      });
+
+      expect(mockClient.set).toHaveBeenCalledWith('bigint-key', '42');
+    });
+
     it('should throw error for unsupported value type', async () => {
       await expect(
         redisInstance.setCache({
           key: 'test-key',
-          value: true as any, // boolean is unsupported
+          value: Symbol('not-supported') as any,
         }),
       ).rejects.toThrow('Unsupported value type');
     });

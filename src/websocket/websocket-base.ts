@@ -74,12 +74,21 @@ export default abstract class WebSocketBase {
 
       const controllerInstance = new ControllerClass(controllerDependencies as any);
 
-      const controllerHandler = controllerInstance[
-        route.action as keyof typeof controllerInstance
-      ] as WebSocketMessageHandler;
+      const controllerHandler = controllerInstance[route.action as keyof typeof controllerInstance] as
+        | WebSocketMessageHandler
+        | undefined;
       const routeKey = getRouteKey(route.type, route.action);
 
-      this.routeHandlers.set(routeKey, controllerHandler);
+      if (typeof controllerHandler !== 'function') {
+        log('Controller action not found', {
+          Controller: route.controllerName ?? ControllerClass.name,
+          Action: route.action,
+          RouteKey: routeKey,
+        });
+        continue;
+      }
+
+      this.routeHandlers.set(routeKey, controllerHandler.bind(controllerInstance));
     }
 
     if (this.shouldPrintRoutes()) {

@@ -270,7 +270,21 @@ export default class QueueManager {
     const startTime = Time.now();
 
     // Add start time to job data
-    job.updateData({ ...job.data, startTime });
+    if (typeof job.updateData === 'function') {
+      try {
+        await job.updateData({ ...job.data, startTime });
+      } catch (error) {
+        Logger.warn({
+          message: 'Failed to persist job metadata before processing',
+          meta: {
+            Queue: job.queueName,
+            'Job Name': job.name,
+            'Job ID': job.id,
+            Error: error instanceof Error ? error.message : String(error),
+          },
+        });
+      }
+    }
 
     this.log('Worker processing...', {
       Queue: job.queueName,

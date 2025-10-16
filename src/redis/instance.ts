@@ -76,12 +76,20 @@ export default class RedisInstance {
   }): Promise<void> {
     let formattedValue: string | number | Buffer;
 
-    if (typeof value === 'object') {
+    if (Buffer.isBuffer(value)) {
+      formattedValue = value;
+    } else if (value === null) {
+      formattedValue = 'null';
+    } else if (typeof value === 'object') {
       formattedValue = JSON.stringify(value);
     } else if (typeof value === 'number') {
       formattedValue = value;
     } else if (typeof value === 'string') {
       formattedValue = value;
+    } else if (typeof value === 'boolean') {
+      formattedValue = value ? 'true' : 'false';
+    } else if (typeof value === 'bigint') {
+      formattedValue = value.toString();
     } else {
       throw new Error('Unsupported value type');
     }

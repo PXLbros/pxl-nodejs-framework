@@ -157,4 +157,29 @@ describe('CacheManager (ioredis unified)', () => {
     await manager.clearItem({ key: 'test' });
     expect(mockRedisManager.connect).toHaveBeenCalledTimes(1);
   });
+
+  it('reuses in-flight connection for concurrent callers', async () => {
+    mockRedisManager.instances = [];
+
+    let resolveConnect: ((value: any) => void) | undefined;
+    mockRedisManager.connect.mockImplementation(
+      () =>
+        new Promise(resolve => {
+          resolveConnect = resolve;
+        }),
+    );
+
+    mockRedisInstance.setCache.mockResolvedValue(undefined);
+
+    const manager = new CacheManager({ redisManager: mockRedisManager });
+
+    const firstCall = manager.setItem({ key: 'one', value: 1 });
+    const secondCall = manager.setItem({ key: 'two', value: 2 });
+
+    expect(mockRedisManager.connect).toHaveBeenCalledTimes(1);
+    resolveConnect?.(mockRedisInstance);
+
+    await Promise.all([firstCall, secondCall]);
+    expect(mockRedisManager.connect).toHaveBeenCalledTimes(1);
+  });
 });

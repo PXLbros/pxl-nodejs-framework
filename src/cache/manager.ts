@@ -42,6 +42,7 @@ export interface CacheManagerProps {
 export default class CacheManager {
   private redisManager: RedisManager;
   private redisInstance?: RedisInstance;
+  private redisInstancePromise?: Promise<RedisInstance>;
 
   constructor({ redisManager }: CacheManagerProps) {
     this.redisManager = redisManager;
@@ -53,6 +54,7 @@ export default class CacheManager {
    */
   private async getRedisInstance(): Promise<RedisInstance> {
     if (this.redisInstance) return this.redisInstance;
+    if (this.redisInstancePromise) return this.redisInstancePromise;
 
     if (this.redisManager.instances.length > 0) {
       this.redisInstance = this.redisManager.instances[0];
@@ -60,8 +62,19 @@ export default class CacheManager {
     }
 
     // Lazily connect if no instances yet (e.g., used before app onBeforeStart)
-    this.redisInstance = await this.redisManager.connect();
-    return this.redisInstance;
+    this.redisInstancePromise = this.redisManager
+      .connect()
+      .then(instance => {
+        this.redisInstance = instance;
+        this.redisInstancePromise = undefined;
+        return instance;
+      })
+      .catch(error => {
+        this.redisInstancePromise = undefined;
+        throw error;
+      });
+
+    return this.redisInstancePromise;
   }
 
   /**

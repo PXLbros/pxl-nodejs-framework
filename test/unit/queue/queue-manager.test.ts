@@ -3,7 +3,7 @@ import { Queue, type Job } from 'bullmq';
 import QueueManager from '../../../src/queue/manager.js';
 import QueueWorker from '../../../src/queue/worker.js';
 import { Logger } from '../../../src/logger/index.js';
-import { File, Helper, Loader } from '../../../src/util/index.js';
+import { File, Helper, Loader, Time } from '../../../src/util/index.js';
 import type { QueueManagerConstructorParams } from '../../../src/queue/manager.interface.js';
 import type { QueueItem } from '../../../src/queue/index.interface.js';
 
@@ -11,14 +11,42 @@ import type { QueueItem } from '../../../src/queue/index.interface.js';
 vi.mock('bullmq');
 vi.mock('../../../src/queue/worker.js');
 vi.mock('../../../src/logger/index.js');
-vi.mock('../../../src/util/index.js');
+vi.mock('../../../src/util/index.js', () => ({
+  File: {
+    pathExists: vi.fn(),
+  },
+  Helper: {
+    defaultsDeep: vi.fn(),
+    getScriptFileExtension: vi.fn(() => 'ts'),
+  },
+  Loader: {
+    loadModulesInDirectory: vi.fn(),
+  },
+  Time: {
+    now: vi.fn(() => 0),
+    calculateElapsedTimeMs: vi.fn(() => 0),
+    formatTime: vi.fn(),
+  },
+}));
 
 const mockQueue = vi.mocked(Queue);
 const mockQueueWorker = vi.mocked(QueueWorker);
 const mockLogger = vi.mocked(Logger);
-const mockHelper = vi.mocked(Helper);
-const mockLoader = vi.mocked(Loader);
-const mockFile = vi.mocked(File);
+const mockHelper = Helper as unknown as {
+  defaultsDeep: ReturnType<typeof vi.fn>;
+  getScriptFileExtension: ReturnType<typeof vi.fn>;
+};
+const mockLoader = Loader as unknown as {
+  loadModulesInDirectory: ReturnType<typeof vi.fn>;
+};
+const mockFile = File as unknown as {
+  pathExists: ReturnType<typeof vi.fn>;
+};
+const mockTime = Time as unknown as {
+  now: ReturnType<typeof vi.fn>;
+  calculateElapsedTimeMs: ReturnType<typeof vi.fn>;
+  formatTime: ReturnType<typeof vi.fn>;
+};
 
 describe('QueueManager', () => {
   let queueManager: QueueManager;
@@ -26,6 +54,10 @@ describe('QueueManager', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+
+    mockTime.now.mockReturnValue(0);
+    mockTime.calculateElapsedTimeMs.mockReturnValue(0);
+    mockHelper.getScriptFileExtension.mockReturnValue('ts');
 
     mockParams = {
       applicationConfig: {
@@ -199,6 +231,74 @@ describe('QueueManager', () => {
 
       // The function should handle long data internally
       expect(result).toBeDefined();
+    });
+  });
+
+  describe('workerProcessor', () => {
+    beforeEach(() => {
+      mockTime.now.mockReturnValue(1000);
+      const jobProcessors = queueManager['jobProcessors'] as Map<string, any>;
+      jobProcessors.clear();
+    });
+
+    it('awaits updateData before processing job', async () => {
+      const job: Partial<Job> = {
+        id: 'job-1',
+        name: 'test-job',
+        queueName: 'test-queue',
+        data: {},
+      };
+
+      let resolveUpdate: (() => void) | undefined;
+      const updatePromise = new Promise<void>(resolve => {
+        resolveUpdate = resolve;
+      });
+
+      job.updateData = vi.fn(() => updatePromise);
+
+      const processor = { process: vi.fn().mockResolvedValue('ok') };
+
+      const jobProcessors = queueManager['jobProcessors'] as Map<string, any>;
+      jobProcessors.set('test-job', processor as any);
+
+      const workerPromise = (queueManager as any).workerProcessor(job);
+
+      expect(processor.process).not.toHaveBeenCalled();
+
+      expect(resolveUpdate).toBeDefined();
+      resolveUpdate?.();
+
+      await workerPromise;
+
+      expect(job.updateData).toHaveBeenCalledWith({ ...job.data, startTime: 1000 });
+      expect(processor.process).toHaveBeenCalledWith({ job });
+    });
+
+    it('logs warning when updateData rejects', async () => {
+      const job: Partial<Job> = {
+        id: 'job-2',
+        name: 'test-job',
+        queueName: 'test-queue',
+        data: {},
+        updateData: vi.fn(() => Promise.reject(new Error('fail update'))),
+      };
+
+      const processor = { process: vi.fn().mockResolvedValue('ok') };
+      const jobProcessors = queueManager['jobProcessors'] as Map<string, any>;
+      jobProcessors.set('test-job', processor as any);
+
+      await (queueManager as any).workerProcessor(job);
+
+      expect(mockLogger.warn).toHaveBeenCalledWith({
+        message: 'Failed to persist job metadata before processing',
+        meta: {
+          Queue: 'test-queue',
+          'Job Name': 'test-job',
+          'Job ID': 'job-2',
+          Error: 'fail update',
+        },
+      });
+      expect(processor.process).toHaveBeenCalled();
     });
   });
 

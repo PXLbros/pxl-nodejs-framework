@@ -147,6 +147,15 @@ describe('BaseApplication', () => {
     // Clean up any event listeners that may have been added during tests
     process.removeAllListeners('uncaughtException');
     process.removeAllListeners('unhandledRejection');
+    // Reset BaseApplication static state between tests
+    const baseAppStatics = BaseApplication as unknown as {
+      globalErrorHandlersRegistered?: boolean;
+      instances?: Set<unknown>;
+    };
+    if (baseAppStatics.instances) {
+      baseAppStatics.instances.clear();
+    }
+    baseAppStatics.globalErrorHandlersRegistered = false;
   });
 
   describe('constructor', () => {
@@ -218,6 +227,20 @@ describe('BaseApplication', () => {
 
       // @ts-ignore - accessing protected property
       expect(application.workerId).toBe(5);
+    });
+
+    it('registers global error handlers only once across instances', () => {
+      const firstApp = new TestApplication(mockConfig);
+      const listenersAfterFirst = process.listenerCount('uncaughtException');
+
+      const secondApp = new TestApplication(mockConfig);
+      const listenersAfterSecond = process.listenerCount('uncaughtException');
+
+      expect(listenersAfterSecond).toBe(listenersAfterFirst);
+
+      // Prevent unused variable lint in certain environments
+      void firstApp;
+      void secondApp;
     });
   });
 
@@ -381,8 +404,8 @@ describe('BaseApplication', () => {
     beforeEach(() => {
       application = new TestApplication(mockConfig);
 
-      // Mock the stop method
-      vi.spyOn(application as any, 'stop').mockResolvedValue(undefined);
+      // Prevent real shutdown logic from triggering during tests
+      vi.spyOn(application as any, 'initiateGracefulShutdown').mockResolvedValue(undefined);
     });
 
     it('should handle uncaught exceptions', () => {
