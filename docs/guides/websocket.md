@@ -647,6 +647,43 @@ export default defineWebSocketSubscriber({
 });
 ```
 
+### Subscriber Matching and Ordering
+
+- Pick one of `channel`, `channels`, or `match` when calling `defineWebSocketSubscriber` to describe how a handler should be triggered.
+- `match` accepts a string, regular expression, predicate function, or an array mixing any of those for advanced routing.
+- Use `priority` to decide execution order when more than one handler matches the same payload (higher runs first).
+- Add `name` and `description` so operational logs and the debug printer call out the handler you expect.
+
+```typescript
+// src/websocket/subscribers/queue-dashboard.ts
+export default defineWebSocketSubscriber({
+  name: 'queueDashboard',
+  description: 'Forward queue updates to the live dashboard',
+  channels: [WebSocketRedisSubscriberEvent.QueueJobCompleted, WebSocketRedisSubscriberEvent.QueueJobError],
+  priority: 20,
+  handle: ({ channel, message, webSocketServer }) => {
+    webSocketServer.sendCustomMessage({
+      data: {
+        type: 'queue',
+        action: channel === WebSocketRedisSubscriberEvent.QueueJobCompleted ? 'done' : 'errored',
+        data: message,
+      },
+    });
+  },
+});
+```
+
+```typescript
+// src/websocket/subscribers/segment-targeting.ts
+export default defineWebSocketSubscriber({
+  name: 'segmentTargeting',
+  match: [/^analytics:/, ({ message }) => message?.segment === 'vip'],
+  handle: ({ message, queueManager }) => {
+    queueManager.add('analytics', { message });
+  },
+});
+```
+
 ## Advanced Features
 
 ### Inactive Client Management

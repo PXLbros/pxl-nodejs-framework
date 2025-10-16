@@ -75,7 +75,7 @@ Store high-value metrics without blocking the request path.
 ```ts
 export default defineWebSocketSubscriber({
   name: 'analyticsSink',
-  matchers: [/^analytics:/],
+  match: [/^analytics:/],
   handle: async ({ message, databaseInstance }) => {
     const em = databaseInstance.getEntityManager();
     em.persist(new AnalyticsEvent(message));
@@ -87,8 +87,10 @@ export default defineWebSocketSubscriber({
 ## Tips for Developer Experience
 
 - Use the optional `priority` field to control execution order when multiple handlers listen to the same channel.
+- Document intent with the `description` field so operational logs have more context.
 - Wildcard listeners (`channels: ['*']`) are helpful while debugging to observe raw Redis traffic.
 - When a handler throws, the framework logs the failure and continues, so keep your code defensive and log meaningful metadata.
 - Co-locate subscribers with the feature that emits their messages to keep ownership clear.
+- `match` accepts a string, regular expression, predicate, or an array of any combination—giving you fine-grained routing without additional boilerplate.
 
 For more background, review the main WebSocket guide and the Hello World example, which now ships with a basic subscriber demonstration.

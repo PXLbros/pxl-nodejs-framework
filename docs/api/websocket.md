@@ -954,10 +954,20 @@ Use `defineWebSocketSubscriber` to get type inference when authoring handlers:
 
 ```typescript
 defineWebSocketSubscriber({
+  name: 'customRelay',
+  description: 'Forward custom events to connected clients',
   channel: 'custom',
   priority: 10,
   handle: ({ channel, message, webSocketServer }) => {
     // ...
+  },
+});
+
+defineWebSocketSubscriber({
+  name: 'segmentEnrichment',
+  match: [/^analytics:/, ({ message }) => message?.segment === 'vip'],
+  handle: ({ queueManager, message }) => {
+    queueManager.add('analytics', message);
   },
 });
 
