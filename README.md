@@ -4,6 +4,7 @@
 [![Node.js Version](https://img.shields.io/node/v/@scpxl/nodejs-framework.svg)](https://nodejs.org)
 [![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue.svg)](https://www.typescriptlang.org/)
+[![Coverage](https://img.shields.io/badge/Coverage-81%25-yellowgreen.svg)](#testing)
 
 A comprehensive, production-ready Node.js framework for building modern applications with built-in support for web servers, databases, queues, caching, WebSockets, and more.
 

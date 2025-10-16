@@ -200,6 +200,16 @@ export default abstract class BaseApplication {
     // Get application version`
     this.applicationVersion = await this.getApplicationVersion();
 
+    // Log initial startup message with version
+    Logger.info({
+      message: 'Starting application',
+      meta: {
+        Name: this.config.name,
+        'Instance ID': this.config.instanceId,
+        'PXL Framework Version': this.applicationVersion,
+      },
+    });
+
     const startInstanceOptions: ApplicationStartInstanceOptions = {
       onStarted: this.onStarted.bind(this),
     };

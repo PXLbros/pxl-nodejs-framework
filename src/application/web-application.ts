@@ -190,9 +190,6 @@ export default class WebApplication extends BaseApplication {
       Logger.info({
         message: 'Application started',
         meta: {
-          Name: this.config.name,
-          'Instance ID': this.config.instanceId,
-          'PXL Framework Version': this.applicationVersion,
           'Startup Time': Time.formatTime({
             time: startupTime,
             format: 's',
