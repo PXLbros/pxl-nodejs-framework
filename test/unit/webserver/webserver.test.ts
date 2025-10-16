@@ -74,7 +74,7 @@ vi.mock('../../../src/logger/index.js', () => ({
 describe('WebServer', () => {
   let applicationConfig: ApplicationConfig;
   let options: WebServerOptions;
-  let routes: WebServerRoute[];
+  let routes: WebServerRoute[] | undefined;
   let mockEventManager: any;
   let mockLifecycleManager: any;
 
@@ -267,6 +267,8 @@ describe('WebServer', () => {
         return {};
       });
 
+      routes = undefined;
+
       const webServer = new WebServer({
         applicationConfig,
         options: {
@@ -292,6 +294,40 @@ describe('WebServer', () => {
 
       vi.mocked(File.pathExists).mockResolvedValue(false);
       vi.mocked(Loader.loadModulesInDirectory).mockResolvedValue({});
+    });
+
+    it('should throw a helpful error when routesDirectory and explicit routes are both configured', async () => {
+      const routesDirectory = '/conflict/routes';
+
+      class StaticController {
+        public index = vi.fn();
+      }
+
+      routes = [
+        {
+          type: WebServerRouteType.Default,
+          method: 'GET',
+          path: '/static',
+          controller: StaticController,
+          action: 'index',
+        },
+      ];
+
+      const webServer = new WebServer({
+        applicationConfig,
+        options: {
+          ...options,
+          routesDirectory,
+        },
+        routes,
+        redisInstance: mockRedisInstance as any,
+        queueManager: mockQueueManager as any,
+        eventManager: mockEventManager,
+        databaseInstance: mockDatabaseInstance as any,
+        lifecycleManager: mockLifecycleManager,
+      });
+
+      await expect(webServer.load()).rejects.toThrow(/Invalid web server configuration/);
     });
 
     it('should register routes with Zod schemas via handler-only definitions', async () => {

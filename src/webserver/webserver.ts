@@ -45,6 +45,7 @@ class WebServer {
 
   private options: WebServerOptions;
   private routes: WebServerRoute[];
+  private readonly explicitRoutesConfigured: boolean;
 
   private redisInstance: RedisInstance;
   private queueManager: QueueManager;
@@ -85,7 +86,10 @@ class WebServer {
     this.applicationConfig = params.applicationConfig;
 
     this.options = mergedOptions;
-    this.routes = [...(params.routes ?? [])];
+
+    const staticRoutes = Array.isArray(params.routes) ? params.routes : [];
+    this.explicitRoutesConfigured = Array.isArray(params.routes);
+    this.routes = [...staticRoutes];
 
     this.redisInstance = params.redisInstance;
     this.queueManager = params.queueManager;
@@ -325,6 +329,17 @@ class WebServer {
    * Configure routes.
    */
   private async configureRoutes(): Promise<void> {
+    if (this.options.routesDirectory && this.explicitRoutesConfigured) {
+      const baseMessage =
+        'Invalid web server configuration: choose either "routesDirectory" for automatic discovery or provide a "routes" array.';
+      const guidance =
+        this.routes.length === 0
+          ? ' Remove the empty routes array when using "routesDirectory".'
+          : ' Remove one of these options so only a single routes source is configured.';
+
+      throw new Error(`${baseMessage}${guidance}`);
+    }
+
     await this.loadRoutesFromDirectory();
 
     // Check if controllers directory exists
@@ -470,24 +485,27 @@ class WebServer {
               entityModel as { schema?: { describe: () => unknown } }
             ).schema?.describe() as
               | {
-                  keys: Record<string, { type: string; flags?: { presence?: string }; [key: string]: unknown }>;
+                  keys?: Record<string, { type: string; flags?: { presence?: string }; [key: string]: unknown }>;
                   [key: string]: unknown;
                 }
               | undefined;
 
-            const formattedEntityValidationSchema = entityValidationSchema
-              ? {
-                  type: 'object',
-                  properties: Object.fromEntries(
-                    Object.entries(entityValidationSchema.keys).map(([key, value]) => [key, { type: value.type }]),
-                  ),
-                  required: Object.keys(entityValidationSchema.keys).filter(
-                    // Dynamic schema inspection of joi describe output; keys are from trusted entity definitions
-                    // eslint-disable-next-line security/detect-object-injection
-                    key => entityValidationSchema.keys[key].flags?.presence === 'required',
-                  ),
-                }
-              : {};
+            const schemaKeys = entityValidationSchema?.keys;
+
+            const formattedEntityValidationSchema =
+              entityValidationSchema && schemaKeys
+                ? {
+                    type: 'object',
+                    properties: Object.fromEntries(
+                      Object.entries(schemaKeys).map(([key, value]) => [key, { type: value.type }]),
+                    ),
+                    required: Object.keys(schemaKeys).filter(
+                      // Dynamic schema inspection of joi describe output; keys are from trusted entity definitions
+                      // eslint-disable-next-line security/detect-object-injection
+                      key => schemaKeys[key].flags?.presence === 'required',
+                    ),
+                  }
+                : {};
 
             const entityRouteDefinitions = WebServerUtil.getEntityRouteDefinitions({
               basePath: route.path,

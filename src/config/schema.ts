@@ -170,7 +170,7 @@ export const WebServerConfigSchema = z
       .int()
       .positive()
       .default(10 * 1000), // 10s default (was 30s)
-    routes: z.array(WebServerRouteSchema).default([]),
+    routes: z.array(WebServerRouteSchema).optional(),
     controllersDirectory: z.string().optional(), // Controllers directory path
     routesDirectory: z.string().optional(),
     cors: z

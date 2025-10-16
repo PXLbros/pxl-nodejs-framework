@@ -53,6 +53,8 @@ export default class WebApplication extends BaseApplication {
     eventManager: EventManager;
   }): Promise<void> {
     if (this.config.webServer?.enabled) {
+      const staticRoutes = this.config.webServer.routes;
+
       // Initialize web server
       this.webServer = new WebServer({
         applicationConfig: this.config,
@@ -67,7 +69,7 @@ export default class WebApplication extends BaseApplication {
           debug: this.config.webServer.debug,
         },
 
-        routes: this.config.webServer.routes,
+        ...(Array.isArray(staticRoutes) ? { routes: staticRoutes } : {}),
 
         redisInstance,
         databaseInstance,

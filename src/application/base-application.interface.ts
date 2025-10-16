@@ -129,7 +129,7 @@ export interface ApplicationWebServerConfig extends WebServerOptions {
   // controllersDirectory: string;
 
   /** Web server routes */
-  routes: WebServerRoute[];
+  routes?: WebServerRoute[];
 
   // /** Web server CORS URLs */
   // corsUrls: string[];

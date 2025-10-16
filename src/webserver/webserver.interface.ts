@@ -71,7 +71,7 @@ export interface WebServerConstructorParams {
   options: WebServerOptions;
 
   /** Web server routes */
-  routes: WebServerRoute[];
+  routes?: WebServerRoute[];
 
   /** Redis instance */
   redisInstance: RedisInstance;
