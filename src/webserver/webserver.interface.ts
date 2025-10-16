@@ -110,15 +110,6 @@ export interface BaseWebServerRoute {
   /** Typed route handler */
   handler?: ControllerAction<any>;
 
-  /** Route validation */
-  validation?: {
-    /** Validation type */
-    type: 'body' | 'query' | 'params';
-
-    /** Validation schema */
-    schema: { [key: string]: any };
-  };
-
   /** Zod-based schema definition */
   schema?: AnyRouteSchemaDefinition;
 }
@@ -142,20 +133,10 @@ export interface EntityWebServerRoute extends BaseWebServerRoute {
 
 export type WebServerRoute = DefaultWebServerRoute | EntityWebServerRoute;
 
-export interface RouteValidationSchema {
-  type: 'body' | 'query' | 'params';
-  schema: {
-    type: 'object';
-    properties: { [key: string]: any };
-    required: string[];
-  };
-}
-
 export interface EntityRouteDefinition {
   path: string;
   method: HTTPMethods | HTTPMethods[];
   action: string;
-  validationSchema?: RouteValidationSchema | RouteValidationSchema[];
 }
 
 export interface WebServerLogConfig {

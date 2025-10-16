@@ -401,7 +401,7 @@ class WebServer {
           throw new Error('Handler-only routes require an HTTP method');
         }
 
-        const schema = this.buildFastifySchema(route.schema) ?? this.buildLegacySchema(route.validation);
+        const schema = this.buildFastifySchema(route.schema);
 
         this.fastifyServer.route({
           method: route.method,
@@ -469,7 +469,6 @@ class WebServer {
             routeAction,
             routeSchema: route.schema,
             handlerOverride: route.handler?.bind(controllerInstance),
-            legacyValidation: route.validation,
           });
 
           break;
@@ -481,19 +480,55 @@ class WebServer {
               entityName: route.entityName,
             });
 
-            const entityValidationSchema = (
-              entityModel as { schema?: { describe: () => unknown } }
-            ).schema?.describe() as
-              | {
-                  keys?: Record<string, { type: string; flags?: { presence?: string }; [key: string]: unknown }>;
-                  [key: string]: unknown;
-                }
-              | undefined;
+            const entitySchemaSource = (entityModel as { schema?: { describe?: () => unknown } }).schema;
 
-            const schemaKeys = entityValidationSchema?.keys;
+            if (entitySchemaSource && typeof entitySchemaSource.describe !== 'function') {
+              const reportedType =
+                typeof entitySchemaSource === 'object'
+                  ? (entitySchemaSource?.constructor?.name ?? 'object')
+                  : typeof entitySchemaSource;
+
+              throw new Error(
+                `Entity route auto-validation requires a Joi schema with a describe() method. ` +
+                  `Entity "${route.entityName}" provided a ${reportedType}. ` +
+                  `If you're using Zod (schema/schemaUpdate) for this entity, migrate to the new DynamicEntity helpers or ` +
+                  `attach typed route validators instead of relying on WebServerRouteType.Entity auto-validation.`,
+              );
+            }
+
+            const entitySchemaDescription =
+              typeof entitySchemaSource?.describe === 'function'
+                ? (entitySchemaSource.describe() as
+                    | {
+                        keys?: Record<string, { type: string; flags?: { presence?: string }; [key: string]: unknown }>;
+                        [key: string]: unknown;
+                      }
+                    | undefined)
+                : undefined;
+
+            if (
+              entitySchemaSource &&
+              (entitySchemaDescription === undefined ||
+                typeof entitySchemaDescription !== 'object' ||
+                !('keys' in entitySchemaDescription))
+            ) {
+              const detectedType =
+                entitySchemaDescription && typeof entitySchemaDescription === 'object'
+                  ? (entitySchemaDescription.constructor?.name ?? 'object')
+                  : typeof entitySchemaDescription;
+
+              throw new Error(
+                `Entity route auto-validation expected Joi.describe() output with a "keys" map, ` +
+                  `but entity "${route.entityName}" returned ${detectedType}. ` +
+                  `This usually means the entity uses Zod schemas. ` +
+                  `Switch the entity to use DynamicEntity.defineSchemas or provide Joi-based validation for "${route.path}".`,
+              );
+            }
+
+            const schemaKeys = entitySchemaDescription?.keys;
 
             const formattedEntityValidationSchema =
-              entityValidationSchema && schemaKeys
+              entitySchemaDescription && schemaKeys
                 ? {
                     type: 'object',
                     properties: Object.fromEntries(
@@ -521,7 +556,6 @@ class WebServer {
                 routeAction: entityRouteDefinition.action,
                 routeSchema: route.schema,
                 handlerOverride: route.handler?.bind(controllerInstance),
-                legacyValidation: entityRouteDefinition.validationSchema,
               });
             }
           }
@@ -679,7 +713,6 @@ class WebServer {
     routeAction,
     routeSchema,
     handlerOverride,
-    legacyValidation,
   }: {
     controllerInstance: any;
     controllerName: string;
@@ -688,15 +721,6 @@ class WebServer {
     routeAction?: string;
     routeSchema?: AnyRouteSchemaDefinition;
     handlerOverride?: ControllerAction<any>;
-    legacyValidation?:
-      | {
-          type: 'body' | 'query' | 'params';
-          schema: { [key: string]: any };
-        }
-      | Array<{
-          type: 'body' | 'query' | 'params';
-          schema: { [key: string]: any };
-        }>;
   }): Promise<void> {
     let handler = handlerOverride;
 
@@ -726,7 +750,7 @@ class WebServer {
       handler = controllerHandler.bind(controllerInstance) as ControllerAction<any>;
     }
 
-    const fastifySchema = this.buildFastifySchema(routeSchema) ?? this.buildLegacySchema(legacyValidation);
+    const fastifySchema = this.buildFastifySchema(routeSchema);
 
     if (!handler) {
       throw new Error('Route handler could not be resolved');
@@ -792,43 +816,6 @@ class WebServer {
 
     if (routeSchema.response) {
       schema.response = routeSchema.response;
-    }
-
-    return schema;
-  }
-
-  private buildLegacySchema(
-    legacyValidation?:
-      | {
-          type: 'body' | 'query' | 'params';
-          schema: { [key: string]: any };
-        }
-      | Array<{
-          type: 'body' | 'query' | 'params';
-          schema: { [key: string]: any };
-        }>,
-  ): FastifySchema | undefined {
-    if (!legacyValidation) {
-      return undefined;
-    }
-
-    const schema: FastifySchema = {};
-
-    // Handle both single validation schema and array of validation schemas
-    const validations = Array.isArray(legacyValidation) ? legacyValidation : [legacyValidation];
-
-    for (const validation of validations) {
-      switch (validation.type) {
-        case 'body':
-          schema.body = validation.schema;
-          break;
-        case 'query':
-          schema.querystring = validation.schema;
-          break;
-        case 'params':
-          schema.params = validation.schema;
-          break;
-      }
     }
 
     return schema;

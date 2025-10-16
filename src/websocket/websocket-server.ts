@@ -686,7 +686,6 @@ export default class WebSocketServer extends WebSocketBase {
       }
       case WebSocketRedisSubscriberEvent.QueueJobError: {
         // For queue job errors, merge error information into data field
-        // This maintains backward compatibility while allowing flexible error data
         parsedMessage.data = {
           ...(parsedMessage.data ?? {}),
           error: parsedMessage.error,
@@ -1047,7 +1046,7 @@ export default class WebSocketServer extends WebSocketBase {
     }
 
     // Check if client can join multiple rooms
-    const canJoinMultipleRooms = this.options.rooms?.clientCanJoinMultipleRooms ?? true; // Default to true for backward compatibility
+    const canJoinMultipleRooms = this.options.rooms?.clientCanJoinMultipleRooms ?? true;
 
     if (!canJoinMultipleRooms && client.roomName) {
       // Remove client from current room before joining new one

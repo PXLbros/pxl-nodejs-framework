@@ -103,7 +103,6 @@
   ],
   "scripts": {
     "dev": "node scripts/hmr-watcher-enhanced.js",
-    "dev:legacy": "node scripts/hmr-watcher.js",
     "dev:import-map": "tsx src/index.ts",
     "clean": "del-cli dist",
     "build": "npm run clean && node esbuild.config.js",

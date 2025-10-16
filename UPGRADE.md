@@ -1,4 +1,60 @@
-# Upgrade Guide: Entity Schema System (Breaking Change)
+# Upgrade Guide
+
+## Pre-Launch Cleanup - Removed Features (v1.0.x)
+
+The following backward compatibility features were removed **before the official launch** (when there were no users). These are documented here for historical reference only - no migration is needed since these features were never in a public release.
+
+### 1. Legacy Route Validation System (Removed)
+
+**What was removed:**
+
+- `validation` property on route definitions (replaced by `schema` with Zod)
+- `buildLegacySchema()` method in WebServer
+- Support for old-style Joi validation schemas on routes
+
+**Why it was removed:**
+The framework now uses Zod exclusively for route validation, providing better TypeScript integration and type safety.
+
+**Modern approach:**
+
+```ts
+// Use 'schema' with Zod instead
+{
+  method: 'POST',
+  path: '/users',
+  controller: UserController,
+  action: 'create',
+  schema: {
+    body: z.object({
+      email: z.string().email(),
+      name: z.string().min(2),
+    }),
+  },
+}
+```
+
+### 2. Config Schema Duplicate Fields (Removed)
+
+**What was removed:**
+
+- `url` field on route config (use `path` instead)
+- `webServer` field on app config (use `web` instead)
+
+**Why it was removed:**
+Eliminated naming confusion and enforced consistent field names across the framework.
+
+### 3. Legacy HMR Script (Removed)
+
+**What was removed:**
+
+- `dev:legacy` npm script for old HMR watcher
+
+**Why it was removed:**
+The new HMR system is more efficient and reliable. The legacy script is no longer needed.
+
+---
+
+## Entity Schema System Migration (Breaking Change)
 
 This guide explains how to migrate from the legacy `schema` / `schemaCreate` / `schemaUpdate` pattern to the new unified `defineSchemas` system introduced in version NEXT (date: 2025-10-06).
 

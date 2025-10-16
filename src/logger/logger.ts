@@ -28,7 +28,7 @@ export class Logger {
 
   public isSentryInitialized = false;
 
-  private showRequestIdInConsole = true; // Default to true for backward compatibility
+  private showRequestIdInConsole = true;
 
   private constructor() {
     this.environment = process.env.NODE_ENV;

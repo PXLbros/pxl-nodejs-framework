@@ -144,12 +144,10 @@ export const WebServerRouteSchema = z
     type: z.string().optional(),
     method: z.union([z.string(), z.array(z.string())]).optional(),
     path: z.string(),
-    url: z.string().optional(), // Keep for backwards compatibility
     controller: z.unknown().optional(), // Controller class reference
     controllerName: z.string().optional(),
     action: z.string().optional(),
     entityName: z.string().optional(),
-    validation: z.unknown().optional(), // Validation schema reference
     handler: z.unknown().optional(),
     schema: z.unknown().optional(),
   })
@@ -235,7 +233,6 @@ export const FrameworkConfigSchema = z.object({
   email: z.object({}).optional(),
   auth: AuthConfigSchema,
   web: WebServerConfigSchema.optional(),
-  webServer: WebServerConfigSchema.optional(), // Support both 'web' and 'webServer' for compatibility
   webSocket: WebSocketConfigSchema.optional(),
 });
 

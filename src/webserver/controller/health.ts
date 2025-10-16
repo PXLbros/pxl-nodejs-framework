@@ -23,7 +23,7 @@ export default class HealthController extends BaseController {
     const phase = this.lifecycleManager.phase;
     const readinessStatus = await this.lifecycleManager.getReadinessStatus();
 
-    // Convert readiness check results to probe format for backward compatibility
+    // Convert readiness check results to probe format
     const probes: Record<string, { healthy: boolean; required: boolean }> = {};
     for (const check of readinessStatus.checks) {
       probes[check.name] = { healthy: check.ready, required: true };

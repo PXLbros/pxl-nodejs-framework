@@ -330,6 +330,57 @@ describe('WebServer', () => {
       await expect(webServer.load()).rejects.toThrow(/Invalid web server configuration/);
     });
 
+    it('should throw a clear error when entity routes are backed by Zod schemas', async () => {
+      const { File, Loader } = await import('../../../src/util/index.js');
+
+      vi.mocked(File.pathExists).mockResolvedValue(true);
+      vi.mocked(Loader.loadEntityModule).mockResolvedValueOnce({
+        schema: z.object({ name: z.string() }),
+      });
+
+      applicationConfig = {
+        ...applicationConfig,
+        database: {
+          enabled: true,
+          entitiesDirectory: '/entities',
+        },
+      };
+
+      class EntityController {
+        public options = vi.fn();
+        public getMany = vi.fn();
+        public getOne = vi.fn();
+        public createOne = vi.fn();
+        public updateOne = vi.fn();
+        public deleteOne = vi.fn();
+      }
+
+      routes = [
+        {
+          type: WebServerRouteType.Entity,
+          path: '/entities',
+          controller: EntityController as any,
+          entityName: 'TestEntity',
+        },
+      ];
+
+      const webServer = new WebServer({
+        applicationConfig,
+        options,
+        routes,
+        redisInstance: mockRedisInstance as any,
+        queueManager: mockQueueManager as any,
+        eventManager: mockEventManager,
+        databaseInstance: mockDatabaseInstance as any,
+        lifecycleManager: mockLifecycleManager,
+      });
+
+      await expect(webServer.load()).rejects.toThrow(/Entity route auto-validation expected Joi\.describe\(\) output/);
+
+      vi.mocked(File.pathExists).mockResolvedValue(false);
+      vi.mocked(Loader.loadEntityModule).mockResolvedValue({ schema: null });
+    });
+
     it('should register routes with Zod schemas via handler-only definitions', async () => {
       routes = [
         {

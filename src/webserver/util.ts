@@ -1,25 +1,14 @@
 import type { HTTPMethods } from 'fastify';
-import type { EntityRouteDefinition, RouteValidationSchema } from './webserver.interface.js';
+import type { EntityRouteDefinition } from './webserver.interface.js';
 
 function getEntityRouteDefinitions({
   basePath,
-  entityValidationSchema,
+  entityValidationSchema: _entityValidationSchema,
 }: {
   basePath: string;
   entityValidationSchema: any;
 }): EntityRouteDefinition[] {
   const routeDefinitions: EntityRouteDefinition[] = [];
-
-  const idValidationSchema: RouteValidationSchema = {
-    type: 'params',
-    schema: {
-      properties: {
-        id: { type: 'integer' },
-      },
-      required: ['id'],
-      type: 'object',
-    },
-  };
 
   // Options
   routeDefinitions.push({
@@ -40,7 +29,6 @@ function getEntityRouteDefinitions({
     path: `${basePath}/:id`,
     method: 'GET' as HTTPMethods,
     action: 'getOne',
-    validationSchema: idValidationSchema,
   });
 
   // Create one
@@ -48,20 +36,13 @@ function getEntityRouteDefinitions({
     path: `${basePath}`,
     method: 'POST' as HTTPMethods,
     action: 'createOne',
-    validationSchema: entityValidationSchema,
   });
 
-  // Update one - merge params and body validation
-  const updateOneValidationSchemas: RouteValidationSchema[] = [idValidationSchema];
-  if (entityValidationSchema) {
-    updateOneValidationSchemas.push(entityValidationSchema);
-  }
-
+  // Update one
   routeDefinitions.push({
     path: `${basePath}/:id`,
     method: 'PUT' as HTTPMethods,
     action: 'updateOne',
-    validationSchema: updateOneValidationSchemas,
   });
 
   // Delete one
@@ -69,7 +50,6 @@ function getEntityRouteDefinitions({
     path: `${basePath}/:id`,
     method: 'DELETE' as HTTPMethods,
     action: 'deleteOne',
-    validationSchema: idValidationSchema,
   });
 
   return routeDefinitions;

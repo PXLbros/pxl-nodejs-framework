@@ -400,12 +400,6 @@ export default abstract class BaseApplication {
   /**
    * Set up global error handlers
    */
-  /**
-   * Initialize performance monitor
-   */
-  // initializePerformanceMonitor deprecated in favor of PerformanceMonitorPlugin
-  // (left intentionally absent)
-
   private setupGlobalErrorHandlers(): void {
     // Handle uncaught exceptions
     process.on('uncaughtException', error => {

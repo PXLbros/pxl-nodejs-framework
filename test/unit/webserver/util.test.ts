@@ -20,54 +20,10 @@ describe('webserver util', () => {
     expect(routes).toEqual([
       { path: '/users/options', method: 'GET', action: 'options' },
       { path: '/users', method: 'GET', action: 'getMany' },
-      {
-        path: '/users/:id',
-        method: 'GET',
-        action: 'getOne',
-        validationSchema: {
-          type: 'params',
-          schema: {
-            type: 'object',
-            required: ['id'],
-            properties: { id: { type: 'integer' } },
-          },
-        },
-      },
-      {
-        path: '/users',
-        method: 'POST',
-        action: 'createOne',
-        validationSchema: entitySchema,
-      },
-      {
-        path: '/users/:id',
-        method: 'PUT',
-        action: 'updateOne',
-        validationSchema: [
-          {
-            type: 'params',
-            schema: {
-              type: 'object',
-              required: ['id'],
-              properties: { id: { type: 'integer' } },
-            },
-          },
-          entitySchema,
-        ],
-      },
-      {
-        path: '/users/:id',
-        method: 'DELETE',
-        action: 'deleteOne',
-        validationSchema: {
-          type: 'params',
-          schema: {
-            type: 'object',
-            required: ['id'],
-            properties: { id: { type: 'integer' } },
-          },
-        },
-      },
+      { path: '/users/:id', method: 'GET', action: 'getOne' },
+      { path: '/users', method: 'POST', action: 'createOne' },
+      { path: '/users/:id', method: 'PUT', action: 'updateOne' },
+      { path: '/users/:id', method: 'DELETE', action: 'deleteOne' },
     ]);
   });
 

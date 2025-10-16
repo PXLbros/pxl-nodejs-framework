@@ -33,11 +33,7 @@ The PXL Framework includes an enhanced HMR system for fast development iteration
 ### Starting HMR
 
 ```bash
-# Enhanced HMR (recommended)
 npm run dev
-
-# Legacy HMR (full rebuild each time)
-npm run dev:legacy
 ```
 
 ### WebSocket Auto-Reconnection
@@ -149,15 +145,17 @@ Enhanced HMR provides rich console output:
 [10:31:23] ✅ Build completed in 187ms
 ```
 
-## Performance Comparison
+## Performance
 
-| Operation           | Legacy HMR | Enhanced HMR     | Improvement     |
-| ------------------- | ---------- | ---------------- | --------------- |
-| Initial build       | 2.5s       | 2.5s             | Same            |
-| Small change        | 2.3s       | 0.2s             | **11x faster**  |
-| Route change        | 2.5s       | 0.2s             | **11x faster**  |
-| Syntax error        | Crash      | Continue running | **Much better** |
-| WebSocket reconnect | Manual     | Automatic        | **Seamless**    |
+The HMR system provides fast incremental builds:
+
+| Operation           | Time             | Notes                        |
+| ------------------- | ---------------- | ---------------------------- |
+| Initial build       | 2.5s             | Full compilation             |
+| Small change        | 0.2s             | **11x faster** than full     |
+| Route change        | 0.2s             | Incremental compilation      |
+| Syntax error        | Continue running | Error recovery built-in      |
+| WebSocket reconnect | Automatic        | Seamless client reconnection |
 
 ## Troubleshooting
 
@@ -181,7 +179,7 @@ wsClient.enableAutoReconnect();
 
 ## Best Practices
 
-1. **Use Enhanced HMR**: Always use `npm run dev` for development
+1. **Use `npm run dev`**: Start the HMR development server for fast iterations
 2. **Save Related Files Together**: HMR debounces changes, so saving multiple related files quickly is efficient
 3. **Monitor Console**: Watch for build errors and fix them promptly
 4. **Handle Reconnection Events**: Implement reconnection event handlers for better UX
