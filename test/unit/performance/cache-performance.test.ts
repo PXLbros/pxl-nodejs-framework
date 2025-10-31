@@ -4,8 +4,18 @@ import { PerformanceMonitor } from '../../../src/performance/performance-monitor
 
 vi.mock('../../../src/performance/performance-monitor.js', () => {
   const mockMonitor = {
-    measureAsync: vi.fn(async ({ fn }) => fn()),
-    measureSync: vi.fn(fn => fn()),
+    measureAsync: vi.fn(async (options: any) => {
+      if (typeof options.fn === 'function') {
+        return options.fn();
+      }
+      return undefined;
+    }),
+    measureSync: vi.fn((fn: any) => {
+      if (typeof fn === 'function') {
+        return fn();
+      }
+      return undefined;
+    }),
   };
 
   return {

@@ -24,6 +24,19 @@ const mockPromisify = vi.mocked(promisify);
 describe('File', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Reset mock implementations
+    mockFs.statSync.mockReset();
+    mockFs.copyFileSync.mockReset();
+    mockFs.existsSync.mockReset();
+    mockFs.mkdirSync.mockReset();
+    mockFs.readdirSync.mockReset();
+    mockFs.unlinkSync.mockReset();
+    mockFs.rmdirSync.mockReset();
+    mockFs.createWriteStream.mockReset();
+    mockFs.unlink.mockReset();
+    mockPath.join.mockReset();
+    mockHttps.get.mockReset();
+    mockPipeline.mockReset();
   });
 
   describe('formatFileSize', () => {
@@ -154,46 +167,50 @@ describe('File', () => {
 
   describe('pathExists', () => {
     it('should return true when path exists', async () => {
-      const fsPromises = await import('fs/promises');
-      vi.mocked(fsPromises.access).mockResolvedValue(undefined);
+      const fsMock = await import('fs/promises');
+      const mockAccess = vi.mocked(fsMock).access;
+      mockAccess.mockResolvedValueOnce(undefined);
 
       const result = await File.pathExists('/existing/path');
 
       expect(result).toBe(true);
-      expect(fsPromises.access).toHaveBeenCalledWith('/existing/path');
+      expect(mockAccess).toHaveBeenCalledWith('/existing/path');
     });
 
     it('should return false when path does not exist', async () => {
-      const fsPromises = await import('fs/promises');
-      vi.mocked(fsPromises.access).mockRejectedValue(new Error('ENOENT: no such file or directory'));
+      const fsMock = await import('fs/promises');
+      const mockAccess = vi.mocked(fsMock).access;
+      mockAccess.mockRejectedValueOnce(new Error('ENOENT: no such file or directory'));
 
       const result = await File.pathExists('/non/existent/path');
 
       expect(result).toBe(false);
-      expect(fsPromises.access).toHaveBeenCalledWith('/non/existent/path');
+      expect(mockAccess).toHaveBeenCalledWith('/non/existent/path');
     });
   });
 
   describe('ensureDir', () => {
     it('should not create directory if it already exists', async () => {
-      const fsPromises = await import('fs/promises');
-      vi.mocked(fsPromises.access).mockResolvedValue(undefined);
+      const fsMock = await import('fs/promises');
+      const mockModule = vi.mocked(fsMock);
+      mockModule.access.mockResolvedValueOnce(undefined);
 
       await File.ensureDir('/existing/dir');
 
-      expect(fsPromises.access).toHaveBeenCalledWith('/existing/dir');
-      expect(fsPromises.mkdir).not.toHaveBeenCalled();
+      expect(mockModule.access).toHaveBeenCalledWith('/existing/dir');
+      expect(mockModule.mkdir).not.toHaveBeenCalled();
     });
 
     it('should create directory if it does not exist', async () => {
-      const fsPromises = await import('fs/promises');
-      vi.mocked(fsPromises.access).mockRejectedValue(new Error('ENOENT'));
-      vi.mocked(fsPromises.mkdir).mockResolvedValue(undefined);
+      const fsMock = await import('fs/promises');
+      const mockModule = vi.mocked(fsMock);
+      mockModule.access.mockRejectedValueOnce(new Error('ENOENT'));
+      mockModule.mkdir.mockResolvedValueOnce(undefined);
 
       await File.ensureDir('/new/dir');
 
-      expect(fsPromises.access).toHaveBeenCalledWith('/new/dir');
-      expect(fsPromises.mkdir).toHaveBeenCalledWith('/new/dir', { recursive: true });
+      expect(mockModule.access).toHaveBeenCalledWith('/new/dir');
+      expect(mockModule.mkdir).toHaveBeenCalledWith('/new/dir', { recursive: true });
     });
   });
 
@@ -267,8 +284,8 @@ describe('File', () => {
 
   describe('convertFile', () => {
     it('should convert file successfully', async () => {
-      const ffmpeg = (await import('fluent-ffmpeg')).default;
-      const mockFfmpeg = vi.mocked(ffmpeg);
+      const ffmpegModule = await import('fluent-ffmpeg');
+      const mockFfmpeg = vi.mocked(ffmpegModule).default;
 
       const mockCommand = {
         output: vi.fn().mockReturnThis(),
@@ -277,7 +294,7 @@ describe('File', () => {
         run: vi.fn(),
       };
 
-      mockFfmpeg.mockReturnValue(mockCommand as any);
+      mockFfmpeg.mockReturnValueOnce(mockCommand as any);
 
       // Trigger the 'end' event
       mockCommand.on.mockImplementation((event: string, handler: any) => {
@@ -301,8 +318,8 @@ describe('File', () => {
     });
 
     it('should handle conversion errors', async () => {
-      const ffmpeg = (await import('fluent-ffmpeg')).default;
-      const mockFfmpeg = vi.mocked(ffmpeg);
+      const ffmpegModule = await import('fluent-ffmpeg');
+      const mockFfmpeg = vi.mocked(ffmpegModule).default;
 
       const mockCommand = {
         output: vi.fn().mockReturnThis(),
@@ -311,7 +328,7 @@ describe('File', () => {
         run: vi.fn(),
       };
 
-      mockFfmpeg.mockReturnValue(mockCommand as any);
+      mockFfmpeg.mockReturnValueOnce(mockCommand as any);
 
       // Trigger the 'error' event
       mockCommand.on.mockImplementation((event: string, handler: any) => {
@@ -331,8 +348,8 @@ describe('File', () => {
     });
 
     it('should use correct format for jpg', async () => {
-      const ffmpeg = (await import('fluent-ffmpeg')).default;
-      const mockFfmpeg = vi.mocked(ffmpeg);
+      const ffmpegModule = await import('fluent-ffmpeg');
+      const mockFfmpeg = vi.mocked(ffmpegModule).default;
 
       const mockCommand = {
         output: vi.fn().mockReturnThis(),
@@ -341,7 +358,7 @@ describe('File', () => {
         run: vi.fn(),
       };
 
-      mockFfmpeg.mockReturnValue(mockCommand as any);
+      mockFfmpeg.mockReturnValueOnce(mockCommand as any);
 
       mockCommand.on.mockImplementation((event: string, handler: any) => {
         if (event === 'end') {
@@ -360,8 +377,8 @@ describe('File', () => {
     });
 
     it('should use format as-is for non-jpg formats', async () => {
-      const ffmpeg = (await import('fluent-ffmpeg')).default;
-      const mockFfmpeg = vi.mocked(ffmpeg);
+      const ffmpegModule = await import('fluent-ffmpeg');
+      const mockFfmpeg = vi.mocked(ffmpegModule).default;
 
       const mockCommand = {
         output: vi.fn().mockReturnThis(),
@@ -370,7 +387,7 @@ describe('File', () => {
         run: vi.fn(),
       };
 
-      mockFfmpeg.mockReturnValue(mockCommand as any);
+      mockFfmpeg.mockReturnValueOnce(mockCommand as any);
 
       mockCommand.on.mockImplementation((event: string, handler: any) => {
         if (event === 'end') {
@@ -389,8 +406,8 @@ describe('File', () => {
     });
 
     it('should handle progress events', async () => {
-      const ffmpeg = (await import('fluent-ffmpeg')).default;
-      const mockFfmpeg = vi.mocked(ffmpeg);
+      const ffmpegModule = await import('fluent-ffmpeg');
+      const mockFfmpeg = vi.mocked(ffmpegModule).default;
       const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
       const mockCommand = {
@@ -400,7 +417,7 @@ describe('File', () => {
         run: vi.fn(),
       };
 
-      mockFfmpeg.mockReturnValue(mockCommand as any);
+      mockFfmpeg.mockReturnValueOnce(mockCommand as any);
 
       mockCommand.on.mockImplementation((event: string, handler: any) => {
         if (event === 'progress') {
