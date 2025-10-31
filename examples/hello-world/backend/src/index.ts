@@ -37,6 +37,12 @@ async function canConnectToRedis(host: string, port: number): Promise<boolean> {
     maxRetriesPerRequest: 0,
   });
 
+  // Attach error handler to prevent unhandled error events
+  const errorHandler = () => {
+    // Errors are expected and handled via try/catch below
+  };
+  client.on('error', errorHandler);
+
   try {
     await client.connect();
     await client.ping();
@@ -45,6 +51,7 @@ async function canConnectToRedis(host: string, port: number): Promise<boolean> {
   } catch {
     return false;
   } finally {
+    client.off('error', errorHandler);
     if (client.status === 'ready') {
       try {
         await client.quit();

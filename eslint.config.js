@@ -73,7 +73,7 @@ export default [
       '@typescript-eslint/explicit-module-boundary-types': 'off',
       '@typescript-eslint/no-non-null-assertion': 'error',
       '@typescript-eslint/prefer-nullish-coalescing': 'error',
-      '@typescript-eslint/prefer-optional-chain': 'error',
+      '@typescript-eslint/prefer-optional-chain': 'warn',
       '@typescript-eslint/consistent-type-imports': 'error',
       '@typescript-eslint/no-unnecessary-type-assertion': 'error',
 

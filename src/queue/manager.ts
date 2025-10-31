@@ -208,17 +208,15 @@ export default class QueueManager {
     }
   };
 
-  private onQueueProgress = (job: Job, progress: number | object): void => {
+  private onQueueProgress = (jobId: string, progress: unknown): void => {
     this.log('Progress update', {
-      Queue: job.queueName,
-      'Job Name': job.name,
-      'Job ID': job.id,
+      'Job ID': jobId,
       Progress: progress,
     });
   };
 
-  private onQueueRemoved = (job: Job): void => {
-    this.log('Removed queue', { Queue: job.queueName, Job: job.id });
+  private onQueueRemoved = (jobId: string): void => {
+    this.log('Removed queue', { Job: jobId });
   };
 
   public addJobToQueue = async <

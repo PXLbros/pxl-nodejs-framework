@@ -30,11 +30,8 @@ export default defineConfig({
     include: ['test/**/*.{test,spec}.{js,ts}'],
     exclude: ['node_modules/**', 'dist/**'],
     pool: 'forks', // Better isolation for tests
-    poolOptions: {
-      forks: {
-        singleFork: true, // Avoid issues with shared state
-      },
-    },
+    maxWorkers: 1, // Avoid issues with shared state (replaces singleFork in v4)
+    isolate: false, // Avoid issues with shared state (replaces singleFork in v4)
   },
   resolve: {
     alias: {

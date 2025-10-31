@@ -175,6 +175,7 @@ export default class RedisManager {
           port: this.options.port,
           password: this.options.password,
           maxRetriesPerRequest: null, // Needed for bullmq
+          lazyConnect: true, // Prevent automatic connection to avoid unhandled errors
         };
 
         const useInMemoryRedis =
@@ -186,7 +187,13 @@ export default class RedisManager {
             return new InMemoryRedisClient(getGlobalInMemoryRedisState()) as unknown as Redis;
           }
 
-          return new Redis(redisOptions);
+          const client = new Redis(redisOptions);
+          // Attach a temporary error handler to prevent unhandled errors during connection
+          const errorHandler = (error: Error) => {
+            // Error will be handled by the promise rejection below
+          };
+          client.once('error', errorHandler);
+          return client;
         };
 
         const client = createClient();
@@ -194,21 +201,26 @@ export default class RedisManager {
         const subscriberClient = createClient();
 
         try {
-          // Wait for all three clients to be ready
-          await Promise.all([
-            new Promise<void>((resolve, reject) => {
-              client.once('ready', () => resolve());
-              client.once('error', (error: Error) => reject(error));
-            }),
-            new Promise<void>((resolve, reject) => {
-              publisherClient.once('ready', () => resolve());
-              publisherClient.once('error', (error: Error) => reject(error));
-            }),
-            new Promise<void>((resolve, reject) => {
-              subscriberClient.once('ready', () => resolve());
-              subscriberClient.once('error', (error: Error) => reject(error));
-            }),
-          ]);
+          // For non-in-memory clients, explicitly connect since we use lazyConnect
+          if (!useInMemoryRedis) {
+            await Promise.all([client.connect(), publisherClient.connect(), subscriberClient.connect()]);
+          } else {
+            // Wait for in-memory clients to be ready
+            await Promise.all([
+              new Promise<void>((resolve, reject) => {
+                client.once('ready', () => resolve());
+                client.once('error', (error: Error) => reject(error));
+              }),
+              new Promise<void>((resolve, reject) => {
+                publisherClient.once('ready', () => resolve());
+                publisherClient.once('error', (error: Error) => reject(error));
+              }),
+              new Promise<void>((resolve, reject) => {
+                subscriberClient.once('ready', () => resolve());
+                subscriberClient.once('error', (error: Error) => reject(error));
+              }),
+            ]);
+          }
 
           const redisInstance = new RedisInstance({
             redisManager: this,
