@@ -1,20 +1,18 @@
-import { beforeEach, vi } from 'vitest';
+import { beforeEach, vi, afterEach } from 'vitest';
 
 // Set test environment variables
 process.env.NODE_ENV = 'test';
 
-// Mock console to avoid noise in tests (but allow debug if needed)
-const originalConsole = global.console;
-global.console = {
-  ...originalConsole,
-  log: vi.fn(),
-  debug: vi.fn(),
-  info: vi.fn(),
-  warn: originalConsole.warn, // Keep warnings visible
-  error: originalConsole.error, // Keep errors visible
-};
+// Store original console methods
+const originalConsole = { ...global.console };
 
-// Clean up mocks before each test
+// Clean up mocks before and after each test
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.restoreAllMocks();
+});
+
+afterEach(() => {
+  vi.clearAllMocks();
+  vi.restoreAllMocks();
 });

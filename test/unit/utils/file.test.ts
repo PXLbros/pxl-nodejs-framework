@@ -71,7 +71,9 @@ describe('File', () => {
     it('should copy a file', () => {
       const mockStats = { isDirectory: () => false };
       mockFs.statSync.mockReturnValue(mockStats as any);
-      mockFs.copyFileSync.mockImplementation(() => {});
+      mockFs.copyFileSync.mockImplementation(() => {
+        return undefined;
+      });
 
       File.copySync('/src/file.txt', '/dest/file.txt');
 

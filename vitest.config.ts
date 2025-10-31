@@ -31,7 +31,7 @@ export default defineConfig({
     exclude: ['node_modules/**', 'dist/**'],
     pool: 'forks', // Better isolation for tests
     maxWorkers: 1, // Avoid issues with shared state (replaces singleFork in v4)
-    isolate: false, // Avoid issues with shared state (replaces singleFork in v4)
+    isolate: true, // Enable isolation for proper module mocking
   },
   resolve: {
     alias: {

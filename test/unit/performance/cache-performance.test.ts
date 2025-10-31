@@ -6,13 +6,13 @@ vi.mock('../../../src/performance/performance-monitor.js', () => {
   const mockMonitor = {
     measureAsync: vi.fn(async (options: any) => {
       if (typeof options.fn === 'function') {
-        return options.fn();
+        return await options.fn();
       }
       return undefined;
     }),
-    measureSync: vi.fn((fn: any) => {
-      if (typeof fn === 'function') {
-        return fn();
+    measureSync: vi.fn((options: any) => {
+      if (typeof options.fn === 'function') {
+        return options.fn();
       }
       return undefined;
     }),
