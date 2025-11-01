@@ -3,12 +3,13 @@ import Jwt from '../../../src/auth/jwt.js';
 
 // Mock jose library
 vi.mock('jose', () => ({
-  SignJWT: vi.fn().mockImplementation(() => ({
-    setProtectedHeader: vi.fn().mockReturnThis(),
-    setIssuedAt: vi.fn().mockReturnThis(),
-    setExpirationTime: vi.fn().mockReturnThis(),
-    sign: vi.fn().mockResolvedValue('mock-jwt-token'),
-  })),
+  SignJWT: vi.fn(function (this: any, payload: any) {
+    this.setProtectedHeader = vi.fn().mockReturnThis();
+    this.setIssuedAt = vi.fn().mockReturnThis();
+    this.setExpirationTime = vi.fn().mockReturnThis();
+    this.sign = vi.fn().mockResolvedValue('mock-jwt-token');
+    return this;
+  }),
   importJWK: vi.fn().mockResolvedValue('mock-secret-key'),
   jwtVerify: vi.fn().mockResolvedValue({
     payload: { sub: '123', exp: Date.now() + 3600000 },

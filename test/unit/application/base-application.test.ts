@@ -23,12 +23,24 @@ vi.mock('url');
 vi.mock('path');
 vi.mock('os');
 vi.mock('cluster');
-vi.mock('../../../src/database/index.js');
-vi.mock('../../../src/queue/manager.js');
-vi.mock('../../../src/redis/manager.js');
-vi.mock('../../../src/cache/manager.js');
-vi.mock('../../../src/cluster/cluster-manager.js');
-vi.mock('../../../src/event/manager.js');
+vi.mock('../../../src/database/index.js', () => ({
+  DatabaseManager: vi.fn(),
+}));
+vi.mock('../../../src/queue/manager.js', () => ({
+  default: vi.fn(),
+}));
+vi.mock('../../../src/redis/manager.js', () => ({
+  default: vi.fn(),
+}));
+vi.mock('../../../src/cache/manager.js', () => ({
+  default: vi.fn(),
+}));
+vi.mock('../../../src/cluster/cluster-manager.js', () => ({
+  default: vi.fn(),
+}));
+vi.mock('../../../src/event/manager.js', () => ({
+  default: vi.fn(),
+}));
 vi.mock('../../../src/performance/performance-monitor.js');
 vi.mock('../../../src/util/index.js');
 vi.mock('../../../src/logger/logger.js');
@@ -115,29 +127,26 @@ describe('BaseApplication', () => {
     mockExistsSync.mockReturnValue(true);
 
     // Mock managers
-    mockRedisManager.mockImplementation(
-      () =>
-        ({
-          connect: vi.fn(),
-          disconnect: vi.fn(),
-        }) as any,
-    );
+    mockRedisManager.mockImplementation(function (this: any) {
+      this.connect = vi.fn();
+      this.disconnect = vi.fn();
+      return this;
+    } as any);
 
-    mockCacheManager.mockImplementation(() => ({}) as any);
-    mockDatabaseManager.mockImplementation(
-      () =>
-        ({
-          connect: vi.fn(),
-          disconnect: vi.fn(),
-        }) as any,
-    );
+    mockCacheManager.mockImplementation(function (this: any) {
+      return this;
+    } as any);
 
-    mockQueueManager.mockImplementation(
-      () =>
-        ({
-          registerQueues: vi.fn(),
-        }) as any,
-    );
+    mockDatabaseManager.mockImplementation(function (this: any) {
+      this.connect = vi.fn();
+      this.disconnect = vi.fn();
+      return this;
+    } as any);
+
+    mockQueueManager.mockImplementation(function (this: any) {
+      this.registerQueues = vi.fn();
+      return this;
+    } as any);
 
     mockPerformanceMonitor.initialize.mockReturnValue({} as any);
   });
@@ -318,7 +327,10 @@ describe('BaseApplication', () => {
         application.databaseManager.connect = vi.fn().mockResolvedValue(mockDatabaseInstance);
       }
 
-      mockQueueManager.mockImplementation(() => mockQueueManagerInstance as any);
+      mockQueueManager.mockImplementation(function (this: any) {
+        this.registerQueues = mockQueueManagerInstance.registerQueues;
+        return this;
+      } as any);
     });
 
     it('should start standalone application', async () => {
@@ -353,7 +365,10 @@ describe('BaseApplication', () => {
       const mockClusterManagerInstance = {
         start: vi.fn(),
       };
-      mockClusterManager.mockImplementation(() => mockClusterManagerInstance as any);
+      mockClusterManager.mockImplementation(function (this: any) {
+        this.start = mockClusterManagerInstance.start;
+        return this;
+      } as any);
 
       await application.start();
 
@@ -385,7 +400,10 @@ describe('BaseApplication', () => {
       const mockEventManagerInstance = {
         load: vi.fn(),
       };
-      mockEventManager.mockImplementation(() => mockEventManagerInstance as any);
+      mockEventManager.mockImplementation(function (this: any) {
+        this.load = mockEventManagerInstance.load;
+        return this;
+      } as any);
 
       await application.start();
 

@@ -1,0 +1,12 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Only lint and check documentation when pushing to main branch
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
+if [ "$BRANCH" = "main" ]; then
+  echo "Pushing to main branch - running linting checks..."
+  npm run lint && npm run prettier && npm run docs:build
+else
+  echo "Pushing to branch '$BRANCH' - skipping linting checks (they will run on push to main)"
+fi

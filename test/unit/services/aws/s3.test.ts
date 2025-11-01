@@ -2,20 +2,22 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import AwsS3 from '../../../../src/services/aws/s3.js';
 
 // Mock AWS SDK
-vi.mock('@aws-sdk/client-s3', () => ({
-  S3Client: vi.fn().mockImplementation(() => ({
-    send: vi.fn().mockResolvedValue({
-      UploadId: 'test-upload-id',
-      ETag: 'test-etag',
-      Location: 'https://test-bucket.s3.amazonaws.com/test/file.txt',
-    }),
-  })),
-  PutObjectCommand: vi.fn(),
-  GetObjectCommand: vi.fn(),
-  CreateMultipartUploadCommand: vi.fn(),
-  UploadPartCommand: vi.fn(),
-  CompleteMultipartUploadCommand: vi.fn(),
-}));
+vi.mock('@aws-sdk/client-s3', () => {
+  return {
+    S3Client: class {
+      send = vi.fn().mockResolvedValue({
+        UploadId: 'test-upload-id',
+        ETag: 'test-etag',
+        Location: 'https://test-bucket.s3.amazonaws.com/test/file.txt',
+      });
+    },
+    PutObjectCommand: vi.fn(),
+    GetObjectCommand: vi.fn(),
+    CreateMultipartUploadCommand: vi.fn(),
+    UploadPartCommand: vi.fn(),
+    CompleteMultipartUploadCommand: vi.fn(),
+  };
+});
 
 vi.mock('@aws-sdk/s3-request-presigner', () => ({
   getSignedUrl: vi.fn().mockResolvedValue('https://signed-url.example.com'),

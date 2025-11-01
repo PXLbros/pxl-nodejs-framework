@@ -1,6 +1,2 @@
-# Check linting
-npm run lint
-npm run prettier
-
-# Check documentation builds without dead links
-npm run docs:build
+# Linting and documentation checks have been moved to pre-push hook for main branch only
+# This allows for faster commits during development

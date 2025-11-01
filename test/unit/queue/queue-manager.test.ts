@@ -8,8 +8,12 @@ import type { QueueManagerConstructorParams } from '../../../src/queue/manager.i
 import type { QueueItem } from '../../../src/queue/index.interface.js';
 
 // Mock dependencies
-vi.mock('bullmq');
-vi.mock('../../../src/queue/worker.js');
+vi.mock('bullmq', () => ({
+  Queue: vi.fn(),
+}));
+vi.mock('../../../src/queue/worker.js', () => ({
+  default: vi.fn(),
+}));
 vi.mock('../../../src/logger/index.js');
 vi.mock('../../../src/util/index.js', () => ({
   File: {
@@ -140,7 +144,9 @@ describe('QueueManager', () => {
         add: vi.fn(),
         getJobs: vi.fn(),
       };
-      mockQueue.mockImplementation(() => mockQueueInstance as any);
+      mockQueue.mockImplementation(function (this: any) {
+        return Object.assign(this, mockQueueInstance);
+      } as any);
 
       const queues: QueueItem[] = [
         {
@@ -384,7 +390,9 @@ describe('QueueManager', () => {
         add: vi.fn(),
         getJobs: vi.fn(),
       };
-      mockQueue.mockImplementation(() => mockQueueInstance);
+      mockQueue.mockImplementation(function (this: any) {
+        return Object.assign(this, mockQueueInstance);
+      } as any);
 
       // Mock the log method
       vi.spyOn(queueManager, 'log').mockImplementation(() => {});

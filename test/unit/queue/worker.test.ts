@@ -6,9 +6,10 @@ import type { Job } from 'bullmq';
 
 // Mock dependencies
 vi.mock('bullmq', () => ({
-  Worker: class MockWorker {
-    on = vi.fn((event: string, handler: Function) => this);
-  },
+  Worker: vi.fn(function (this: any, name: string, processor: any, options: any) {
+    this.on = vi.fn((event: string, handler: Function) => this);
+    return this;
+  }),
 }));
 
 vi.mock('../../../src/logger/index.js', () => ({

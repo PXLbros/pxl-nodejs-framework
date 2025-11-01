@@ -7,11 +7,18 @@ import type { ApplicationDatabaseOptions } from '../../../src/database/manager.i
 
 // Mock dependencies
 vi.mock('@mikro-orm/postgresql');
-vi.mock('../../../src/database/instance.js');
+vi.mock('../../../src/database/instance.js', () => ({
+  default: vi.fn(),
+}));
 vi.mock('../../../src/logger/index.js');
+vi.mock('../../../src/performance/index.js', () => ({
+  DatabasePerformanceWrapper: {
+    monitorConnection: vi.fn((_operation, callback) => callback()),
+  },
+}));
 
 const mockMikroORM = vi.mocked(MikroORM);
-const mockDatabaseInstance = vi.mocked(DatabaseInstance);
+const MockDatabaseInstance = vi.mocked(DatabaseInstance);
 const mockLogger = vi.mocked(Logger);
 
 describe('DatabaseManager', () => {
@@ -20,6 +27,12 @@ describe('DatabaseManager', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+
+    // Setup DatabaseInstance mock as a proper constructor
+    MockDatabaseInstance.mockImplementation(function (this: any, opts: any) {
+      this.disconnect = vi.fn().mockResolvedValue(undefined);
+      return this;
+    } as any);
 
     mockOptions = {
       applicationConfig: {
@@ -66,17 +79,19 @@ describe('DatabaseManager', () => {
       };
 
       mockMikroORM.init.mockResolvedValue(mockOrm as any);
-      mockDatabaseInstance.mockImplementation(() => mockInstance as any);
+      MockDatabaseInstance.mockImplementation(function (this: any) {
+        return Object.assign(this, mockInstance);
+      } as any);
 
       const result = await databaseManager.connect();
 
       expect(mockMikroORM.init).toHaveBeenCalled();
-      expect(mockDatabaseInstance).toHaveBeenCalledWith({
+      expect(MockDatabaseInstance).toHaveBeenCalledWith({
         databaseManager,
         applicationConfig: mockOptions.applicationConfig,
         orm: mockOrm,
       });
-      expect(result).toBe(mockInstance);
+      expect(result).toMatchObject(mockInstance);
     });
 
     it('should track multiple instances', async () => {
@@ -87,15 +102,19 @@ describe('DatabaseManager', () => {
 
       mockMikroORM.init.mockResolvedValueOnce(mockOrm1 as any).mockResolvedValueOnce(mockOrm2 as any);
 
-      mockDatabaseInstance
-        .mockImplementationOnce(() => mockInstance1 as any)
-        .mockImplementationOnce(() => mockInstance2 as any);
+      MockDatabaseInstance
+        .mockImplementationOnce(function (this: any) {
+          return Object.assign(this, mockInstance1);
+        } as any)
+        .mockImplementationOnce(function (this: any) {
+          return Object.assign(this, mockInstance2);
+        } as any);
 
       const instance1 = await databaseManager.connect();
       const instance2 = await databaseManager.connect();
 
-      expect(instance1).toBe(mockInstance1);
-      expect(instance2).toBe(mockInstance2);
+      expect(instance1).toMatchObject(mockInstance1);
+      expect(instance2).toMatchObject(mockInstance2);
 
       // Verify both instances are tracked
       await databaseManager.disconnect();
@@ -118,9 +137,13 @@ describe('DatabaseManager', () => {
       const mockInstance2 = { disconnect: vi.fn().mockResolvedValue(undefined) };
 
       mockMikroORM.init.mockResolvedValue(mockOrm as any);
-      mockDatabaseInstance
-        .mockImplementationOnce(() => mockInstance1 as any)
-        .mockImplementationOnce(() => mockInstance2 as any);
+      MockDatabaseInstance
+        .mockImplementationOnce(function (this: any) {
+          return Object.assign(this, mockInstance1);
+        } as any)
+        .mockImplementationOnce(function (this: any) {
+          return Object.assign(this, mockInstance2);
+        } as any);
 
       // Create two connections
       await databaseManager.connect();
@@ -138,7 +161,9 @@ describe('DatabaseManager', () => {
       const mockInstance = { disconnect: vi.fn().mockResolvedValue(undefined) };
 
       mockMikroORM.init.mockResolvedValue(mockOrm as any);
-      mockDatabaseInstance.mockImplementation(() => mockInstance as any);
+      MockDatabaseInstance.mockImplementation(function (this: any) {
+        return Object.assign(this, mockInstance);
+      } as any);
 
       await databaseManager.connect();
       await databaseManager.disconnect();
@@ -155,9 +180,13 @@ describe('DatabaseManager', () => {
       const mockInstance2 = { disconnect: vi.fn().mockResolvedValue(undefined) };
 
       mockMikroORM.init.mockResolvedValue(mockOrm as any);
-      mockDatabaseInstance
-        .mockImplementationOnce(() => mockInstance1 as any)
-        .mockImplementationOnce(() => mockInstance2 as any);
+      MockDatabaseInstance
+        .mockImplementationOnce(function (this: any) {
+          return Object.assign(this, mockInstance1);
+        } as any)
+        .mockImplementationOnce(function (this: any) {
+          return Object.assign(this, mockInstance2);
+        } as any);
 
       await databaseManager.connect();
       await databaseManager.connect();

@@ -2,12 +2,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { EventEmitter } from 'node:events';
 
 // Mock ioredis
-const mockRedis = vi.fn();
 vi.mock('ioredis', () => {
-  const MockRedis = vi.fn().mockImplementation(() => {
+  const MockRedis = vi.fn(function MockRedisConstructor() {
     const emitter = new EventEmitter();
     Object.assign(emitter, {
       status: 'ready',
+      connect: vi.fn().mockResolvedValue(undefined),
       ping: vi.fn().mockResolvedValue('PONG'),
       set: vi.fn().mockResolvedValue('OK'),
       get: vi.fn().mockResolvedValue(null),
