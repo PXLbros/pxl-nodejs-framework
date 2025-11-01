@@ -26,7 +26,7 @@ export default abstract class EntityController extends BaseController {
   }
 
   protected getEntity = async (): Promise<typeof DynamicEntity | undefined> => {
-    if (!this.applicationConfig.database || this.applicationConfig.database.enabled !== true) {
+    if (this.applicationConfig.database?.enabled !== true) {
       throw new Error(`Database not enabled (Entity: ${this.entityName})`);
     }
 

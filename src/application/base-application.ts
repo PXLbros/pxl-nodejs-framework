@@ -140,7 +140,7 @@ export default abstract class BaseApplication {
     // Track instance and ensure global error handlers are registered once
     BaseApplication.registerInstance(this);
 
-    if (this.config.database && this.config.database.enabled === true) {
+    if (this.config.database?.enabled === true) {
       const defaultEntitiesDirectory = join(this.config.rootDirectory, 'src', 'database', 'entities');
 
       if (!this.config.database.entitiesDirectory) {

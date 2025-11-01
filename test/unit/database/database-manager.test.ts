@@ -102,13 +102,11 @@ describe('DatabaseManager', () => {
 
       mockMikroORM.init.mockResolvedValueOnce(mockOrm1 as any).mockResolvedValueOnce(mockOrm2 as any);
 
-      MockDatabaseInstance
-        .mockImplementationOnce(function (this: any) {
-          return Object.assign(this, mockInstance1);
-        } as any)
-        .mockImplementationOnce(function (this: any) {
-          return Object.assign(this, mockInstance2);
-        } as any);
+      MockDatabaseInstance.mockImplementationOnce(function (this: any) {
+        return Object.assign(this, mockInstance1);
+      } as any).mockImplementationOnce(function (this: any) {
+        return Object.assign(this, mockInstance2);
+      } as any);
 
       const instance1 = await databaseManager.connect();
       const instance2 = await databaseManager.connect();
@@ -137,13 +135,11 @@ describe('DatabaseManager', () => {
       const mockInstance2 = { disconnect: vi.fn().mockResolvedValue(undefined) };
 
       mockMikroORM.init.mockResolvedValue(mockOrm as any);
-      MockDatabaseInstance
-        .mockImplementationOnce(function (this: any) {
-          return Object.assign(this, mockInstance1);
-        } as any)
-        .mockImplementationOnce(function (this: any) {
-          return Object.assign(this, mockInstance2);
-        } as any);
+      MockDatabaseInstance.mockImplementationOnce(function (this: any) {
+        return Object.assign(this, mockInstance1);
+      } as any).mockImplementationOnce(function (this: any) {
+        return Object.assign(this, mockInstance2);
+      } as any);
 
       // Create two connections
       await databaseManager.connect();
@@ -180,13 +176,11 @@ describe('DatabaseManager', () => {
       const mockInstance2 = { disconnect: vi.fn().mockResolvedValue(undefined) };
 
       mockMikroORM.init.mockResolvedValue(mockOrm as any);
-      MockDatabaseInstance
-        .mockImplementationOnce(function (this: any) {
-          return Object.assign(this, mockInstance1);
-        } as any)
-        .mockImplementationOnce(function (this: any) {
-          return Object.assign(this, mockInstance2);
-        } as any);
+      MockDatabaseInstance.mockImplementationOnce(function (this: any) {
+        return Object.assign(this, mockInstance1);
+      } as any).mockImplementationOnce(function (this: any) {
+        return Object.assign(this, mockInstance2);
+      } as any);
 
       await databaseManager.connect();
       await databaseManager.connect();

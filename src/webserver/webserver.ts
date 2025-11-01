@@ -474,7 +474,7 @@ class WebServer {
           break;
         }
         case WebServerRouteType.Entity: {
-          if (this.applicationConfig.database && this.applicationConfig.database.enabled === true) {
+          if (this.applicationConfig.database?.enabled === true) {
             const entityModel = await Loader.loadEntityModule({
               entitiesDirectory: this.applicationConfig.database.entitiesDirectory,
               entityName: route.entityName,
