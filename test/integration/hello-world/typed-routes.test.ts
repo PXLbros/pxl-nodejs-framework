@@ -114,10 +114,13 @@ describe('Hello World - Typed Routes Integration', () => {
               params: z.object({
                 id: z.string().regex(/^\d+$/, 'ID must be a number'),
               }),
-              body: z.object({
-                name: z.string().min(1).max(100).optional(),
-                message: z.string().min(1).max(500).optional(),
-              }).strict().optional(),
+              body: z
+                .object({
+                  name: z.string().min(1).max(100).optional(),
+                  message: z.string().min(1).max(500).optional(),
+                })
+                .strict()
+                .optional(),
             } as RouteSchemaDefinition,
             handler: async (_request, reply) => {
               // Mock implementation - returns 404 as expected by test
