@@ -1,6 +1,10 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { WebApplication } from '../../../src/application/index.js';
 import type { WebApplicationConfig } from '../../../src/application/index.js';
+import { WebServerRouteType } from '../../../src/webserver/index.js';
+import { waitForServer } from '../../utils/helpers/test-server.js';
+import { routes as helloTypedRoutes } from '../../../examples/hello-world/backend/src/routes/hello.routes.js';
+import { routes as greetingsTypedRoutes } from '../../../examples/hello-world/backend/src/routes/greetings.routes.js';
 
 describe('Hello World - Typed Routes Integration', () => {
   let app: WebApplication;
@@ -26,14 +30,30 @@ describe('Hello World - Typed Routes Integration', () => {
           enabled: true,
           urls: ['*'],
         },
-        controllersDirectory: './examples/hello-world/backend/controllers',
-        routesDirectory: './examples/hello-world/backend/src/routes',
         log: {
-          startUp: true, // Enable to see if routes are loaded
+          startUp: false,
         },
         debug: {
-          printRoutes: true, // Enable to see registered routes
+          printRoutes: false,
         },
+        // Include typed routes - same approach as the working hello-world backend
+        routes: [
+          {
+            type: WebServerRouteType.Default,
+            method: 'GET',
+            path: '/api/ping',
+            handler: async (_request, reply) => {
+              return reply.send({
+                status: 'ok',
+                message: 'pong',
+                timestamp: new Date().toISOString(),
+              });
+            },
+          },
+          // Include typed routes from examples
+          ...helloTypedRoutes,
+          ...greetingsTypedRoutes,
+        ],
       },
 
       redis: {
@@ -54,8 +74,8 @@ describe('Hello World - Typed Routes Integration', () => {
     app = new WebApplication(config);
     await app.start();
 
-    // Wait a bit for server to be ready
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Wait for server to be ready with proper timeout
+    await waitForServer(port, 30000);
   });
 
   afterAll(async () => {
