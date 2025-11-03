@@ -1,131 +1,224 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { spawn, type ChildProcess } from 'child_process';
 import { testServerRequest, waitForServer } from '../../utils/helpers/test-server.js';
 import WebSocket from 'ws';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import type { WebApplicationConfig } from '../../../dist/application/index.js';
+import { WebApplication } from '../../../dist/application/index.js';
+import { WebSocketServerBaseController } from '../../../dist/websocket/index.js';
+import type { FastifyRequest, FastifyReply } from 'fastify';
+import type { WebSocket as WSType } from 'ws';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+/**
+ * WebSocket Controller - Handles real-time messages
+ */
+class HelloWebSocketController extends WebSocketServerBaseController {
+  public greet = (clientWebSocket: WSType, webSocketClientId: string, data: any) => {
+    const name = typeof data?.name === 'string' && data.name.trim() ? data.name.trim() : 'World';
+    const message =
+      typeof data?.message === 'string' && data.message.trim() ? data.message.trim() : `${name} says hello!`;
+
+    const payload = {
+      type: 'hello',
+      action: 'greeting',
+      data: {
+        name,
+        message,
+        clientId: webSocketClientId,
+        timestamp: new Date().toISOString(),
+      },
+    };
+
+    // Broadcast to all clients
+    this.webSocketServer.sendMessageToAll({
+      data: payload,
+    });
+
+    return {
+      success: true,
+    };
+  };
+}
 
 describe('Hello World Example End-to-End', () => {
-  let backendProcess: ChildProcess;
+  let app: WebApplication;
   let testPort: number;
   const testHost = '127.0.0.1';
   let wsUrl: string;
   let baseUrl: string;
-  let previousInMemoryRedisEnv: string | undefined;
 
   beforeAll(async () => {
-    // Import test port helper
+    // Use in-memory Redis for testing
+    process.env.PXL_REDIS_IN_MEMORY = 'true';
+
+    // Get test port
     const { getTestPort } = await import('../../utils/helpers/test-server.js');
     testPort = getTestPort();
     wsUrl = `ws://${testHost}:${testPort}/ws`;
     baseUrl = `http://${testHost}:${testPort}`;
 
-    // Path to the hello-world backend
-    const backendPath = path.join(__dirname, '../../../examples/hello-world/backend');
-    const indexPath = path.join(backendPath, 'src/index.ts');
+    // Create application configuration
+    const config: WebApplicationConfig = {
+      name: 'hello-world-api-test',
+      instanceId: `hello-world-test-${process.pid}`,
+      rootDirectory: process.cwd(),
 
-    // Set environment variables for the test
-    const env = {
-      ...process.env,
-      PORT: testPort.toString(),
-      HOST: testHost,
-      NODE_ENV: 'integration-test',
-      PXL_REDIS_IN_MEMORY: 'true',
-      DB_ENABLED: 'false',
-      DB_HOST: 'localhost',
-      DB_PORT: '5432',
-      DB_USERNAME: 'postgres',
-      DB_PASSWORD: 'postgres',
-      DB_DATABASE_NAME: 'hello_world',
-      REDIS_HOST: 'localhost',
-      REDIS_PORT: '6379',
-      JWT_SECRET: 'test-secret-key',
+      // Web server configuration
+      webServer: {
+        enabled: true,
+        host: testHost,
+        port: testPort,
+        cors: {
+          enabled: true,
+          urls: ['*'],
+        },
+        controllersDirectory: './controllers',
+        debug: {
+          printRoutes: false,
+        },
+        routes: [
+          {
+            type: 'default',
+            method: 'GET',
+            path: '/',
+            handler: async (_request: FastifyRequest, reply: FastifyReply) => {
+              return reply.type('text/html; charset=utf-8').send(`<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>PXL Hello World</title>
+  </head>
+  <body>
+    <h1>Welcome to PXL Hello World API</h1>
+  </body>
+</html>`);
+            },
+          } as any,
+          {
+            type: 'default',
+            method: 'GET',
+            path: '/api/ping',
+            handler: async (_request: FastifyRequest, reply: FastifyReply) => {
+              return reply.send({
+                status: 'ok',
+                message: 'pong',
+                timestamp: new Date().toISOString(),
+              });
+            },
+          } as any,
+          {
+            type: 'default',
+            method: 'POST',
+            path: '/api/hello',
+            handler: async (request: FastifyRequest, reply: FastifyReply) => {
+              const body = request.body as { name?: string } | undefined;
+              const { name = 'World' } = body || {};
+              return reply.send({
+                message: `Hello, ${name}!`,
+                timestamp: new Date().toISOString(),
+                receivedName: name,
+              });
+            },
+          } as any,
+          {
+            type: 'default',
+            method: 'GET',
+            path: '/api/info',
+            handler: async (_request: FastifyRequest, reply: FastifyReply) => {
+              return reply.send({
+                name: 'PXL Framework - Hello World API',
+                version: '1.0.0',
+                framework: '@scpxl/nodejs-framework',
+                endpoints: [
+                  { method: 'GET', path: '/api/ping', description: 'Health check' },
+                  { method: 'POST', path: '/api/hello', description: 'Greeting endpoint' },
+                  { method: 'GET', path: '/api/info', description: 'API information' },
+                ],
+              });
+            },
+          } as any,
+        ],
+      },
+
+      // WebSocket server configuration
+      webSocket: {
+        enabled: true,
+        type: 'server',
+        host: testHost,
+        url: wsUrl,
+        controllersDirectory: './controllers',
+        routes: [
+          {
+            type: 'hello',
+            action: 'greet',
+            controllerName: 'hello',
+            controller: HelloWebSocketController,
+          },
+        ],
+        events: {
+          onConnected: ({ ws, clientId }) => {
+            ws.send(
+              JSON.stringify({
+                type: 'hello',
+                action: 'connected',
+                data: {
+                  message: 'Connected to the PXL Hello World WebSocket!',
+                  clientId,
+                  timestamp: new Date().toISOString(),
+                },
+              }),
+            );
+          },
+        },
+        subscriberHandlers: {
+          directory: './websocket/subscribers',
+          handlers: [],
+        },
+      },
+
+      // Database disabled for this test
+      database: {
+        enabled: false,
+        host: 'localhost',
+        port: 5432,
+        username: 'postgres',
+        password: 'postgres',
+        databaseName: 'hello_world',
+      },
+
+      // Redis configuration
+      redis: {
+        host: 'localhost',
+        port: 6379,
+      },
+
+      // Queue configuration
+      queue: {
+        processorsDirectory: './processors',
+        queues: [],
+      },
+
+      // Auth configuration
+      auth: {
+        jwtSecretKey: 'test-secret-key',
+      },
+
+      // Logging disabled for cleaner test output
+      log: {
+        startUp: false,
+        shutdown: false,
+      },
     };
 
-    // Start the backend process
-    backendProcess = spawn('npx', ['tsx', indexPath], {
-      cwd: backendPath,
-      env,
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
+    // Create and start the application
+    app = new WebApplication(config);
+    await app.start();
 
-    previousInMemoryRedisEnv = process.env.PXL_REDIS_IN_MEMORY;
-    process.env.PXL_REDIS_IN_MEMORY = 'true';
-
-    // Collect output for debugging
-    let stdout = '';
-    let stderr = '';
-    backendProcess.stdout?.on('data', data => {
-      const text = data.toString();
-      stdout += text;
-      if (process.env.DEBUG_TESTS) {
-        console.log('[BACKEND]', text);
-      }
-    });
-    backendProcess.stderr?.on('data', data => {
-      const text = data.toString();
-      stderr += text;
-      if (process.env.DEBUG_TESTS) {
-        console.error('[BACKEND ERROR]', text);
-      }
-    });
-
-    // Handle process errors
-    backendProcess.on('error', error => {
-      console.error('Failed to start backend process:', error);
-      console.error('STDOUT:', stdout);
-      console.error('STDERR:', stderr);
-    });
-
-    backendProcess.on('exit', (code, signal) => {
-      if (code !== 0 && code !== null) {
-        console.error(`Backend process exited with code ${code}`);
-        console.error('STDOUT:', stdout);
-        console.error('STDERR:', stderr);
-      }
-    });
-
-    // Wait for server to be ready (timeout is auto-adjusted for CI environments)
-    try {
-      await waitForServer(testPort);
-      // Give it an extra moment to fully initialize
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    } catch (error) {
-      console.error('Server failed to start. STDOUT:', stdout);
-      console.error('Server failed to start. STDERR:', stderr);
-      throw error;
-    }
-  }, 75000); // Increased timeout to accommodate CI environments (60s wait + 15s buffer)
+    // Wait for server to be ready (shorter timeout since we're in-process)
+    await waitForServer(testPort, 15000);
+  }, 20000);
 
   afterAll(async () => {
-    if (backendProcess) {
-      // Send SIGTERM and wait for graceful shutdown
-      backendProcess.kill('SIGTERM');
-
-      // Wait for process to exit with timeout
-      const exitPromise = new Promise<void>(resolve => {
-        backendProcess.once('exit', () => resolve());
-      });
-
-      const timeoutPromise = new Promise<void>(resolve => setTimeout(resolve, 3000));
-
-      await Promise.race([exitPromise, timeoutPromise]);
-
-      // If still running after timeout, force kill
-      if (backendProcess.exitCode === null) {
-        console.warn('Process did not exit gracefully, forcing SIGKILL');
-        backendProcess.kill('SIGKILL');
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
-    }
-
-    if (previousInMemoryRedisEnv === undefined) {
-      delete process.env.PXL_REDIS_IN_MEMORY;
-    } else {
-      process.env.PXL_REDIS_IN_MEMORY = previousInMemoryRedisEnv;
+    if (app) {
+      await app.stop();
     }
   }, 10000);
 
@@ -228,8 +321,6 @@ describe('Hello World Example End-to-End', () => {
     it.skip('should receive connection message', async () => {
       const ws = new WebSocket(wsUrl);
 
-      // The framework sends multiple messages on connection (system + custom)
-      // We need to collect all messages and find the hello one
       const messages: any[] = [];
 
       const connectionMessage = await new Promise<any>((resolve, reject) => {
@@ -241,7 +332,6 @@ describe('Hello World Example End-to-End', () => {
           const message = JSON.parse(data.toString());
           messages.push(message);
 
-          // Look for the hello/connected message
           if (message.type === 'hello' && message.action === 'connected') {
             clearTimeout(timeout);
             resolve(message);
@@ -267,16 +357,13 @@ describe('Hello World Example End-to-End', () => {
       const client1 = new WebSocket(wsUrl);
       const client2 = new WebSocket(wsUrl);
 
-      // Wait for both connections
       await Promise.all([
         new Promise<void>(resolve => client1.on('open', () => resolve())),
         new Promise<void>(resolve => client2.on('open', () => resolve())),
       ]);
 
-      // Wait for connection messages to complete
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      // Set up message collectors AFTER connection messages
       const client1Greetings: any[] = [];
       const client2Greetings: any[] = [];
 
@@ -315,7 +402,6 @@ describe('Hello World Example End-to-End', () => {
         });
       });
 
-      // Send a greeting
       client1.send(
         JSON.stringify({
           type: 'hello',
@@ -327,10 +413,8 @@ describe('Hello World Example End-to-End', () => {
         }),
       );
 
-      // Wait for both clients to receive the greeting
       await greetingReceived;
 
-      // Both clients should have received the broadcast
       expect(client1Greetings.length).toBeGreaterThanOrEqual(1);
       expect(client2Greetings.length).toBeGreaterThanOrEqual(1);
 
