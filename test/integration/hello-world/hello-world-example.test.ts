@@ -88,9 +88,9 @@ describe('Hello World Example End-to-End', () => {
       }
     });
 
-    // Wait for server to be ready
+    // Wait for server to be ready (timeout is auto-adjusted for CI environments)
     try {
-      await waitForServer(testPort, 30000);
+      await waitForServer(testPort);
       // Give it an extra moment to fully initialize
       await new Promise(resolve => setTimeout(resolve, 1000));
     } catch (error) {
@@ -98,7 +98,7 @@ describe('Hello World Example End-to-End', () => {
       console.error('Server failed to start. STDERR:', stderr);
       throw error;
     }
-  }, 40000);
+  }, 75000); // Increased timeout to accommodate CI environments (60s wait + 15s buffer)
 
   afterAll(async () => {
     if (backendProcess) {

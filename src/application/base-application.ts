@@ -249,11 +249,31 @@ export default abstract class BaseApplication {
     queueManager: QueueManager;
     eventManager?: EventManager;
   }> {
+    const phaseStartTime = Time.now();
+
     // Connect to Redis
+    if (process.env.DEBUG_TESTS) {
+      console.log('[BaseApplication] Connecting to Redis...');
+    }
     const redisInstance = await this.redisManager.connect();
+    if (process.env.DEBUG_TESTS) {
+      const redisElapsed = Time.calculateElapsedTimeMs({ startTime: phaseStartTime });
+      console.log(`[BaseApplication] Redis connected (${redisElapsed}ms)`);
+    }
 
     // Connect to database
-    const databaseInstance = this.databaseManager ? await this.databaseManager.connect() : null;
+    let databaseInstance: DatabaseInstance | null = null;
+    if (this.databaseManager) {
+      if (process.env.DEBUG_TESTS) {
+        console.log('[BaseApplication] Connecting to database...');
+      }
+      const dbStartTime = Time.now();
+      databaseInstance = await this.databaseManager.connect();
+      if (process.env.DEBUG_TESTS) {
+        const dbElapsed = Time.calculateElapsedTimeMs({ startTime: dbStartTime });
+        console.log(`[BaseApplication] Database connected (${dbElapsed}ms)`);
+      }
+    }
 
     let eventManager: EventManager | undefined;
 
@@ -330,7 +350,15 @@ export default abstract class BaseApplication {
   private async startInstance(options: ApplicationStartInstanceOptions): Promise<void> {
     try {
       // Phase 1: Initialize (resource setup)
+      if (process.env.DEBUG_TESTS) {
+        console.log('[startInstance] Phase 1: Initializing lifecycle...');
+      }
+      const initStartTime = Time.now();
       const initResult = await this.lifecycle.initialize();
+      if (process.env.DEBUG_TESTS) {
+        const initElapsed = Time.calculateElapsedTimeMs({ startTime: initStartTime });
+        console.log(`[startInstance] Phase 1 complete (${initElapsed}ms)`);
+      }
       if (initResult.errors.length > 0) {
         Logger.warn({
           message: 'Lifecycle init phase encountered errors',
@@ -339,10 +367,26 @@ export default abstract class BaseApplication {
       }
 
       // Before application start
+      if (process.env.DEBUG_TESTS) {
+        console.log('[startInstance] Connecting to services (Redis, Database, Queue, Events)...');
+      }
+      const beforeStartTime = Time.now();
       const { redisInstance, databaseInstance, queueManager, eventManager } = await this.onBeforeStart();
+      if (process.env.DEBUG_TESTS) {
+        const beforeStartElapsed = Time.calculateElapsedTimeMs({ startTime: beforeStartTime });
+        console.log(`[startInstance] Services connected (${beforeStartElapsed}ms)`);
+      }
 
       // Phase 2: Start (component startup)
+      if (process.env.DEBUG_TESTS) {
+        console.log('[startInstance] Phase 2: Starting lifecycle components...');
+      }
+      const startStartTime = Time.now();
       const startResult = await this.lifecycle.start();
+      if (process.env.DEBUG_TESTS) {
+        const startElapsed = Time.calculateElapsedTimeMs({ startTime: startStartTime });
+        console.log(`[startInstance] Phase 2 complete (${startElapsed}ms)`);
+      }
       if (startResult.errors.length > 0) {
         Logger.warn({
           message: 'Lifecycle start phase encountered errors',
@@ -351,15 +395,31 @@ export default abstract class BaseApplication {
       }
 
       // Start application
+      if (process.env.DEBUG_TESTS) {
+        console.log('[startInstance] Starting application handler...');
+      }
+      const handlerStartTime = Time.now();
       await this.startHandler({
         redisInstance,
         databaseInstance,
         queueManager,
         eventManager,
       });
+      if (process.env.DEBUG_TESTS) {
+        const handlerElapsed = Time.calculateElapsedTimeMs({ startTime: handlerStartTime });
+        console.log(`[startInstance] Application handler started (${handlerElapsed}ms)`);
+      }
 
       // Phase 3: Ready (application accepting traffic)
+      if (process.env.DEBUG_TESTS) {
+        console.log('[startInstance] Phase 3: Waiting for application to be ready...');
+      }
+      const readyStartTime = Time.now();
       const readyResult = await this.lifecycle.ready();
+      if (process.env.DEBUG_TESTS) {
+        const readyElapsed = Time.calculateElapsedTimeMs({ startTime: readyStartTime });
+        console.log(`[startInstance] Phase 3 complete (${readyElapsed}ms)`);
+      }
       if (readyResult.errors.length > 0) {
         Logger.warn({
           message: 'Lifecycle ready phase encountered errors',

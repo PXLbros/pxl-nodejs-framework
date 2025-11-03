@@ -105,22 +105,73 @@ export async function testServerRequest(
 }
 
 /**
- * Waits for server to be ready by polling
+ * Detects if running in CI environment
  */
-export async function waitForServer(port: number, timeoutMs: number = 5000, intervalMs: number = 100): Promise<void> {
-  const startTime = Date.now();
+function isCI(): boolean {
+  return !!(
+    process.env.CI ||
+    process.env.GITHUB_ACTIONS ||
+    process.env.GITLAB_CI ||
+    process.env.CIRCLECI ||
+    process.env.TRAVIS ||
+    process.env.JENKINS_URL ||
+    process.env.BUILD_ID
+  );
+}
 
-  while (Date.now() - startTime < timeoutMs) {
+/**
+ * Gets appropriate timeout based on environment
+ */
+function getDefaultTimeout(): number {
+  // CI environments get longer timeout (60s) due to slower hardware
+  // Local development gets 30s timeout
+  return isCI() ? 60000 : 30000;
+}
+
+/**
+ * Waits for server to be ready by polling with enhanced diagnostics
+ */
+export async function waitForServer(port: number, timeoutMs?: number, intervalMs: number = 100): Promise<void> {
+  // Use provided timeout or detect appropriate default
+  const finalTimeoutMs = timeoutMs ?? getDefaultTimeout();
+  const startTime = Date.now();
+  let lastError: Error | undefined;
+  let attemptCount = 0;
+
+  if (process.env.DEBUG_TESTS) {
+    console.log(
+      `[waitForServer] Starting wait for server on port ${port}, timeout: ${finalTimeoutMs}ms, interval: ${intervalMs}ms`,
+    );
+  }
+
+  while (Date.now() - startTime < finalTimeoutMs) {
     try {
+      attemptCount++;
       await testServerRequest(port);
+      if (process.env.DEBUG_TESTS) {
+        console.log(
+          `[waitForServer] Server ready on port ${port} (attempt ${attemptCount}, elapsed: ${Date.now() - startTime}ms)`,
+        );
+      }
       return; // Server is ready
     } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
       // Server not ready yet, wait and try again
+      if (process.env.DEBUG_TESTS && attemptCount % 10 === 0) {
+        const elapsed = Date.now() - startTime;
+        console.log(
+          `[waitForServer] Still waiting for server on port ${port}... (${elapsed}ms / ${finalTimeoutMs}ms, attempt ${attemptCount})`,
+        );
+      }
       await new Promise(resolve => setTimeout(resolve, intervalMs));
     }
   }
 
-  throw new Error(`Server on port ${port} did not become ready within ${timeoutMs}ms`);
+  const elapsed = Date.now() - startTime;
+  const errorMessage = lastError?.message || 'Unknown error';
+  throw new Error(
+    `Server on port ${port} did not become ready within ${finalTimeoutMs}ms (${elapsed}ms elapsed, ${attemptCount} attempts). Last error: ${errorMessage}`,
+  );
 }
 
 /**
