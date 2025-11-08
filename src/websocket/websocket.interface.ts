@@ -55,6 +55,14 @@ export interface WebSocketSubscriberDefinition<TMessage = any> {
 
   /** Handler that will be invoked when the message is matched */
   handle: WebSocketSubscriberHandler<TMessage>;
+
+  /** Optional middleware to apply to this handler */
+  middleware?: Array<{
+    name: string;
+    onBefore?: (context: WebSocketSubscriberHandlerContext<TMessage>) => boolean | Promise<boolean>;
+    onAfter?: (context: WebSocketSubscriberHandlerContext<TMessage>, result: unknown) => void | Promise<void>;
+    onError?: (context: WebSocketSubscriberHandlerContext<TMessage>, error: Error) => boolean | Promise<boolean>;
+  }>;
 }
 
 export interface WebSocketSubscriberHandlersConfig {

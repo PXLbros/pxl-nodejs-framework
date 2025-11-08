@@ -23,6 +23,7 @@ import logger from '../logger/logger.js';
 import type { FastifyInstance } from 'fastify';
 import { WebSocketAuthService } from './websocket-auth.js';
 import { File, Loader } from '../util/index.js';
+import { executeWithMiddleware } from './subscriber-middleware.js';
 
 export default class WebSocketServer extends WebSocketBase {
   protected defaultRoutes: WebSocketRoute[] = [
@@ -423,15 +424,20 @@ export default class WebSocketServer extends WebSocketBase {
 
     const orderedHandlers = Array.from(candidates).sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
 
-    for (const handler of orderedHandlers) {
+    for (const handlerDef of orderedHandlers) {
       try {
-        await handler.handle(context);
+        // Execute handler with middleware if available
+        if (handlerDef.middleware && handlerDef.middleware.length > 0) {
+          await executeWithMiddleware(handlerDef.handle, handlerDef.middleware, context);
+        } else {
+          await handlerDef.handle(context);
+        }
       } catch (error) {
         logger.error({
           error,
           message: 'WebSocket subscriber handler failed',
           meta: {
-            Handler: handler.name ?? '(anonymous)',
+            Handler: handlerDef.name ?? '(anonymous)',
             Channel: channel,
           },
         });
@@ -961,13 +967,16 @@ export default class WebSocketServer extends WebSocketBase {
    * Broadcast a message to all connected WebSocket clients
    * @param data - The data to broadcast (will be JSON stringified)
    * @param excludeClientId - Optional client ID to exclude from broadcast
+   * @param predicate - Optional function to filter clients
    */
   public broadcastToAllClients({
     data,
     excludeClientId,
+    predicate,
   }: {
     data: { [key: string]: any };
     excludeClientId?: string;
+    predicate?: (clientData: { clientId: string; userData: any }) => boolean;
   }): void {
     if (!this.server) {
       log('Server not started when broadcasting to all clients');
@@ -979,16 +988,114 @@ export default class WebSocketServer extends WebSocketBase {
         continue;
       }
 
+      const clientId = this.clientManager.getClientId({ ws: client });
+
       // Skip excluded client if specified
-      if (excludeClientId) {
-        const clientId = this.clientManager.getClientId({ ws: client });
-        if (clientId === excludeClientId) {
+      if (excludeClientId && clientId === excludeClientId) {
+        continue;
+      }
+
+      // Apply custom predicate filter
+      if (predicate && clientId) {
+        const clientData = this.clientManager.getClient({ clientId });
+        if (!clientData || !predicate({ clientId, userData: clientData.user })) {
           continue;
         }
       }
 
       client.send(JSON.stringify(data));
     }
+  }
+
+  /**
+   * Broadcast a message to all clients in a specific room
+   * @param roomName - The room to broadcast to
+   * @param data - The data to broadcast
+   * @param excludeClientId - Optional client ID to exclude from broadcast
+   */
+  public broadcastToRoom({
+    roomName,
+    data,
+    excludeClientId,
+  }: {
+    roomName: string;
+    data: { [key: string]: any };
+    excludeClientId?: string;
+  }): void {
+    if (!this.server) {
+      log('Server not started when broadcasting to room', { roomName });
+      return;
+    }
+
+    const room = this.roomManager.rooms.get(roomName);
+    if (!room) {
+      log('Room not found when broadcasting', { roomName });
+      return;
+    }
+
+    for (const clientId of room.clientIds) {
+      if (excludeClientId && clientId === excludeClientId) {
+        continue;
+      }
+
+      const client = this.clientManager.getClient({ clientId });
+      if (!client?.ws || client.ws.readyState !== WebSocket.OPEN) {
+        continue;
+      }
+
+      client.ws.send(JSON.stringify(data));
+    }
+  }
+
+  /**
+   * Broadcast a message to specific users
+   * @param userIds - Array of user IDs to broadcast to
+   * @param data - The data to broadcast
+   */
+  public broadcastToUsers({ userIds, data }: { userIds: (string | number)[]; data: { [key: string]: any } }): void {
+    if (!this.server) {
+      log('Server not started when broadcasting to users');
+      return;
+    }
+
+    const userIdSet = new Set(userIds.map(id => String(id)));
+
+    for (const client of this.server.clients) {
+      if (client.readyState !== WebSocket.OPEN) {
+        continue;
+      }
+
+      const clientId = this.clientManager.getClientId({ ws: client });
+      const clientData = clientId ? this.clientManager.getClient({ clientId }) : null;
+
+      if (!clientData?.user) {
+        continue;
+      }
+
+      const clientUserId = String(clientData.user.id ?? clientData.user.userId);
+
+      if (userIdSet.has(clientUserId)) {
+        client.send(JSON.stringify(data));
+      }
+    }
+  }
+
+  /**
+   * Broadcast a message to a specific client
+   * @param clientId - The client ID to send to
+   * @param data - The data to send
+   */
+  public broadcastToClient({ clientId, data }: { clientId: string; data: { [key: string]: any } }): void {
+    const client = this.clientManager.getClient({ clientId });
+
+    if (!client?.ws || client.ws.readyState !== WebSocket.OPEN) {
+      log('Client not found or not connected when broadcasting to specific client', {
+        clientId,
+      });
+      return;
+    }
+
+    client.ws.send(JSON.stringify(data));
   }
 
   public sendMessageError({ webSocketClientId, error }: { webSocketClientId: string; error: string }): void {

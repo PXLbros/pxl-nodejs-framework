@@ -1,6 +1,7 @@
 import type {
   WebSocketSubscriberDefinition,
   WebSocketSubscriberHandler,
+  WebSocketSubscriberHandlerContext,
   WebSocketSubscriberMatcher,
 } from './websocket.interface.js';
 
@@ -22,10 +23,18 @@ type MatchConfig = {
   channels?: never;
 };
 
+type MiddlewareConfig = Array<{
+  name: string;
+  onBefore?: (context: WebSocketSubscriberHandlerContext) => boolean | Promise<boolean>;
+  onAfter?: (context: WebSocketSubscriberHandlerContext, result: unknown) => void | Promise<void>;
+  onError?: (context: WebSocketSubscriberHandlerContext, error: Error) => boolean | Promise<boolean>;
+}>;
+
 type BaseConfig = {
   name?: string;
   description?: string;
   priority?: number;
+  middleware?: MiddlewareConfig;
   handle: WebSocketSubscriberHandler;
 };
 
@@ -58,5 +67,6 @@ export function defineWebSocketSubscriber(config: DefineWebSocketSubscriberConfi
     channels,
     matchers,
     handle: config.handle,
+    middleware: config.middleware,
   };
 }

@@ -13,6 +13,9 @@ The PXL Framework provides comprehensive WebSocket support for building real-tim
 - [Room Management](#room-management)
 - [Authentication](#authentication)
 - [Multi-Worker Coordination](#multi-worker-coordination)
+- [Broadcasting Utilities](#broadcasting-utilities)
+- [Subscriber Utilities](#subscriber-utilities)
+- [Subscriber Middleware](#subscriber-middleware)
 - [Advanced Features](#advanced-features)
 - [Best Practices](#best-practices)
 - [Troubleshooting](#troubleshooting)
@@ -682,6 +685,364 @@ export default defineWebSocketSubscriber({
     queueManager.add('analytics', { message });
   },
 });
+```
+
+## Broadcasting Utilities
+
+The framework provides convenient methods for broadcasting messages to different client groups.
+
+### Broadcast to All Clients
+
+```typescript
+// Broadcast to all connected clients
+app.websocket.server.broadcastToAllClients({
+  data: {
+    type: 'notification',
+    action: 'update',
+    data: { message: 'Server maintenance in 5 minutes' },
+  },
+});
+
+// Broadcast to all except sender
+app.websocket.server.broadcastToAllClients({
+  data: {
+    /* ... */
+  },
+  excludeClientId: sendingClientId,
+});
+
+// Broadcast with custom filtering
+app.websocket.server.broadcastToAllClients({
+  data: {
+    /* ... */
+  },
+  predicate: ({ clientId, userData }) => {
+    // Only broadcast to premium users
+    return userData?.subscription === 'premium';
+  },
+});
+```
+
+### Broadcast to Room
+
+```typescript
+// Broadcast to all clients in a room
+app.websocket.server.broadcastToRoom({
+  roomName: 'general',
+  data: {
+    type: 'chat',
+    action: 'message',
+    data: { text: 'Welcome to general chat!' },
+  },
+});
+
+// Broadcast to room excluding sender
+app.websocket.server.broadcastToRoom({
+  roomName: 'general',
+  data: {
+    /* ... */
+  },
+  excludeClientId: sendingClientId,
+});
+```
+
+### Broadcast to Specific Users
+
+```typescript
+// Broadcast to specific user IDs
+app.websocket.server.broadcastToUsers({
+  userIds: [123, 456, 789],
+  data: {
+    type: 'notification',
+    action: 'personalAlert',
+    data: { message: 'This is for you!' },
+  },
+});
+```
+
+### Broadcast to Single Client
+
+```typescript
+// Broadcast to a specific client
+app.websocket.server.broadcastToClient({
+  clientId: 'specific-client-id',
+  data: {
+    type: 'private',
+    action: 'message',
+    data: { text: 'Private message' },
+  },
+});
+```
+
+## Subscriber Utilities
+
+The framework provides composable utilities for building WebSocket subscriber handlers with common patterns like validation, error handling, rate limiting, and more.
+
+### Creating Matchers
+
+```typescript
+import { matchByProperty, matchByPropertyPredicate } from '@scpxl/nodejs-framework/websocket';
+
+// Match by exact property value
+export default defineWebSocketSubscriber({
+  match: matchByProperty('type', 'analytics'),
+  handle: ({ message }) => {
+    /* ... */
+  },
+});
+
+// Match by property predicate
+export default defineWebSocketSubscriber({
+  match: matchByPropertyPredicate('priority', value => value > 5),
+  handle: ({ message }) => {
+    /* ... */
+  },
+});
+
+// Combine multiple matchers
+export default defineWebSocketSubscriber({
+  match: [/^analytics:/, matchByProperty('userId', 123)],
+  handle: ({ message }) => {
+    /* ... */
+  },
+});
+```
+
+### Error Handling
+
+```typescript
+import { withErrorHandler } from '@scpxl/nodejs-framework/websocket';
+
+const handler = async ({ webSocketServer, message }) => {
+  // Your handler logic
+};
+
+export default defineWebSocketSubscriber({
+  channel: 'custom',
+  handle: withErrorHandler(handler, (error, context) => {
+    console.error(`Error in channel ${context.channel}:`, error.message);
+    // Send error notification to client
+  }),
+});
+```
+
+### Rate Limiting
+
+```typescript
+import { withRateLimit } from '@scpxl/nodejs-framework/websocket';
+
+const handler = async ({ webSocketServer }) => {
+  webSocketServer.broadcastToAllClients({
+    data: {
+      /* ... */
+    },
+  });
+};
+
+// Allow max 10 executions per 1 minute
+export default defineWebSocketSubscriber({
+  channel: 'updates',
+  handle: withRateLimit(
+    handler,
+    10, // max executions
+    60000, // 1 minute window
+    context => {
+      console.log('Rate limit exceeded for channel:', context.channel);
+    },
+  ),
+});
+```
+
+### Retry Logic
+
+```typescript
+import { withRetry } from '@scpxl/nodejs-framework/websocket';
+
+const handler = async ({ databaseInstance }) => {
+  // Attempt database operation
+  const result = await databaseInstance.query('SELECT ...');
+  return result;
+};
+
+// Retry up to 3 times with 1 second delay and exponential backoff
+export default defineWebSocketSubscriber({
+  channel: 'database-sync',
+  handle: withRetry(
+    handler,
+    3, // max retries
+    1000, // initial delay (1 second)
+    2, // backoff multiplier (exponential)
+  ),
+});
+```
+
+### Validation
+
+```typescript
+import { withValidation } from '@scpxl/nodejs-framework/websocket';
+
+const handler = async ({ message, webSocketServer }) => {
+  webSocketServer.broadcastToAllClients({
+    data: message,
+  });
+};
+
+export default defineWebSocketSubscriber({
+  channel: 'messages',
+  handle: withValidation(message => {
+    // Validate message structure
+    if (!message?.type) throw new Error('Missing type');
+    if (!message?.action) throw new Error('Missing action');
+    if (!message?.data) throw new Error('Missing data');
+  }, handler),
+});
+```
+
+### Conditional Execution
+
+```typescript
+import { withFilter } from '@scpxl/nodejs-framework/websocket';
+
+const handler = async ({ webSocketServer, message }) => {
+  // Only broadcast to authenticated users
+  webSocketServer.broadcastToAllClients({
+    data: message,
+    predicate: ({ userData }) => !!userData?.userId,
+  });
+};
+
+export default defineWebSocketSubscriber({
+  channel: 'protected',
+  handle: withFilter(context => {
+    // Only execute if conditions are met
+    return context.message?.authenticated === true;
+  }, handler),
+});
+```
+
+### Composing Handlers
+
+```typescript
+import { composeHandlers, withLogging, withErrorHandler, withRateLimit } from '@scpxl/nodejs-framework/websocket';
+
+const validateMessage = async ({ message }) => {
+  if (!message?.data) throw new Error('Invalid message');
+};
+
+const broadcastMessage = async ({ webSocketServer, message }) => {
+  webSocketServer.broadcastToAllClients({ data: message });
+};
+
+const logMetrics = async ({ channel, message }) => {
+  console.log(`Processed message on ${channel}:`, message.type);
+};
+
+export default defineWebSocketSubscriber({
+  channel: 'analytics',
+  handle: composeHandlers([
+    withLogging(validateMessage, 'validate'),
+    withLogging(broadcastMessage, 'broadcast'),
+    withLogging(logMetrics, 'metrics'),
+  ]),
+});
+```
+
+## Subscriber Middleware
+
+Middleware allows you to intercept and modify handler execution for cross-cutting concerns like logging, timing, and error recovery.
+
+### Using Built-in Middleware
+
+```typescript
+import {
+  defineWebSocketSubscriber,
+  loggingMiddleware,
+  timingMiddleware,
+  rateLimitMiddleware,
+} from '@scpxl/nodejs-framework/websocket';
+
+export default defineWebSocketSubscriber({
+  channels: ['updates'],
+  handle: async ({ webSocketServer, message }) => {
+    webSocketServer.broadcastToAllClients({
+      data: message,
+    });
+  },
+  middleware: [
+    loggingMiddleware('updatesBroadcaster'),
+    timingMiddleware(),
+    rateLimitMiddleware(10, 60000), // 10 per minute
+  ],
+});
+```
+
+### Custom Middleware
+
+```typescript
+import type { WebSocketSubscriberMiddleware } from '@scpxl/nodejs-framework/websocket';
+
+const authenticationMiddleware: WebSocketSubscriberMiddleware = {
+  name: 'authentication',
+  onBefore: async context => {
+    // Check if message is authenticated
+    const isAuthenticated = context.message?.authenticated === true;
+    if (!isAuthenticated) {
+      console.warn('Unauthenticated message on channel:', context.channel);
+      return false; // Skip handler execution
+    }
+    return true; // Proceed with handler
+  },
+};
+
+const metricsMiddleware: WebSocketSubscriberMiddleware = {
+  name: 'metrics',
+  onAfter: async (context, result) => {
+    // Record metrics after successful execution
+    console.log('Handler executed successfully', {
+      channel: context.channel,
+      resultType: typeof result,
+    });
+  },
+  onError: async (context, error) => {
+    // Handle errors
+    console.error('Handler error:', error.message);
+    return false; // Don't suppress the error
+  },
+};
+
+export default defineWebSocketSubscriber({
+  channels: ['secure-updates'],
+  handle: async ({ webSocketServer, message }) => {
+    webSocketServer.broadcastToAllClients({
+      data: message,
+    });
+  },
+  middleware: [authenticationMiddleware, metricsMiddleware],
+});
+```
+
+### Middleware Execution Flow
+
+Middleware executes in three phases:
+
+1. **Before** - Runs before the handler, can skip handler execution
+2. **Handler** - Your subscriber handler runs here
+3. **After** - Runs after successful execution
+4. **Error** - Runs if handler throws, can suppress or propagate error
+
+```typescript
+interface WebSocketSubscriberMiddleware {
+  name: string;
+
+  // Called before handler (can return false to skip handler)
+  onBefore?: (context) => boolean | Promise<boolean>;
+
+  // Called after successful handler execution
+  onAfter?: (context, result) => void | Promise<void>;
+
+  // Called if handler throws (return true to suppress error)
+  onError?: (context, error) => boolean | Promise<boolean>;
+}
 ```
 
 ## Advanced Features
