@@ -1033,7 +1033,7 @@ export default class WebSocketServer extends WebSocketBase {
       return;
     }
 
-    for (const clientId of room.clientIds) {
+    for (const clientId of room) {
       if (excludeClientId && clientId === excludeClientId) {
         continue;
       }

@@ -110,11 +110,15 @@ export function withLogging<TMessage = any>(
 ): WebSocketSubscriberHandler<TMessage> {
   return async (context: WebSocketSubscriberHandlerContext<TMessage>) => {
     const startTime = Date.now();
+    const messageKeys =
+      context.message && typeof context.message === 'object'
+        ? Object.keys(context.message as Record<string, unknown>).slice(0, 5)
+        : [];
     Logger.info({
       message: `${handlerName}: Starting handler execution`,
       meta: {
         channel: context.channel,
-        messageKeys: Object.keys(context.message).slice(0, 5),
+        messageKeys,
       },
     });
 
