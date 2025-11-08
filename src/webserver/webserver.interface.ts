@@ -141,6 +141,8 @@ export interface EntityRouteDefinition {
 
 export interface WebServerLogConfig {
   startUp?: boolean;
+  /** Paths to exclude from request logging (e.g., ['/health', '/health/live', '/health/ready']) */
+  excludePaths?: string[];
 }
 
 export interface WebServerDebugOptions {

@@ -230,7 +230,10 @@ class WebServer {
     const requestId = (request.headers['x-request-id'] as string | undefined) ?? crypto.randomUUID();
     request.requestId = requestId;
 
-    const pathsToIgnore = ['/health/live', '/health/ready'];
+    // Default health check paths to ignore from logging
+    const defaultPathsToIgnore: string[] = [];
+    const configuredExcludePaths = this.options.log?.excludePaths ?? [];
+    const pathsToIgnore = [...defaultPathsToIgnore, ...configuredExcludePaths];
 
     if (pathsToIgnore.includes(request.url) || request.method === 'OPTIONS') {
       // ...
