@@ -24,6 +24,7 @@ import type { FastifyInstance } from 'fastify';
 import { WebSocketAuthService } from './websocket-auth.js';
 import { File, Loader } from '../util/index.js';
 import { executeWithMiddleware } from './subscriber-middleware.js';
+import { runWithContextAsync } from '../request-context/index.js';
 
 export default class WebSocketServer extends WebSocketBase {
   protected defaultRoutes: WebSocketRoute[] = [
@@ -872,50 +873,53 @@ export default class WebSocketServer extends WebSocketBase {
   };
 
   private handleClientMessage = async (ws: WebSocket, message: RawData): Promise<void> => {
-    try {
-      const clientId = this.clientManager.getClientId({
-        ws,
-      });
-
-      if (!clientId) {
-        log('Client ID not found when handling server message');
-
-        return;
-      }
-
-      // Handle server message
-      const serverMessageResponse = await this.handleServerMessage(ws, message, clientId);
-
-      if (serverMessageResponse) {
-        this.sendClientMessage(ws, {
-          type: serverMessageResponse.type,
-          action: serverMessageResponse.action,
-          response: serverMessageResponse?.response,
+    // Run without request context to prevent inheriting HTTP upgrade requestId
+    return runWithContextAsync(undefined, async () => {
+      try {
+        const clientId = this.clientManager.getClientId({
+          ws,
         });
 
-        if (
-          serverMessageResponse?.response &&
-          typeof serverMessageResponse.response === 'object' &&
-          'error' in serverMessageResponse.response
-        ) {
-          // Log error but don't throw to prevent connection disruption
-          Logger.error({
-            error: serverMessageResponse.response.error,
-            meta: {
-              clientId,
-              type: serverMessageResponse.type,
-              action: serverMessageResponse.action,
-            },
-          });
-        }
-      }
-    } catch (error) {
-      Logger.error({ error });
+        if (!clientId) {
+          log('Client ID not found when handling server message');
 
-      log('Error handling client message', {
-        Error: error,
-      });
-    }
+          return;
+        }
+
+        // Handle server message
+        const serverMessageResponse = await this.handleServerMessage(ws, message, clientId);
+
+        if (serverMessageResponse) {
+          this.sendClientMessage(ws, {
+            type: serverMessageResponse.type,
+            action: serverMessageResponse.action,
+            response: serverMessageResponse?.response,
+          });
+
+          if (
+            serverMessageResponse?.response &&
+            typeof serverMessageResponse.response === 'object' &&
+            'error' in serverMessageResponse.response
+          ) {
+            // Log error but don't throw to prevent connection disruption
+            Logger.error({
+              error: serverMessageResponse.response.error,
+              meta: {
+                clientId,
+                type: serverMessageResponse.type,
+                action: serverMessageResponse.action,
+              },
+            });
+          }
+        }
+      } catch (error) {
+        Logger.error({ error });
+
+        log('Error handling client message', {
+          Error: error,
+        });
+      }
+    });
   };
 
   protected handleMessageError(clientId: string, error: string): void {
