@@ -111,11 +111,13 @@ export default class QueueManager {
       return;
     }
 
+    // Merge framework defaults with queue-specific default job options
     const queueOptions: QueueOptions = {
       connection: this.redisInstance.client,
       defaultJobOptions: {
         removeOnComplete: true,
         removeOnFail: true,
+        ...(queue.defaultJobOptions ?? {}),
       },
     };
 
@@ -127,9 +129,11 @@ export default class QueueManager {
     queueInstance.on('removed', this.onQueueRemoved);
 
     if (!queue.isExternal) {
+      // Build worker options, applying per-queue runtime settings
       const workerOptions: WorkerOptions = {
         connection: this.redisInstance.client,
         autorun: true,
+        ...(queue.settings ?? {}),
       };
 
       new QueueWorker({
@@ -145,7 +149,10 @@ export default class QueueManager {
     this.queues.set(queue.name, queueInstance);
 
     if (this.applicationConfig.queue.log?.queueRegistered) {
-      this.log('Registered queue', { Name: queue.name });
+      this.log('Registered queue', {
+        Name: queue.name,
+        Settings: queue.settings ? JSON.stringify(queue.settings) : 'default',
+      });
     }
 
     // Register job processors
