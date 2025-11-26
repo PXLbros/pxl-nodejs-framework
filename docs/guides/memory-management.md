@@ -369,7 +369,7 @@ Following these patterns ensures your application maintains stable memory usage 
 
 ## See Also
 
-- [Database Guide](./database.md)
-- [Queue Guide](./queue.md)
 - [WebSocket Guide](./websocket.md)
 - [Performance Monitoring](./performance-monitoring.md)
+- [Commands Guide](./commands.md)
+- [Testing Guide](./testing.md)
