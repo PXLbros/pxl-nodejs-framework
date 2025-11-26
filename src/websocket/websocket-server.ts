@@ -1238,24 +1238,24 @@ export default class WebSocketServer extends WebSocketBase {
     // const webSocketId = this.clientManager.getClientId({ ws });
 
     if (userId) {
-      // Get user email from database
-      const dbEntityManager = this.databaseInstance.getEntityManager();
+      // Get user email from database using withEntityManager for automatic cleanup
+      userData = await this.databaseInstance.withEntityManager(async em => {
+        const getUserQuery = 'SELECT email FROM users WHERE id = ?';
+        const getUserParams = [userId];
 
-      const getUserQuery = 'SELECT email FROM users WHERE id = ?';
-      const getUserParams = [userId];
+        const getUserResult = await em.execute(getUserQuery, getUserParams);
 
-      const getUserResult = await dbEntityManager.execute(getUserQuery, getUserParams);
+        if (!getUserResult || getUserResult.length === 0) {
+          throw new Error('User not found in database');
+        }
 
-      if (!getUserResult || getUserResult.length === 0) {
-        throw new Error('User not found in database');
-      }
+        const user = getUserResult[0];
 
-      const user = getUserResult[0];
-
-      userData = {
-        id: userId,
-        ...user,
-      };
+        return {
+          id: userId,
+          ...user,
+        };
+      });
     }
 
     // userData.uniqueId = webSocketId;

@@ -262,7 +262,11 @@ describe('QueueManager', () => {
 
       job.updateData = vi.fn(() => updatePromise);
 
-      const processor = { process: vi.fn().mockResolvedValue('ok') };
+      const processor = {
+        process: vi.fn().mockResolvedValue('ok'),
+        beforeProcess: vi.fn().mockResolvedValue(undefined),
+        afterProcess: vi.fn().mockResolvedValue(undefined),
+      };
 
       const jobProcessors = queueManager['jobProcessors'] as Map<string, any>;
       jobProcessors.set('test-job', processor as any);
@@ -289,7 +293,11 @@ describe('QueueManager', () => {
         updateData: vi.fn(() => Promise.reject(new Error('fail update'))),
       };
 
-      const processor = { process: vi.fn().mockResolvedValue('ok') };
+      const processor = {
+        process: vi.fn().mockResolvedValue('ok'),
+        beforeProcess: vi.fn().mockResolvedValue(undefined),
+        afterProcess: vi.fn().mockResolvedValue(undefined),
+      };
       const jobProcessors = queueManager['jobProcessors'] as Map<string, any>;
       jobProcessors.set('test-job', processor as any);
 

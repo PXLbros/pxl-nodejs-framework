@@ -248,4 +248,163 @@ describe('BaseProcessor', () => {
       });
     });
   });
+
+  describe('beforeProcess', () => {
+    it('should have default no-op implementation', async () => {
+      const mockJob: Partial<Job> = {
+        id: '123',
+        name: 'test-job',
+        data: { test: 'data' },
+      };
+
+      // Should not throw
+      await expect(processor.beforeProcess({ job: mockJob as Job })).resolves.toBeUndefined();
+    });
+
+    it('should be callable by subclasses', async () => {
+      class CustomProcessor extends BaseProcessor {
+        public setupCalled = false;
+
+        public async beforeProcess({ job }: { job: Job }) {
+          this.setupCalled = true;
+        }
+
+        public async process({ job }: { job: Job }) {
+          return { result: 'processed' };
+        }
+      }
+
+      const customProcessor = new CustomProcessor(
+        mockQueueManager,
+        { name: 'test-app', instanceId: 'test-instance', rootDirectory: '/test' },
+        mockRedisInstance as any,
+        mockDatabaseInstance as any,
+      );
+
+      const mockJob: Partial<Job> = {
+        id: '123',
+        name: 'test-job',
+        data: { test: 'data' },
+      };
+
+      await customProcessor.beforeProcess({ job: mockJob as Job });
+
+      expect(customProcessor.setupCalled).toBe(true);
+    });
+  });
+
+  describe('afterProcess', () => {
+    it('should have default no-op implementation', async () => {
+      const mockJob: Partial<Job> = {
+        id: '123',
+        name: 'test-job',
+        data: { test: 'data' },
+      };
+
+      // Should not throw
+      await expect(processor.afterProcess({ job: mockJob as Job, result: 'test' })).resolves.toBeUndefined();
+    });
+
+    it('should accept result parameter', async () => {
+      const mockJob: Partial<Job> = {
+        id: '123',
+        name: 'test-job',
+        data: { test: 'data' },
+      };
+
+      await expect(processor.afterProcess({ job: mockJob as Job, result: { success: true } })).resolves.toBeUndefined();
+    });
+
+    it('should accept error parameter', async () => {
+      const mockJob: Partial<Job> = {
+        id: '123',
+        name: 'test-job',
+        data: { test: 'data' },
+      };
+
+      const error = new Error('Test error');
+
+      await expect(processor.afterProcess({ job: mockJob as Job, error })).resolves.toBeUndefined();
+    });
+
+    it('should be callable by subclasses for cleanup', async () => {
+      class CleanupProcessor extends BaseProcessor {
+        public cleanedUp = false;
+
+        public async afterProcess({ job, result, error }: { job: Job; result?: any; error?: Error }) {
+          this.cleanedUp = true;
+        }
+
+        public async process({ job }: { job: Job }) {
+          return { result: 'processed' };
+        }
+      }
+
+      const cleanupProcessor = new CleanupProcessor(
+        mockQueueManager,
+        { name: 'test-app', instanceId: 'test-instance', rootDirectory: '/test' },
+        mockRedisInstance as any,
+        mockDatabaseInstance as any,
+      );
+
+      const mockJob: Partial<Job> = {
+        id: '123',
+        name: 'test-job',
+        data: { test: 'data' },
+      };
+
+      await cleanupProcessor.afterProcess({ job: mockJob as Job, result: 'test' });
+
+      expect(cleanupProcessor.cleanedUp).toBe(true);
+    });
+  });
+
+  describe('withEntityManager', () => {
+    it('should execute callback with entity manager', async () => {
+      const callback = vi.fn().mockResolvedValue('test result');
+
+      const result = await processor['withEntityManager'](callback);
+
+      expect(result).toBe('test result');
+      expect(mockDatabaseInstance.withEntityManager).toHaveBeenCalledTimes(1);
+      expect(callback).toHaveBeenCalled();
+    });
+
+    it('should throw error if database instance is null', async () => {
+      const processorWithoutDb = new TestProcessor(
+        mockQueueManager,
+        { name: 'test-app', instanceId: 'test-instance', rootDirectory: '/test' },
+        mockRedisInstance as any,
+        null,
+      );
+
+      const callback = vi.fn().mockResolvedValue('test result');
+
+      await expect(processorWithoutDb['withEntityManager'](callback)).rejects.toThrow('Database not available');
+    });
+
+    it('should propagate callback return value', async () => {
+      const expectedData = { id: 1, name: 'Test User' };
+      const callback = vi.fn().mockResolvedValue(expectedData);
+
+      const result = await processor['withEntityManager'](callback);
+
+      expect(result).toEqual(expectedData);
+    });
+
+    it('should propagate callback errors', async () => {
+      const error = new Error('Callback failed');
+      const callback = vi.fn().mockRejectedValue(error);
+
+      await expect(processor['withEntityManager'](callback)).rejects.toThrow('Callback failed');
+    });
+
+    it('should delegate to databaseInstance.withEntityManager', async () => {
+      const callback = vi.fn().mockResolvedValue('success');
+
+      await processor['withEntityManager'](callback);
+
+      expect(mockDatabaseInstance.withEntityManager).toHaveBeenCalledWith(callback);
+    });
+  });
 });

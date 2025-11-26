@@ -1,5 +1,173 @@
 # Upgrade Guide
 
+## v1.0.47 - Memory Management Improvements (BREAKING CHANGES)
+
+This version introduces critical memory leak fixes and improved EntityManager lifecycle management. Several breaking changes ensure memory-safe defaults.
+
+### Breaking Changes
+
+#### 1. EntityController.entityManager Removed
+
+**What changed:**
+
+- `EntityController.entityManager` instance property removed
+- EntityManager is now request-scoped (different instance per HTTP request)
+- Automatic cleanup after each request
+
+**Before (v1.x - Memory Leak):**
+
+```typescript
+class MyController extends EntityController {
+  async customRoute(request: FastifyRequest, reply: FastifyReply) {
+    // Used shared EntityManager - memory leak!
+    const users = await this.entityManager.find('User', {});
+    reply.send({ users });
+  }
+}
+```
+
+**After (v1.0.47 - Safe):**
+
+```typescript
+class MyController extends EntityController {
+  async customRoute(request: FastifyRequest, reply: FastifyReply) {
+    // Use withEntityManager for automatic cleanup
+    await this.databaseInstance.withEntityManager(async em => {
+      const users = await em.find('User', {});
+      reply.send({ users });
+    });
+  }
+}
+```
+
+**Or use hooks (recommended):**
+
+```typescript
+class MyController extends EntityController {
+  protected async preGetMany({ entityManager, request, reply }) {
+    // entityManager is automatically request-scoped
+    const count = await entityManager.count('User', {});
+  }
+}
+```
+
+#### 2. EntityController Hook Behavior Change
+
+Pre/post hooks now receive request-scoped EntityManager instead of shared instance.
+
+**Impact:** If your hooks stored references to the EntityManager, they will now receive different instances per request (this is correct behavior for memory safety).
+
+**Migration:** No code changes needed, but be aware that EntityManager references are no longer shared across requests.
+
+### New Features
+
+#### DatabaseInstance Helper Methods
+
+**`withEntityManager(callback)`** - Automatic EntityManager cleanup
+
+```typescript
+await databaseInstance.withEntityManager(async em => {
+  const user = await em.findOne('User', { id: 1 });
+  return user;
+});
+// em.clear() called automatically, even if callback throws
+```
+
+**`withTransaction(callback)`** - Transactional with automatic cleanup
+
+```typescript
+await databaseInstance.withTransaction(async em => {
+  const user = em.create('User', { name: 'John' });
+  await em.persistAndFlush(user);
+  return user;
+});
+```
+
+**`getEntityManager()`** - Now deprecated with warning
+
+Still available but deprecated. Use `withEntityManager()` instead to avoid manual cleanup.
+
+#### BaseProcessor Lifecycle Hooks
+
+Queue processors now support optional lifecycle hooks for resource management:
+
+```typescript
+class MyProcessor extends BaseProcessor {
+  async beforeProcess({ job }) {
+    // Setup logic before job processing
+  }
+
+  async process({ job }) {
+    // Your job logic
+    return result;
+  }
+
+  async afterProcess({ job, result, error }) {
+    // Cleanup logic - ALWAYS called, even if process() throws
+  }
+}
+```
+
+**Helper method:**
+
+```typescript
+class MyProcessor extends BaseProcessor {
+  async process({ job }) {
+    // Automatic EntityManager cleanup
+    return this.withEntityManager(async em => {
+      const user = await em.findOne('User', { id: job.data.userId });
+      return user;
+    });
+  }
+}
+```
+
+### WebSocket Memory Management
+
+WebSocket controllers are singletons - **never store EntityManager as instance property**.
+
+**Updated documentation** added to `WebSocketServerBaseController` with examples of safe patterns.
+
+### Migration Steps
+
+1. **Update EntityController subclasses:**
+   - Replace `this.entityManager` with `this.databaseInstance.withEntityManager()`
+   - Or use request-scoped EM in hooks
+
+2. **Review queue processors:**
+   - Consider using lifecycle hooks for resource management
+   - Use `this.withEntityManager()` for database operations
+
+3. **Check WebSocket controllers:**
+   - Ensure no EntityManager stored as instance property
+   - Use `this.databaseInstance.withEntityManager()` per message
+
+4. **Run tests:**
+
+   ```bash
+   npm test
+   ```
+
+5. **Monitor memory usage in production:**
+   - Heap should stabilize, not grow indefinitely
+   - Watch for GC frequency and request latency
+
+### Documentation
+
+- New guide: [Memory Management](./docs/guides/memory-management.md)
+- Updated: [Database Guide](./docs/concepts/database.md)
+- Updated: [Queue Guide](./docs/concepts/queue.md)
+
+### Why These Changes?
+
+**Problem:** MikroORM's EntityManager maintains an identity map that accumulates entities in memory. Without clearing it, memory grows unbounded until OOM crashes occur.
+
+**Solution:** Request-scoped and operation-scoped EntityManagers with automatic cleanup prevent memory leaks while maintaining the benefits of the identity map pattern.
+
+**Impact:** Applications running under sustained load will maintain stable memory usage instead of crashing after hours/days of operation.
+
+---
+
 ## Pre-Launch Cleanup - Removed Features (v1.0.x)
 
 The following backward compatibility features were removed **before the official launch** (when there were no users). These are documented here for historical reference only - no migration is needed since these features were never in a public release.

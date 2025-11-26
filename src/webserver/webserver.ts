@@ -253,6 +253,13 @@ class WebServer {
       reply.header('X-Request-ID', request.requestId);
     }
 
+    // Clean up request-scoped EntityManager if it exists
+    const em = (request as any).__entityManager;
+    if (em && typeof em.clear === 'function') {
+      em.clear();
+      delete (request as any).__entityManager;
+    }
+
     if (!request.startTime) {
       return;
     }

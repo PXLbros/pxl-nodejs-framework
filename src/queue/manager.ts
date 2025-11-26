@@ -303,22 +303,44 @@ export default class QueueManager {
       throw new Error(`No processor registered for job (Name: ${job.name})`);
     }
 
-    try {
-      const jobResult = await processor.process({ job });
+    let result: unknown;
+    let error: Error | undefined;
 
-      return jobResult;
-    } catch (error) {
+    try {
+      // Call beforeProcess hook
+      await processor.beforeProcess({ job });
+
+      // Execute main processing
+      result = await processor.process({ job });
+
+      return result;
+    } catch (err) {
+      error = err as Error;
+
       Logger.warn({
         message: 'Queue worker processing error',
         meta: {
           Queue: job.queueName,
           'Job Name': job.name,
           'Job ID': job.id,
-          Error: (error as Error).message,
+          Error: error.message,
         },
       });
 
       Logger.error({ error });
+
+      throw error; // Re-throw to mark job as failed
+    } finally {
+      // ALWAYS call afterProcess for cleanup (even on error)
+      try {
+        await processor.afterProcess({ job, result, error });
+      } catch (cleanupError) {
+        // Log but don't throw - cleanup errors shouldn't fail the job
+        Logger.error({
+          error: cleanupError,
+          message: 'Error in processor afterProcess cleanup',
+        });
+      }
     }
   };
 

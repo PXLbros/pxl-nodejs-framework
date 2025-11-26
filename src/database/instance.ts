@@ -42,9 +42,56 @@ export default class DatabaseInstance {
 
   /**
    * Get EntityManager
+   *
+   * Fork and return a new EntityManager instance
+   * WARNING: You MUST call em.clear() when done to prevent memory leaks
+   * Consider using withEntityManager() instead for automatic cleanup
+   *
+   * @deprecated Use withEntityManager() for automatic cleanup
    */
   public getEntityManager(): EntityManager {
     return this.orm.em.fork();
+  }
+
+  /**
+   * Execute a function with a fresh EntityManager that is automatically cleaned up
+   * This is the recommended pattern for short-lived operations (HTTP requests, queue jobs, etc.)
+   *
+   * @example
+   * await databaseInstance.withEntityManager(async (em) => {
+   *   const user = await em.findOne('User', { id: 1 });
+   *   return user;
+   * });
+   */
+  public async withEntityManager<T>(callback: (em: EntityManager) => Promise<T>): Promise<T> {
+    const em = this.orm.em.fork();
+    try {
+      return await callback(em);
+    } finally {
+      em.clear();
+    }
+  }
+
+  /**
+   * Execute a function with a fresh EntityManager that supports transactions
+   * The EntityManager is automatically cleaned up after the transaction
+   *
+   * @example
+   * await databaseInstance.withTransaction(async (em) => {
+   *   const user = em.create('User', { name: 'John' });
+   *   await em.persistAndFlush(user);
+   *   return user;
+   * });
+   */
+  public async withTransaction<T>(callback: (em: EntityManager) => Promise<T>): Promise<T> {
+    const em = this.orm.em.fork();
+    try {
+      return await em.transactional(async transactionalEm => {
+        return await callback(transactionalEm);
+      });
+    } finally {
+      em.clear();
+    }
   }
 
   /**
