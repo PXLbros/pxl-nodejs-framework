@@ -1,0 +1,27 @@
+{
+  "name": "pxl-worker-example",
+  "version": "1.0.0",
+  "description": "PXL Framework - Worker Application Example",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "dev:watch": "tsx watch src/index.ts",
+    "start": "node --loader ts-node/esm src/index.ts",
+    "add-job": "tsx src/add-job.ts"
+  },
+  "dependencies": {
+    "@scpxl/nodejs-framework": "file:../../",
+    "dotenv": "^17.2.0",
+    "picocolors": "^1.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.8.3"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

@@ -372,6 +372,13 @@ export default abstract class BaseApplication {
       }
       const beforeStartTime = Time.now();
       const { redisInstance, databaseInstance, queueManager, eventManager } = await this.onBeforeStart();
+
+      // Store managers on instance for external access
+      this.queueManager = queueManager;
+      if (eventManager) {
+        this.eventManager = eventManager;
+      }
+
       if (process.env.DEBUG_TESTS) {
         const beforeStartElapsed = Time.calculateElapsedTimeMs({ startTime: beforeStartTime });
         console.log(`[startInstance] Services connected (${beforeStartElapsed}ms)`);

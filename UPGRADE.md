@@ -1,6 +1,6 @@
 # Upgrade Guide
 
-## v1.0.47 - Memory Management Improvements (BREAKING CHANGES)
+## v1.0.48 - Memory Management Improvements (BREAKING CHANGES)
 
 This version introduces critical memory leak fixes and improved EntityManager lifecycle management. Several breaking changes ensure memory-safe defaults.
 
@@ -26,7 +26,7 @@ class MyController extends EntityController {
 }
 ```
 
-**After (v1.0.47 - Safe):**
+**After (v1.0.48 - Safe):**
 
 ```typescript
 class MyController extends EntityController {
