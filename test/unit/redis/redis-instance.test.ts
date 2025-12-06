@@ -259,6 +259,19 @@ describe('RedisInstance', () => {
       expect(mockClient.get).toHaveBeenCalledWith('test-key');
     });
 
+    it('should await the client.get call and return resolved value', async () => {
+      // This test verifies the await is present (fix for P0 bug)
+      mockClient.get.mockResolvedValue('awaited-value');
+
+      const result = await redisInstance.getCache({ key: 'test-key' });
+
+      // Result should be the actual value, not a Promise
+      expect(result).toBe('awaited-value');
+      expect(typeof result).toBe('string');
+      // Ensure it's not a promise
+      expect(result).not.toBeInstanceOf(Promise);
+    });
+
     it('should return null when key does not exist', async () => {
       mockClient.get.mockResolvedValue(null);
 

@@ -35,6 +35,8 @@ export default class QueueManager {
 
   private queues: Map<string, Queue> = new Map();
 
+  private workers: Map<string, QueueWorker> = new Map();
+
   private jobProcessors: Map<string, BaseProcessor> = new Map();
 
   constructor({
@@ -136,7 +138,7 @@ export default class QueueManager {
         ...(queue.settings ?? {}),
       };
 
-      new QueueWorker({
+      const worker = new QueueWorker({
         applicationConfig: this.applicationConfig,
         queueManager: this,
         name: queue.name,
@@ -144,6 +146,8 @@ export default class QueueManager {
         options: workerOptions,
         redisInstance: this.redisInstance,
       });
+
+      this.workers.set(queue.name, worker);
     }
 
     this.queues.set(queue.name, queueInstance);
@@ -250,13 +254,12 @@ export default class QueueManager {
 
     const job = (await queue.add(jobId, data)) as Job<QueueJobData<TPayload, TMetadata>, TResult, TName>;
 
-    const dataStr = JSON.stringify(data);
-
-    const maxLogDataStrLength = 50;
-    const truncatedLogDataStr =
-      dataStr.length > maxLogDataStrLength ? `${dataStr.substring(0, maxLogDataStrLength)}...` : dataStr;
-
     if (this.applicationConfig.queue.log?.jobAdded) {
+      const dataStr = JSON.stringify(data);
+      const maxLogDataStrLength = 50;
+      const truncatedLogDataStr =
+        dataStr.length > maxLogDataStrLength ? `${dataStr.substring(0, maxLogDataStrLength)}...` : dataStr;
+
       this.log('Job added', {
         Queue: queueId,
         'Job ID': jobId,
@@ -371,6 +374,46 @@ export default class QueueManager {
     }
 
     return jobsSummary;
+  }
+
+  /**
+   * Disconnect all queues and workers, cleanup resources.
+   * Should be called during application shutdown.
+   */
+  public async disconnect(): Promise<void> {
+    // First, close all workers (they process jobs)
+    for (const [name, worker] of this.workers) {
+      try {
+        await worker.cleanup();
+        this.log('Worker closed', { Name: name });
+      } catch (error) {
+        Logger.error({
+          error,
+          message: `Failed to close worker: ${name}`,
+        });
+      }
+    }
+
+    // Then, close all queues (they manage job state)
+    for (const [name, queue] of this.queues) {
+      try {
+        queue.removeAllListeners();
+        await queue.close();
+        this.log('Queue closed', { Name: name });
+      } catch (error) {
+        Logger.error({
+          error,
+          message: `Failed to close queue: ${name}`,
+        });
+      }
+    }
+
+    // Clear all maps
+    this.workers.clear();
+    this.queues.clear();
+    this.jobProcessors.clear();
+
+    this.log('Queue manager disconnected');
   }
 
   /**

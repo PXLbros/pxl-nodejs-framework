@@ -7,6 +7,8 @@ import { safeSerializeError } from '../error/error-reporter.js';
 
 export default class WebSocketClientManager {
   private clients: Map<string, WebSocketClientData> = new Map();
+  /** Reverse lookup map for O(1) clientId lookup by WebSocket instance */
+  private wsToClientId: Map<WebSocket, string> = new Map();
 
   public addClient({
     clientId,
@@ -25,6 +27,11 @@ export default class WebSocketClientManager {
       user,
     });
 
+    // Maintain reverse lookup map for O(1) clientId lookups
+    if (ws) {
+      this.wsToClientId.set(ws, clientId);
+    }
+
     this.broadcastClientList('addClient');
 
     log('Client connected', {
@@ -36,7 +43,8 @@ export default class WebSocketClientManager {
   }
 
   public getClientId({ ws }: { ws: WebSocket }): string | undefined {
-    return [...this.clients.entries()].find(([_, value]) => value.ws === ws)?.[0];
+    // O(1) lookup using reverse map instead of O(n) iteration
+    return this.wsToClientId.get(ws);
   }
 
   public getClient({
@@ -113,6 +121,9 @@ export default class WebSocketClientManager {
 
     // Clean up WebSocket connection if it exists
     if (client?.ws) {
+      // Remove from reverse lookup map
+      this.wsToClientId.delete(client.ws);
+
       try {
         client.ws.removeAllListeners();
         if (client.ws.readyState === WebSocket.OPEN) {
@@ -293,8 +304,9 @@ export default class WebSocketClientManager {
       }
     });
 
-    // Clear all clients
+    // Clear all maps
     this.clients.clear();
+    this.wsToClientId.clear();
     log('WebSocket client manager cleaned up');
   }
 }

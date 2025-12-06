@@ -550,6 +550,13 @@ export default abstract class BaseApplication {
     });
 
     this.lifecycle.onShutdown(async () => {
+      if (this.queueManager) {
+        Logger.info({ message: 'Closing queue manager (workers and queues)' });
+        await this.queueManager.disconnect();
+      }
+    });
+
+    this.lifecycle.onShutdown(async () => {
       if (this.redisManager) {
         Logger.info({ message: 'Disconnecting from Redis' });
         await this.redisManager.disconnect();

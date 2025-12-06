@@ -17,6 +17,7 @@ vi.mock('ioredis', () => ({
 
 describe('InMemoryRedis Client', () => {
   let RedisManager: any;
+  let clearGlobalInMemoryRedisState: any;
   let manager: any;
 
   beforeEach(async () => {
@@ -28,6 +29,7 @@ describe('InMemoryRedis Client', () => {
     // Import RedisManager after setting env
     const module = await import('../../../src/redis/manager.js');
     RedisManager = module.default;
+    clearGlobalInMemoryRedisState = module.clearGlobalInMemoryRedisState;
 
     manager = new RedisManager({
       host: 'localhost',
@@ -41,6 +43,10 @@ describe('InMemoryRedis Client', () => {
 
   afterEach(() => {
     delete process.env.PXL_REDIS_IN_MEMORY;
+    // Clean up global state after each test to prevent timer leaks
+    if (clearGlobalInMemoryRedisState) {
+      clearGlobalInMemoryRedisState();
+    }
   });
 
   describe('Basic Operations', () => {
@@ -462,6 +468,59 @@ describe('InMemoryRedis Client', () => {
 
       expect(afterClient).toBeNull();
       expect(afterSubscriber).toBeNull();
+    });
+  });
+
+  describe('clearGlobalInMemoryRedisState', () => {
+    it('should clear all data and expiration timers', async () => {
+      const instance = await manager.connect();
+
+      // Set a value with expiration
+      await instance.client.set('timer-key', 'timer-value', 'EX', 60);
+      await instance.subscriberClient.subscribe('test-channel');
+
+      // Verify data exists
+      const valueBefore = await instance.client.get('timer-key');
+      expect(valueBefore).toBe('timer-value');
+
+      // Clear global state
+      clearGlobalInMemoryRedisState();
+
+      // Create new manager/instance after clearing
+      const newManager = new RedisManager({
+        host: 'localhost',
+        port: 6379,
+        applicationConfig: { name: 'test-app-new', log: { startUp: false } },
+      });
+      const newInstance = await newManager.connect();
+
+      // Data should be gone
+      const valueAfter = await newInstance.client.get('timer-key');
+      expect(valueAfter).toBeNull();
+    });
+
+    it('should be safe to call multiple times', () => {
+      // Should not throw
+      expect(() => {
+        clearGlobalInMemoryRedisState();
+        clearGlobalInMemoryRedisState();
+        clearGlobalInMemoryRedisState();
+      }).not.toThrow();
+    });
+
+    it('should prevent timer leaks between tests', async () => {
+      const instance = await manager.connect();
+
+      // Set multiple keys with expirations (simulating timers)
+      for (let i = 0; i < 10; i++) {
+        await instance.client.set(`leak-test-${i}`, 'value', 'EX', 300);
+      }
+
+      // Clear should clean up all timers
+      clearGlobalInMemoryRedisState();
+
+      // No error should occur - timers have been cleared
+      // If timers leaked, they would try to access cleared state and potentially throw
     });
   });
 });

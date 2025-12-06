@@ -328,4 +328,39 @@ export class LifecycleManager {
     const ready = this._isReady && this._phase === LifecyclePhase.RUNNING && checks.every(c => c.ready);
     return { ready, checks };
   }
+
+  /**
+   * Reset the lifecycle manager to its initial state.
+   * This clears all hooks, tracked resources, and readiness checks.
+   * Useful for testing or when reinitializing the application.
+   */
+  reset(): void {
+    // Clear all hooks
+    this.initHooks.length = 0;
+    this.startHooks.length = 0;
+    this.readyHooks.length = 0;
+    this.beforeShutdownHooks.length = 0;
+    this.shutdownHooks.length = 0;
+
+    // Clear all tracked resources
+    for (const id of this.intervals) {
+      clearInterval(id);
+    }
+    for (const id of this.timeouts) {
+      clearTimeout(id);
+    }
+    for (const controller of this.abortControllers) {
+      controller.abort();
+    }
+
+    this.disposables.clear();
+    this.intervals.clear();
+    this.timeouts.clear();
+    this.abortControllers.clear();
+    this.readinessChecks.clear();
+
+    // Reset state
+    this._phase = LifecyclePhase.CREATED;
+    this._isReady = false;
+  }
 }

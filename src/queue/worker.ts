@@ -92,4 +92,13 @@ export default class QueueWorker extends Worker {
       });
     }
   };
+
+  /**
+   * Cleanup worker resources before shutdown.
+   * Removes all event listeners and closes the worker connection.
+   */
+  public async cleanup(): Promise<void> {
+    this.removeAllListeners();
+    await this.close();
+  }
 }

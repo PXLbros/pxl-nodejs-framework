@@ -324,4 +324,34 @@ export default class WebSocketClient extends WebSocketBase {
       autoReconnectEnabled: this.shouldReconnect,
     };
   }
+
+  /**
+   * Destroy the client and clean up all resources.
+   * This should be called when the client is no longer needed to prevent memory leaks.
+   */
+  public destroy(): void {
+    // Ensure all timers are cleared
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = undefined;
+    }
+
+    // Disable reconnection
+    this.shouldReconnect = false;
+
+    // Clean up WebSocket connection
+    if (this.ws) {
+      this.ws.removeAllListeners();
+      if (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) {
+        this.ws.close();
+      }
+      this.ws = undefined;
+    }
+
+    this.clientId = undefined;
+    this.isConnected = false;
+    this.reconnectAttempts = 0;
+
+    log('WebSocket client destroyed');
+  }
 }

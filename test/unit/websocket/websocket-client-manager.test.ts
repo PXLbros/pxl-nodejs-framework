@@ -127,4 +127,45 @@ describe('WebSocketClientManager', () => {
     expect(ws.close).toHaveBeenCalled();
     expect(manager.getClientList()).toHaveLength(0);
   });
+
+  describe('reverse lookup map', () => {
+    it('provides O(1) clientId lookup by WebSocket', () => {
+      const ws1 = new FakeWebSocket();
+      const ws2 = new FakeWebSocket();
+
+      manager.addClient({ clientId: 'client-1', ws: ws1, lastActivity: 1, user: null });
+      manager.addClient({ clientId: 'client-2', ws: ws2, lastActivity: 1, user: null });
+
+      // These should be O(1) lookups using the reverse map
+      expect(manager.getClientId({ ws: ws1 as unknown as WebSocket })).toBe('client-1');
+      expect(manager.getClientId({ ws: ws2 as unknown as WebSocket })).toBe('client-2');
+    });
+
+    it('removes from reverse lookup when client is removed', () => {
+      const ws = new FakeWebSocket();
+      manager.addClient({ clientId: 'client-1', ws, lastActivity: 1, user: null });
+
+      expect(manager.getClientId({ ws: ws as unknown as WebSocket })).toBe('client-1');
+
+      manager.removeClient('client-1');
+
+      expect(manager.getClientId({ ws: ws as unknown as WebSocket })).toBeUndefined();
+    });
+
+    it('clears reverse lookup on cleanup', () => {
+      const ws = new FakeWebSocket();
+      manager.addClient({ clientId: 'client-1', ws, lastActivity: 1, user: null });
+
+      manager.cleanup();
+
+      expect(manager.getClientId({ ws: ws as unknown as WebSocket })).toBeUndefined();
+    });
+
+    it('handles null WebSocket gracefully', () => {
+      manager.addClient({ clientId: 'client-1', ws: null, lastActivity: 1, user: null });
+
+      // Should not throw when adding client with null ws
+      expect(manager.getClientList()).toHaveLength(1);
+    });
+  });
 });

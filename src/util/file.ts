@@ -67,7 +67,12 @@ async function convertFile({
 }
 
 /**
- * Copy a file or directory synchronously
+ * Copy a file or directory synchronously.
+ *
+ * **Note**: This function uses synchronous file system operations which block
+ * the event loop. It is intended for use during application initialization,
+ * build scripts, or CLI tools where blocking is acceptable.
+ * For production runtime code with high concurrency, consider using async alternatives.
  *
  * @param src The source path
  * @param dest The destination path
@@ -162,7 +167,13 @@ function formatFileSize({ bytes }: { bytes: number }): string {
 }
 
 /**
- * Remove a file or directory synchronously
+ * Remove a file or directory synchronously.
+ *
+ * **Note**: This function uses synchronous file system operations which block
+ * the event loop. It is intended for use during application cleanup, build scripts,
+ * or CLI tools where blocking is acceptable.
+ * For production runtime code with high concurrency, consider using async alternatives
+ * like `fs.promises.rm(target, { recursive: true, force: true })`.
  *
  * @param target The path to the file or directory to remove
  */

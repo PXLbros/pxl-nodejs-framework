@@ -384,6 +384,85 @@ describe('QueueManager', () => {
     });
   });
 
+  describe('disconnect', () => {
+    it('should close all workers and queues', async () => {
+      const mockWorker = {
+        cleanup: vi.fn().mockResolvedValue(undefined),
+      };
+      const mockQueueInstance = {
+        removeAllListeners: vi.fn(),
+        close: vi.fn().mockResolvedValue(undefined),
+      };
+
+      // @ts-ignore - accessing private property for testing
+      queueManager['workers'].set('test-queue', mockWorker as any);
+      // @ts-ignore - accessing private property for testing
+      queueManager['queues'].set('test-queue', mockQueueInstance as any);
+      // @ts-ignore - accessing private property for testing
+      queueManager['jobProcessors'].set('test-processor', {} as any);
+
+      vi.spyOn(queueManager, 'log').mockImplementation(() => {});
+
+      await queueManager.disconnect();
+
+      expect(mockWorker.cleanup).toHaveBeenCalled();
+      expect(mockQueueInstance.removeAllListeners).toHaveBeenCalled();
+      expect(mockQueueInstance.close).toHaveBeenCalled();
+
+      // @ts-ignore - accessing private property for testing
+      expect(queueManager['workers'].size).toBe(0);
+      // @ts-ignore - accessing private property for testing
+      expect(queueManager['queues'].size).toBe(0);
+      // @ts-ignore - accessing private property for testing
+      expect(queueManager['jobProcessors'].size).toBe(0);
+    });
+
+    it('should handle worker cleanup errors gracefully', async () => {
+      const mockWorker = {
+        cleanup: vi.fn().mockRejectedValue(new Error('Worker cleanup failed')),
+      };
+      const mockQueueInstance = {
+        removeAllListeners: vi.fn(),
+        close: vi.fn().mockResolvedValue(undefined),
+      };
+
+      // @ts-ignore - accessing private property for testing
+      queueManager['workers'].set('test-queue', mockWorker as any);
+      // @ts-ignore - accessing private property for testing
+      queueManager['queues'].set('test-queue', mockQueueInstance as any);
+
+      vi.spyOn(queueManager, 'log').mockImplementation(() => {});
+
+      await queueManager.disconnect();
+
+      expect(mockLogger.error).toHaveBeenCalledWith({
+        error: expect.any(Error),
+        message: 'Failed to close worker: test-queue',
+      });
+      // Queue should still be closed despite worker error
+      expect(mockQueueInstance.close).toHaveBeenCalled();
+    });
+
+    it('should handle queue close errors gracefully', async () => {
+      const mockQueueInstance = {
+        removeAllListeners: vi.fn(),
+        close: vi.fn().mockRejectedValue(new Error('Queue close failed')),
+      };
+
+      // @ts-ignore - accessing private property for testing
+      queueManager['queues'].set('test-queue', mockQueueInstance as any);
+
+      vi.spyOn(queueManager, 'log').mockImplementation(() => {});
+
+      await queueManager.disconnect();
+
+      expect(mockLogger.error).toHaveBeenCalledWith({
+        error: expect.any(Error),
+        message: 'Failed to close queue: test-queue',
+      });
+    });
+  });
+
   describe('queue event handlers', () => {
     let mockQueueInstance: any;
 

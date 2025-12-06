@@ -14,6 +14,9 @@ export default abstract class EntityController extends BaseController {
   // Cache for entity modules to avoid repeated dynamic imports
   private static entityCache = new Map<string, typeof DynamicEntity>();
 
+  // Cache for entity properties to avoid repeated prototype iteration
+  private static entityPropertiesCache = new WeakMap<Function, string[]>();
+
   /**
    * Get request-scoped EntityManager with automatic cleanup
    * Creates a new EM fork per request, cleaned up after response
@@ -61,6 +64,12 @@ export default abstract class EntityController extends BaseController {
   };
 
   private getEntityProperties(entityClass: any): string[] {
+    // Check cache first to avoid repeated prototype iteration
+    const cached = EntityController.entityPropertiesCache.get(entityClass);
+    if (cached) {
+      return cached;
+    }
+
     const properties: string[] = [];
 
     const reservedPropertyKeys = ['constructor', 'toJSON'];
@@ -74,6 +83,9 @@ export default abstract class EntityController extends BaseController {
 
       properties.push(propertyKey);
     }
+
+    // Cache the result for future calls
+    EntityController.entityPropertiesCache.set(entityClass, properties);
 
     return properties;
   }

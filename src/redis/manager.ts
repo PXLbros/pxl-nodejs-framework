@@ -34,6 +34,23 @@ function getGlobalInMemoryRedisState(): InMemoryRedisSharedState {
   return globalInMemoryRedisState;
 }
 
+/**
+ * Clears the global in-memory Redis state including all timers.
+ * Useful for test cleanup to prevent timer leaks between tests.
+ */
+export function clearGlobalInMemoryRedisState(): void {
+  if (globalInMemoryRedisState) {
+    // Clear all expiration timers to prevent memory leaks
+    for (const timer of globalInMemoryRedisState.expirations.values()) {
+      clearTimeout(timer);
+    }
+    globalInMemoryRedisState.expirations.clear();
+    globalInMemoryRedisState.store.clear();
+    globalInMemoryRedisState.subscriptions.clear();
+  }
+  globalInMemoryRedisState = null;
+}
+
 class InMemoryRedisClient extends EventEmitter {
   private shared: InMemoryRedisSharedState;
 

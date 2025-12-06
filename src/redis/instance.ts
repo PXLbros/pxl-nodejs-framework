@@ -102,7 +102,7 @@ export default class RedisInstance {
   }
 
   public async getCache({ key }: { key: string }): Promise<string | null> {
-    const cacheValue = this.client.get(key);
+    const cacheValue = await this.client.get(key);
 
     return cacheValue;
   }
