@@ -31,8 +31,9 @@ type InferResponse<TResponse> =
     ? z.output<TResponse[keyof TResponse]>
     : RouteGenericInterface['Reply'];
 
-export interface RouteHandlerContext<Schema extends RouteSchemaDefinition | undefined = undefined>
-  extends RouteGenericInterface {
+export interface RouteHandlerContext<
+  Schema extends RouteSchemaDefinition | undefined = undefined,
+> extends RouteGenericInterface {
   Params?: Schema extends RouteSchemaDefinition<infer TParams, any, any, any, any>
     ? InferOrDefault<TParams, RouteGenericInterface['Params']>
     : RouteGenericInterface['Params'];
