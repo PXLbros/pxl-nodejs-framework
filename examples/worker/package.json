@@ -11,15 +11,15 @@
     "add-job": "tsx src/add-job.ts"
   },
   "dependencies": {
-    "@scpxl/nodejs-framework": "file:../../",
-    "dotenv": "^17.2.0",
+    "@scpxl/nodejs-framework": "file:../..",
+    "dotenv": "^17.3.1",
     "picocolors": "^1.1.1"
   },
   "devDependencies": {
-    "@types/node": "^22.10.5",
+    "@types/node": "^25.5.0",
     "ts-node": "^10.9.2",
-    "tsx": "^4.19.2",
-    "typescript": "^5.8.3"
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
   },
   "engines": {
     "node": ">=22.0.0"

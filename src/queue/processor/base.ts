@@ -72,7 +72,7 @@ export default abstract class BaseProcessor<
    * class MyProcessor extends BaseProcessor {
    *   async process({ job }) {
    *     return this.withEntityManager(async (em) => {
-   *       const user = await em.findOne('User', { id: job.data.userId });
+   *       const user = await em.findOne(User, { id: job.data.userId });
    *       return user;
    *     });
    *   }

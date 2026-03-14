@@ -482,7 +482,7 @@ export class Greeting {
 // Usage in controller
 const em = this.databaseInstance.getEntityManager();
 const greeting = em.create(Greeting, { name, message });
-await em.persistAndFlush(greeting);
+await em.persist(greeting).flush();
 ```
 
 ## Testing the Example

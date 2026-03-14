@@ -17,7 +17,7 @@ import type { WebSocketServerBaseControllerConstructorParams } from './base.inte
  * class MyController extends WebSocketServerBaseController {
  *   private em = this.databaseInstance.getEntityManager(); // LEAK!
  *   async handleMessage(ws, data) {
- *     await this.em.findOne('User', { id: data.userId }); // Identity map grows forever
+ *     await this.em.findOne(User, { id: data.userId }); // Identity map grows forever
  *   }
  * }
  * ```
@@ -27,7 +27,7 @@ import type { WebSocketServerBaseControllerConstructorParams } from './base.inte
  * class MyController extends WebSocketServerBaseController {
  *   async handleMessage(ws, data) {
  *     await this.databaseInstance.withEntityManager(async (em) => {
- *       const user = await em.findOne('User', { id: data.userId });
+ *       const user = await em.findOne(User, { id: data.userId });
  *       // em automatically cleaned up after this block
  *     });
  *   }

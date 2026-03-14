@@ -14,16 +14,16 @@
     "test:all": "npm run cluster & sleep 3 && npm run verify && npm run load-test"
   },
   "dependencies": {
-    "@scpxl/nodejs-framework": "file:../../",
-    "dotenv": "^17.2.0",
+    "@scpxl/nodejs-framework": "file:../..",
+    "dotenv": "^17.3.1",
     "picocolors": "^1.1.1",
     "yargs": "^18.0.0"
   },
   "devDependencies": {
-    "@types/node": "^22.10.5",
-    "@types/yargs": "^17.0.33",
-    "tsx": "^4.19.2",
-    "typescript": "^5.8.3"
+    "@types/node": "^25.5.0",
+    "@types/yargs": "^17.0.35",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
   },
   "engines": {
     "node": ">=22.0.0"

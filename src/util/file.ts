@@ -4,7 +4,6 @@ import * as path from 'path';
 import * as https from 'https';
 import { pipeline } from 'stream';
 import { promisify } from 'node:util';
-import ffmpeg from 'fluent-ffmpeg';
 
 const pipelineAsync = promisify(pipeline);
 
@@ -32,38 +31,6 @@ async function ensureDir(dirPath: string): Promise<void> {
   } catch {
     await mkdir(dirPath, { recursive: true });
   }
-}
-
-async function convertFile({
-  inputFilePath,
-  outputFilePath,
-  format,
-}: {
-  inputFilePath: string;
-  outputFilePath: string;
-  format: string;
-}): Promise<void> {
-  return new Promise((resolve, reject) => {
-    console.log(`Starting conversion: ${inputFilePath} -> ${outputFilePath} (format: ${format})`);
-
-    const command = ffmpeg(inputFilePath)
-      .output(outputFilePath)
-      .outputFormat(format === 'jpg' ? 'mjpeg' : format) // Using 'mjpeg' for jpg
-      .on('progress', (progress: any) => {
-        console.log(`Processing: ${Math.round(progress.percent)}% done`);
-      })
-      .on('end', () => {
-        console.log('Conversion finished successfully');
-        resolve();
-      })
-      .on('error', (err: Error) => {
-        console.error('Error during conversion:', err);
-        reject(err);
-      });
-
-    // Start processing
-    command.run();
-  });
 }
 
 /**
@@ -200,7 +167,6 @@ function removeSync(target: string): void {
 }
 
 export default {
-  convertFile,
   copySync,
   downloadFile,
   formatFileSize,

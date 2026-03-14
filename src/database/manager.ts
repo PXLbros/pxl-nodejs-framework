@@ -30,7 +30,17 @@ export default class DatabaseManager {
       const startTime = performance.now();
 
       try {
-        const orm = await MikroORM.init();
+        const orm = await MikroORM.init({
+          host: this.options.host,
+          port: this.options.port,
+          user: this.options.username,
+          password: this.options.password,
+          dbName: this.options.databaseName,
+          entities: [this.options.entitiesDirectory],
+          discovery: {
+            warnWhenNoEntities: false,
+          },
+        });
 
         const databaseInstance = new DatabaseInstance({
           databaseManager: this,

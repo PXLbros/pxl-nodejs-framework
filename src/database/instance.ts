@@ -59,7 +59,7 @@ export default class DatabaseInstance {
    *
    * @example
    * await databaseInstance.withEntityManager(async (em) => {
-   *   const user = await em.findOne('User', { id: 1 });
+   *   const user = await em.findOne(User, { id: 1 });
    *   return user;
    * });
    */
@@ -78,8 +78,8 @@ export default class DatabaseInstance {
    *
    * @example
    * await databaseInstance.withTransaction(async (em) => {
-   *   const user = em.create('User', { name: 'John' });
-   *   await em.persistAndFlush(user);
+   *   const user = em.create(User, { name: 'John' });
+   *   await em.persist(user).flush();
    *   return user;
    * });
    */

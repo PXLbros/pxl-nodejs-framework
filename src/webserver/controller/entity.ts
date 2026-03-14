@@ -340,7 +340,7 @@ export default abstract class EntityController extends BaseController {
       const populate = request.query.populate ? request.query.populate.split(',') : [];
 
       // Fetch items from the database
-      const [items, total] = await em.findAndCount(this.entityName, options.filters, {
+      const [items, total] = await em.findAndCount(EntityClass as any, options.filters, {
         limit: options.limit,
         offset: options.offset,
         orderBy: options.orderBy,
@@ -429,7 +429,7 @@ export default abstract class EntityController extends BaseController {
 
       const id = request.params.id;
 
-      const item = await em.findOne(this.entityName, { id }, { populate });
+      const item = await em.findOne(EntityClass as any, { id }, { populate });
 
       if (!item) {
         return this.sendNotFoundResponse(reply, `${EntityClass.singularNameCapitalized} not found`);
@@ -494,9 +494,9 @@ export default abstract class EntityController extends BaseController {
         return this.sendErrorResponse({ reply, error: error.message });
       }
 
-      const item = em.create(this.entityName, value as object);
+      const item = em.create(EntityClass as any, value as object);
 
-      await em.persistAndFlush(item);
+      await em.persist(item).flush();
 
       // Call postCreateOne hook
       await this.postCreateOne({
@@ -539,7 +539,7 @@ export default abstract class EntityController extends BaseController {
         return this.sendErrorResponse({ reply, error: error.message });
       }
 
-      const item = await em.findOne(this.entityName, { id });
+      const item = await em.findOne(EntityClass as any, { id });
 
       if (!item) {
         return this.sendNotFoundResponse(reply, `${EntityClass.singularNameCapitalized} not found`);
@@ -547,7 +547,7 @@ export default abstract class EntityController extends BaseController {
 
       em.assign(item, value as object);
 
-      await em.persistAndFlush(item);
+      await em.persist(item).flush();
 
       // Call postUpdateOne hook
       await this.postUpdateOne({
@@ -578,13 +578,13 @@ export default abstract class EntityController extends BaseController {
 
       const id = request.params.id;
 
-      const item = await em.findOne(this.entityName, { id });
+      const item = await em.findOne(EntityClass as any, { id });
 
       if (!item) {
         return this.sendNotFoundResponse(reply, `${EntityClass.singularNameCapitalized} not found`);
       }
 
-      await em.removeAndFlush(item);
+      await em.remove(item).flush();
 
       reply.status(StatusCodes.NO_CONTENT).send();
     } catch (error) {

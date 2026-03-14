@@ -112,7 +112,7 @@ export const routes = [
       // Validation already happened via Zod schema
       // const em = databaseInstance.getEntityManager();
       // const greeting = em.create(Greeting, { name, message });
-      // await em.persistAndFlush(greeting);
+      // await em.persist(greeting).flush();
 
       // Mock response
       const greeting = {

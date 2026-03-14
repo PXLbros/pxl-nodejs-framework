@@ -358,7 +358,7 @@ class GreetingsController extends WebServerBaseController {
       message: body.message,
     });
 
-    await em.persistAndFlush(greeting);
+    await em.persist(greeting).flush();
 
     return reply.status(201).send({ greeting });
   };
@@ -404,7 +404,7 @@ class GreetingsController extends WebServerBaseController {
       return reply.status(404).send({ error: 'Greeting not found' });
     }
 
-    await em.removeAndFlush(greeting);
+    await em.remove(greeting).flush();
 
     return reply.status(204).send();
   };

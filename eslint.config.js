@@ -90,6 +90,7 @@ export default [
       'security/detect-pseudoRandomBytes': 'error',
 
       // General JavaScript rules
+      'preserve-caught-error': 'off',
       'no-console': 'off',
       'no-debugger': 'error',
       'no-alert': 'error',
@@ -193,6 +194,7 @@ export default [
       'security/detect-pseudoRandomBytes': 'error',
 
       // General JavaScript rules
+      'preserve-caught-error': 'off',
       'no-console': 'off',
       'no-debugger': 'error',
       'no-alert': 'error',

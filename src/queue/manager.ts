@@ -115,7 +115,7 @@ export default class QueueManager {
 
     // Merge framework defaults with queue-specific default job options
     const queueOptions: QueueOptions = {
-      connection: this.redisInstance.client,
+      connection: this.redisInstance.client as any,
       defaultJobOptions: {
         removeOnComplete: true,
         removeOnFail: true,
@@ -133,7 +133,7 @@ export default class QueueManager {
     if (!queue.isExternal) {
       // Build worker options, applying per-queue runtime settings
       const workerOptions: WorkerOptions = {
-        connection: this.redisInstance.client,
+        connection: this.redisInstance.client as any,
         autorun: true,
         ...(queue.settings ?? {}),
       };
