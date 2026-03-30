@@ -1,6 +1,6 @@
 {
   "name": "@scpxl/nodejs-framework",
-  "version": "1.0.56",
+  "version": "1.0.57",
   "description": "Opinionated TypeScript framework combining Fastify, WebSockets, Redis, BullMQ, and MikroORM with unified lifecycle management",
   "repository": {
     "type": "git",
