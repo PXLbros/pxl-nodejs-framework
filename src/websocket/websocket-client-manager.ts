@@ -1,9 +1,9 @@
+import cluster from 'node:cluster';
 import WebSocket from 'ws';
+import { safeSerializeError } from '../error/error-reporter.js';
+import { Helper, Time } from '../util/index.js';
 import { log } from './utils.js';
 import type { WebSocketClientData } from './websocket-client-manager.interface.js';
-import { Helper, Time } from '../util/index.js';
-import cluster from 'cluster';
-import { safeSerializeError } from '../error/error-reporter.js';
 
 export default class WebSocketClientManager {
   private clients: Map<string, WebSocketClientData> = new Map();

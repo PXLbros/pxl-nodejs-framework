@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { spawn, type ChildProcess } from 'child_process';
-import { testServerRequest, waitForServer, getTestPort } from '../../utils/helpers/test-server.js';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { type ChildProcess, spawn } from 'node:child_process';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { getTestPort, testServerRequest, waitForServer } from '../../utils/helpers/test-server.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -73,7 +73,7 @@ describe('Hello World Database CRUD', () => {
       console.error('STDERR:', stderr);
     });
 
-    backendProcess.on('exit', (code, signal) => {
+    backendProcess.on('exit', (code, _signal) => {
       if (code !== 0 && code !== null) {
         console.error(`Backend process exited with code ${code}`);
         console.error('STDOUT:', stdout);

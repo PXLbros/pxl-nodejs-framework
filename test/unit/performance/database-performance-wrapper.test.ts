@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DatabasePerformanceWrapper, MonitorDatabaseOperation } from '../../../src/performance/database-performance.js';
-import { PerformanceMonitor } from '../../../src/performance/performance-monitor.js';
+import type { PerformanceMonitor } from '../../../src/performance/performance-monitor.js';
 
 describe('DatabasePerformanceWrapper', () => {
   let mockMonitor: PerformanceMonitor;
@@ -17,7 +17,7 @@ describe('DatabasePerformanceWrapper', () => {
     it('should set the performance monitor', () => {
       const newMonitor = {} as PerformanceMonitor;
       DatabasePerformanceWrapper.setPerformanceMonitor(newMonitor);
-      expect(DatabasePerformanceWrapper['performanceMonitor']).toBe(newMonitor);
+      expect(DatabasePerformanceWrapper.performanceMonitor).toBe(newMonitor);
     });
   });
 
@@ -95,7 +95,7 @@ describe('DatabasePerformanceWrapper', () => {
     });
 
     it('should truncate long queries', async () => {
-      const longQuery = 'SELECT * FROM users WHERE '.repeat(20) + 'id = ?';
+      const longQuery = `${'SELECT * FROM users WHERE '.repeat(20)}id = ?`;
       const operation = vi.fn().mockResolvedValue([]);
 
       await DatabasePerformanceWrapper.monitorQuery(longQuery, [], operation);

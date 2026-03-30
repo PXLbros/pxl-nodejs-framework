@@ -13,7 +13,7 @@
  * - Graceful shutdown
  */
 
-import 'dotenv/config';
+process.loadEnvFile();
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { cpus } from 'os';

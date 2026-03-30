@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { WebSocket } from 'ws';
-import SystemServerController from '../../../src/websocket/controllers/server/system.js';
-import SystemClientController from '../../../src/websocket/controllers/client/system.js';
 import { Logger } from '../../../src/logger/index.js';
+import SystemClientController from '../../../src/websocket/controllers/client/system.js';
+import SystemServerController from '../../../src/websocket/controllers/server/system.js';
 
 // Mock Logger
 vi.mock('../../../src/logger/index.js', () => ({

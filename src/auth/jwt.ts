@@ -1,4 +1,4 @@
-import { type JWTPayload, SignJWT, importJWK, jwtVerify } from 'jose';
+import { importJWK, type JWTPayload, jwtVerify, SignJWT } from 'jose';
 
 export interface AuthenticationToken {
   type: string;
@@ -42,7 +42,7 @@ const generateJwtTokens = async ({
     type: 'Bearer',
     accessToken: jwtAccessToken,
     refreshToken: jwtRefreshToken,
-    expiresAt: new Date(new Date().getTime() + jwtAccessTokenLifetimeInHours * 60 * 60 * 1000),
+    expiresAt: new Date(Date.now() + jwtAccessTokenLifetimeInHours * 60 * 60 * 1000),
   };
 
   return jwtToken;

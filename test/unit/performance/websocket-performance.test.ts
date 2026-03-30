@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import {
-  WebSocketPerformanceWrapper,
-  MonitorWebSocketOperation,
-} from '../../../src/performance/websocket-performance.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PerformanceMonitor } from '../../../src/performance/performance-monitor.js';
+import {
+  MonitorWebSocketOperation,
+  WebSocketPerformanceWrapper,
+} from '../../../src/performance/websocket-performance.js';
 
 describe('WebSocketPerformanceWrapper', () => {
   let mockPerformanceMonitor: any;
@@ -264,7 +264,7 @@ describe('WebSocketPerformanceWrapper', () => {
     it('should decorate method with custom operation name', async () => {
       class CustomController {
         @MonitorWebSocketOperation('customOp')
-        async handleEvent(data: any): Promise<void> {
+        async handleEvent(_data: any): Promise<void> {
           // Handle event
         }
       }

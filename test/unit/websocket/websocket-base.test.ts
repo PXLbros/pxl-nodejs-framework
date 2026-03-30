@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import WebSocketBase from '../../../src/websocket/websocket-base.js';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { describe, expect, it, vi } from 'vitest';
+import type WebSocket from 'ws';
 import type { WebSocketRoute, WebSocketType } from '../../../src/websocket/websocket.interface.js';
-import WebSocket from 'ws';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import WebSocketBase from '../../../src/websocket/websocket-base.js';
 
 // Concrete implementation for testing
 class TestWebSocketBase extends WebSocketBase {
@@ -75,13 +75,12 @@ describe('WebSocketBase', () => {
 
       // Mock controller
       class TestController {
-        constructor(deps: any) {}
-        testAction(ws: WebSocket, clientId: string, data: any) {
+        testAction(_ws: WebSocket, _clientId: string, data: any) {
           return { success: true, data };
         }
       }
 
-      const routes: WebSocketRoute[] = [
+      const _routes: WebSocketRoute[] = [
         {
           type: 'test',
           action: 'testAction',
@@ -168,7 +167,6 @@ describe('WebSocketBase', () => {
       instance.shouldPrint = false;
 
       class TestController {
-        constructor(deps: any) {}
         testAction() {
           return { success: true };
         }
@@ -194,8 +192,6 @@ describe('WebSocketBase', () => {
 
       class StatefulController {
         count = 0;
-
-        constructor(_: any) {}
 
         increment() {
           this.count += 1;
@@ -450,7 +446,7 @@ describe('WebSocketBase', () => {
       const instance = new TestWebSocketBase();
 
       // Mock Loader to return an object with a non-function controller
-      const mockLoader = {
+      const _mockLoader = {
         loadModulesInDirectory: vi.fn().mockResolvedValue({
           TestController: 'not-a-function', // Invalid controller
         }),

@@ -1,5 +1,5 @@
-import type { WebSocketSubscriberHandler, WebSocketSubscriberHandlerContext } from './websocket.interface.js';
 import { Logger } from '../logger/index.js';
+import type { WebSocketSubscriberHandler, WebSocketSubscriberHandlerContext } from './websocket.interface.js';
 
 /**
  * Middleware that can intercept and modify subscriber handler execution

@@ -1,12 +1,12 @@
 import type { FastifyReply, FastifyRequest, HTTPMethods, RouteGenericInterface } from 'fastify';
+import type { z } from 'zod';
+import type { ApplicationConfig } from '../application/base-application.interface.js';
 import type { DatabaseInstance } from '../database/index.js';
+import type EventManager from '../event/manager.js';
+import type { LifecycleManager } from '../lifecycle/lifecycle-manager.js';
 import type { QueueManager } from '../queue/index.js';
 import type { RedisInstance } from '../redis/index.js';
 import type { ControllerAction, WebServerBaseControllerType } from './controller/base.interface.js';
-import type { ApplicationConfig } from '../application/base-application.interface.js';
-import type EventManager from '../event/manager.js';
-import type { LifecycleManager } from '../lifecycle/lifecycle-manager.js';
-import type { z } from 'zod';
 
 export interface RouteSchemaDefinition<
   TParams extends z.ZodTypeAny | undefined = undefined,
@@ -31,9 +31,8 @@ type InferResponse<TResponse> =
     ? z.output<TResponse[keyof TResponse]>
     : RouteGenericInterface['Reply'];
 
-export interface RouteHandlerContext<
-  Schema extends RouteSchemaDefinition | undefined = undefined,
-> extends RouteGenericInterface {
+export interface RouteHandlerContext<Schema extends RouteSchemaDefinition | undefined = undefined>
+  extends RouteGenericInterface {
   Params?: Schema extends RouteSchemaDefinition<infer TParams, any, any, any, any>
     ? InferOrDefault<TParams, RouteGenericInterface['Params']>
     : RouteGenericInterface['Params'];
@@ -62,7 +61,7 @@ export type AnyRouteSchemaDefinition = RouteSchemaDefinition<
 export type RouteHandler<Schema extends RouteSchemaDefinition | undefined = undefined> = (
   request: FastifyRequest<RouteHandlerContext<Schema>>,
   reply: FastifyReply,
-) => Promise<RouteHandlerContext<Schema>['Reply'] | void> | RouteHandlerContext<Schema>['Reply'] | void;
+) => Promise<RouteHandlerContext<Schema>['Reply'] | undefined> | RouteHandlerContext<Schema>['Reply'] | undefined;
 
 export interface WebServerConstructorParams {
   /** Application configuration */

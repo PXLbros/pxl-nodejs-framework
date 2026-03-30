@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { DynamicEntity } from '../../../src/database/dynamic-entity';
 import { HttpMethodSchema, HttpStatusCodeSchema } from '../../../src/schemas/entity-builder';
@@ -6,7 +6,7 @@ import { HttpMethodSchema, HttpStatusCodeSchema } from '../../../src/schemas/ent
 // Example entity using new pattern
 class ExternalCallEntity extends DynamicEntity {
   static {
-    this.defineSchemas({
+    ExternalCallEntity.defineSchemas({
       shape: {
         serviceName: z.string(),
         method: HttpMethodSchema,

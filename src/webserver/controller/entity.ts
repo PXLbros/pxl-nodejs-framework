@@ -1,12 +1,12 @@
 import 'reflect-metadata';
-import path from 'path';
+import path from 'node:path';
 import type { EntityManager, FilterQuery, Populate } from '@mikro-orm/core';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { StatusCodes } from 'http-status-codes';
-import BaseController from './base.js';
 import type { DynamicEntity } from '../../database/dynamic-entity.js';
 import { generateFormFields } from '../../database/dynamic-entity-form-decorators.js';
 import { Helper } from '../../util/index.js';
+import BaseController from './base.js';
 
 export default abstract class EntityController extends BaseController {
   protected abstract entityName: string;
@@ -15,6 +15,7 @@ export default abstract class EntityController extends BaseController {
   private static entityCache = new Map<string, typeof DynamicEntity>();
 
   // Cache for entity properties to avoid repeated prototype iteration
+  // biome-ignore lint/complexity/noBannedTypes: WeakMap requires object-type key; Function is the simplest fit for constructor references
   private static entityPropertiesCache = new WeakMap<Function, string[]>();
 
   /**
@@ -77,7 +78,8 @@ export default abstract class EntityController extends BaseController {
     for (const propertyKey of Object.getOwnPropertyNames(entityClass.prototype)) {
       if (propertyKey.startsWith('__')) {
         continue;
-      } else if (reservedPropertyKeys.includes(propertyKey)) {
+      }
+      if (reservedPropertyKeys.includes(propertyKey)) {
         continue;
       }
 
@@ -90,7 +92,7 @@ export default abstract class EntityController extends BaseController {
     return properties;
   }
 
-  public options = async (request: FastifyRequest, reply: FastifyReply) => {
+  public options = async (_request: FastifyRequest, reply: FastifyReply) => {
     try {
       const EntityClass = await this.getEntity();
 
@@ -113,7 +115,7 @@ export default abstract class EntityController extends BaseController {
     }
   };
 
-  public metadata = async (request: FastifyRequest, reply: FastifyReply) => {
+  public metadata = async (_request: FastifyRequest, reply: FastifyReply) => {
     try {
       const EntityClass = await this.getEntity();
 
@@ -196,8 +198,8 @@ export default abstract class EntityController extends BaseController {
       }
 
       // Pagination parameters
-      const page = parseInt(request.query.page) || 1;
-      const limit = parseInt(request.query.limit);
+      const page = parseInt(request.query.page, 10) || 1;
+      const limit = parseInt(request.query.limit, 10);
       const offset = (page - 1) * (limit > 0 ? limit : 0);
 
       // Filtering and sorting
@@ -214,7 +216,7 @@ export default abstract class EntityController extends BaseController {
         }
 
         // Only process own properties
-        if (!Object.prototype.hasOwnProperty.call(request.query, key)) {
+        if (!Object.hasOwn(request.query, key)) {
           continue;
         }
 
@@ -257,7 +259,7 @@ export default abstract class EntityController extends BaseController {
         }
 
         // Only process own properties
-        if (!Object.prototype.hasOwnProperty.call(normalizedQuery, key)) {
+        if (!Object.hasOwn(normalizedQuery, key)) {
           continue;
         }
 

@@ -1,6 +1,6 @@
-import { PerformanceObserver, performance } from 'perf_hooks';
-import { Logger } from '../logger/index.js';
+import { PerformanceObserver, performance } from 'node:perf_hooks';
 import { safeSerializeError } from '../error/error-reporter.js';
+import { Logger } from '../logger/index.js';
 
 export interface PerformanceMetrics {
   name: string;

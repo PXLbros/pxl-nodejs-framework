@@ -1,8 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { EntityManager, MikroORM } from '@mikro-orm/postgresql';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ApplicationConfig } from '../../../src/application/base-application.interface.js';
 import DatabaseInstance from '../../../src/database/instance.js';
 import type DatabaseManager from '../../../src/database/manager.js';
-import type { ApplicationConfig } from '../../../src/application/base-application.interface.js';
-import type { MikroORM, EntityManager } from '@mikro-orm/postgresql';
 
 describe('DatabaseInstance', () => {
   let databaseInstance: DatabaseInstance;

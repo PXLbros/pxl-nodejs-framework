@@ -1,8 +1,8 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
-  withAuth,
-  requiresAuth,
   type AuthenticatedUser,
+  requiresAuth,
+  withAuth,
 } from '../../../../src/webserver/controller/auth-middleware.js';
 
 describe('auth middleware', () => {

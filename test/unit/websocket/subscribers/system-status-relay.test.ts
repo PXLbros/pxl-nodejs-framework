@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { WebSocketRedisSubscriberEvent } from '../../../../src/websocket/index.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import systemStatusRelay from '../../../../examples/hello-world/backend/websocket/subscribers/system-status.js';
+import { WebSocketRedisSubscriberEvent } from '../../../../src/websocket/index.js';
 
 describe('systemStatusRelay subscriber', () => {
   const sendMessageToAll = vi.fn();

@@ -1,9 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import BaseProcessor from '../../../../src/queue/processor/base.js';
 import type { Job } from 'bullmq';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type QueueManager from '../../../../src/queue/manager.js';
-import { mockRedisInstance } from '../../../utils/mocks/redis-mocks.js';
+import BaseProcessor from '../../../../src/queue/processor/base.js';
 import { mockDatabaseInstance } from '../../../utils/mocks/database-mocks.js';
+import { mockRedisInstance } from '../../../utils/mocks/redis-mocks.js';
 
 // Mock Logger
 vi.mock('../../../../src/logger/index.js', () => ({
@@ -363,7 +363,7 @@ describe('BaseProcessor', () => {
     it('should execute callback with entity manager', async () => {
       const callback = vi.fn().mockResolvedValue('test result');
 
-      const result = await processor['withEntityManager'](callback);
+      const result = await processor.withEntityManager(callback);
 
       expect(result).toBe('test result');
       expect(mockDatabaseInstance.withEntityManager).toHaveBeenCalledTimes(1);
@@ -380,14 +380,14 @@ describe('BaseProcessor', () => {
 
       const callback = vi.fn().mockResolvedValue('test result');
 
-      await expect(processorWithoutDb['withEntityManager'](callback)).rejects.toThrow('Database not available');
+      await expect(processorWithoutDb.withEntityManager(callback)).rejects.toThrow('Database not available');
     });
 
     it('should propagate callback return value', async () => {
       const expectedData = { id: 1, name: 'Test User' };
       const callback = vi.fn().mockResolvedValue(expectedData);
 
-      const result = await processor['withEntityManager'](callback);
+      const result = await processor.withEntityManager(callback);
 
       expect(result).toEqual(expectedData);
     });
@@ -396,13 +396,13 @@ describe('BaseProcessor', () => {
       const error = new Error('Callback failed');
       const callback = vi.fn().mockRejectedValue(error);
 
-      await expect(processor['withEntityManager'](callback)).rejects.toThrow('Callback failed');
+      await expect(processor.withEntityManager(callback)).rejects.toThrow('Callback failed');
     });
 
     it('should delegate to databaseInstance.withEntityManager', async () => {
       const callback = vi.fn().mockResolvedValue('success');
 
-      await processor['withEntityManager'](callback);
+      await processor.withEntityManager(callback);
 
       expect(mockDatabaseInstance.withEntityManager).toHaveBeenCalledWith(callback);
     });

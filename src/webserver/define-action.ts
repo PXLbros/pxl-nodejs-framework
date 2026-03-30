@@ -1,5 +1,5 @@
-import type { RouteSchemaDefinition } from './webserver.interface.js';
 import type { ControllerAction } from './controller/base.interface.js';
+import type { RouteSchemaDefinition } from './webserver.interface.js';
 
 /**
  * Define a typed controller action with schema inference.

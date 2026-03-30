@@ -1,9 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import Jwt from '../../../src/auth/jwt.js';
 
 // Mock jose library
 vi.mock('jose', () => ({
-  SignJWT: vi.fn(function (this: any, payload: any) {
+  SignJWT: vi.fn(function (this: any, _payload: any) {
     this.setProtectedHeader = vi.fn().mockReturnThis();
     this.setIssuedAt = vi.fn().mockReturnThis();
     this.setExpirationTime = vi.fn().mockReturnThis();

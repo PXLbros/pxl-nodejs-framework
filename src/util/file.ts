@@ -1,8 +1,8 @@
-import * as fs from 'fs';
-import { access, mkdir } from 'fs/promises';
-import * as path from 'path';
-import * as https from 'https';
-import { pipeline } from 'stream';
+import * as fs from 'node:fs';
+import { access, mkdir } from 'node:fs/promises';
+import * as https from 'node:https';
+import * as path from 'node:path';
+import { pipeline } from 'node:stream';
 import { promisify } from 'node:util';
 
 const pipelineAsync = promisify(pipeline);
@@ -112,7 +112,7 @@ function formatFileSize({ bytes }: { bytes: number }): string {
   let idx = Math.floor(Math.log(bytes) / Math.log(1024));
   if (idx < 0) idx = 0;
   if (idx >= units.length) idx = units.length - 1;
-  const fileSize = (bytes / Math.pow(1024, idx)).toFixed(1);
+  const fileSize = (bytes / 1024 ** idx).toFixed(1);
   let unit: string;
   switch (idx) {
     case 0:

@@ -1,6 +1,6 @@
-import { describe, it, expect, vi } from 'vitest';
-import os from 'os';
-import crypto from 'crypto';
+import crypto from 'node:crypto';
+import os from 'node:os';
+import { describe, expect, it, vi } from 'vitest';
 import OS from '../../../src/util/os.js';
 
 // Mock os and crypto modules

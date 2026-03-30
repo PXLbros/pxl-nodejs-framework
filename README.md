@@ -1,4 +1,4 @@
-# PXL Node.js Framework
+# SC/PXL Node.js Framework
 
 [![npm version](https://img.shields.io/npm/v/@scpxl/nodejs-framework.svg)](https://www.npmjs.com/package/@scpxl/nodejs-framework)
 [![Node.js Version](https://img.shields.io/node/v/@scpxl/nodejs-framework.svg)](https://nodejs.org)

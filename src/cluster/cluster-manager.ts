@@ -1,12 +1,12 @@
 import cluster from 'node:cluster';
 import { cpus } from 'node:os';
+import { requestExit } from '../lifecycle/exit.js';
+import { Logger } from '../logger/index.js';
 import type {
   ClusterManagerConfig,
   ClusterManagerProps,
   ClusterManagerWorkerModeManualConfig,
 } from './cluster-manager.interface.js';
-import { Logger } from '../logger/index.js';
-import { requestExit } from '../lifecycle/exit.js';
 
 export default class ClusterManager {
   private readonly config: ClusterManagerConfig;

@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-import { execSync } from 'child_process';
-import { watch } from 'fs';
-import path from 'path';
+import { execSync } from 'node:child_process';
+import { watch } from 'node:fs';
+import path from 'node:path';
 
 let isBuilding = false;
 
@@ -23,14 +23,14 @@ const buildAndPush = () => {
 };
 
 // Initial build
-console.log('🚀 Starting HMR for PXL Node.js Framework');
+console.log('🚀 Starting HMR for SC/PXL Node.js Framework');
 buildAndPush();
 
 // Watch for changes
 const srcPath = path.join(process.cwd(), 'src');
 console.log(`👁️  Watching for changes in: ${srcPath}`);
 
-watch(srcPath, { recursive: true }, (eventType, filename) => {
+watch(srcPath, { recursive: true }, (_eventType, filename) => {
   if (filename && (filename.endsWith('.ts') || filename.endsWith('.js'))) {
     console.log(`📝 Changed: ${filename}`);
     buildAndPush();

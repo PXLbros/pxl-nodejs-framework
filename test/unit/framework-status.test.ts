@@ -1,14 +1,12 @@
-import { describe, it, expect } from 'vitest';
-import path from 'node:path';
-import fs from 'node:fs';
+import { describe, expect, it } from 'vitest';
 
 // Import named exports from the script (ESM)
 import {
-  parseCliOptions,
+  createPathFilter,
   formatBytes,
   formatRelativeTime,
   loadIgnoreConfig,
-  createPathFilter,
+  parseCliOptions,
 } from '../../scripts/framework-status.js';
 
 describe('framework-status utilities', () => {

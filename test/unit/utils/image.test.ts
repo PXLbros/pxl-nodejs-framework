@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import Image from '../../../src/util/image.js';
 
 describe('Image utilities', () => {

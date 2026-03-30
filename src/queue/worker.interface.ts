@@ -1,6 +1,6 @@
 import type { Processor, WorkerOptions } from 'bullmq';
-import type { RedisInstance } from '../redis/index.js';
 import type { ApplicationConfig } from '../application/base-application.interface.js';
+import type { RedisInstance } from '../redis/index.js';
 import type QueueManager from './manager.js';
 
 export interface QueueWorkerConstructorParams {

@@ -1,13 +1,12 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { PerformanceMonitorPlugin } from '../../../src/performance/performance-monitor.plugin.js';
-import { PerformanceMonitor } from '../../../src/performance/performance-monitor.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Logger } from '../../../src/logger/index.js';
 import {
+  CachePerformanceWrapper,
   DatabasePerformanceWrapper,
   QueuePerformanceWrapper,
-  CachePerformanceWrapper,
 } from '../../../src/performance/index.js';
-import type BaseApplication from '../../../src/application/base-application.js';
+import { PerformanceMonitor } from '../../../src/performance/performance-monitor.js';
+import { PerformanceMonitorPlugin } from '../../../src/performance/performance-monitor.plugin.js';
 
 vi.mock('../../../src/logger/index.js', () => ({
   Logger: {
@@ -88,7 +87,7 @@ describe('PerformanceMonitorPlugin', () => {
 
   describe('start', () => {
     it('should initialize performance monitor when enabled', () => {
-      const plugin = PerformanceMonitorPlugin.register(mockApp);
+      const _plugin = PerformanceMonitorPlugin.register(mockApp);
 
       expect(PerformanceMonitor.initialize).toHaveBeenCalledWith({
         enabled: true,

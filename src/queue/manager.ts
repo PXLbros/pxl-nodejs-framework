@@ -1,17 +1,17 @@
+import path from 'node:path';
 import { type Job, Queue, type QueueOptions, type WorkerOptions } from 'bullmq';
-import path from 'path';
-import type { QueueManagerConstructorParams, QueueManagerOptions } from './manager.interface.js';
-import type { RedisInstance } from '../redis/index.js';
-import type { DatabaseInstance } from '../database/index.js';
-import { Logger } from '../logger/index.js';
-import QueueWorker from './worker.js';
-import type BaseProcessor from './processor/base.js';
-import { File, Helper, Loader, Time } from '../util/index.js';
-import type { QueueJob, QueueJobData, QueueJobPayload } from './job.interface.js';
-import type { ProcessorConstructor } from './processor/processor.interface.js';
-import type { QueueItem } from './index.interface.js';
 import type { ApplicationConfig } from '../application/base-application.interface.js';
+import type { DatabaseInstance } from '../database/index.js';
 import type EventManager from '../event/manager.js';
+import { Logger } from '../logger/index.js';
+import type { RedisInstance } from '../redis/index.js';
+import { File, Helper, Loader, Time } from '../util/index.js';
+import type { QueueItem } from './index.interface.js';
+import type { QueueJob, QueueJobData, QueueJobPayload } from './job.interface.js';
+import type { QueueManagerConstructorParams, QueueManagerOptions } from './manager.interface.js';
+import type BaseProcessor from './processor/base.js';
+import type { ProcessorConstructor } from './processor/processor.interface.js';
+import QueueWorker from './worker.js';
 
 export interface JobSummary {
   id: string;
@@ -421,5 +421,9 @@ export default class QueueManager {
    */
   public log(message: string, meta?: Record<string, unknown>): void {
     this.logger.custom({ level: 'queue', message, meta });
+  }
+
+  async [Symbol.asyncDispose](): Promise<void> {
+    await this.disconnect();
   }
 }

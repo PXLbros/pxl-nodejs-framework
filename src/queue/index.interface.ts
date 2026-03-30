@@ -1,5 +1,5 @@
-import type { QueueJob } from './job.interface.js';
 import type { QueueOptions, WorkerOptions } from 'bullmq';
+import type { QueueJob } from './job.interface.js';
 
 /** Runtime settings applied to the BullMQ Worker for this queue */
 export interface QueueRuntimeSettings {

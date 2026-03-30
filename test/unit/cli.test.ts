@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 // Simple helper to run the built CLI. Assumes `npm run build` executed before tests.
 function runCli(args: string[] = []) {

@@ -1,6 +1,6 @@
 # PXL Framework Examples
 
-This directory contains example projects demonstrating how to use the PXL Node.js Framework.
+This directory contains example projects demonstrating how to use the SC/PXL Node.js Framework.
 
 ## Available Examples
 

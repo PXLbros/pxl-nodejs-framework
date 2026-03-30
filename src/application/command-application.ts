@@ -1,12 +1,12 @@
+import type { CommandConstructorParams } from '../command/command.interface.js';
+import type Command from '../command/command.js';
 import type DatabaseInstance from '../database/instance.js';
 import { Logger } from '../logger/index.js';
 import type QueueManager from '../queue/manager.js';
 import type RedisInstance from '../redis/instance.js';
+import { File, Helper, Loader, Time } from '../util/index.js';
 import BaseApplication from './base-application.js';
 import type { CommandApplicationConfig } from './command-application.interface.js';
-import { File, Helper, Loader, Time } from '../util/index.js';
-import type Command from '../command/command.js';
-import type { CommandConstructorParams } from '../command/command.interface.js';
 
 export default class CommandApplication extends BaseApplication {
   /** Command application config */
@@ -85,7 +85,7 @@ export default class CommandApplication extends BaseApplication {
 
     // Find command by name - use safe property access to prevent object injection
     let CommandClass: (new (params: CommandConstructorParams) => Command) | null = null;
-    if (Object.prototype.hasOwnProperty.call(commands, inputCommandName)) {
+    if (Object.hasOwn(commands, inputCommandName)) {
       CommandClass = Reflect.get(commands, inputCommandName) as new (params: CommandConstructorParams) => Command;
     }
 

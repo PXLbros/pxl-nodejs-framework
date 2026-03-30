@@ -1,9 +1,9 @@
+import { Logger } from '../logger/index.js';
 import type {
   WebSocketSubscriberHandler,
   WebSocketSubscriberHandlerContext,
   WebSocketSubscriberMatcher,
 } from './websocket.interface.js';
-import { Logger } from '../logger/index.js';
 
 /**
  * Utility functions for building and composing WebSocket subscriber handlers

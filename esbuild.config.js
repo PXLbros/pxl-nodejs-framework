@@ -1,9 +1,9 @@
+import { execSync } from 'node:child_process';
+import { globSync } from 'node:fs';
 import { build } from 'esbuild';
-import { glob } from 'glob';
-import { execSync } from 'child_process';
 
 // All library TypeScript files except CLI (we build CLI separately)
-const allTs = glob.sync('src/**/*.ts');
+const allTs = globSync('src/**/*.ts');
 const cliEntry = 'src/cli/index.ts';
 const libEntryPoints = allTs.filter(p => p !== cliEntry);
 

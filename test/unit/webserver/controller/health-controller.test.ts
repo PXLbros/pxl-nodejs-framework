@@ -1,11 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mock } from 'node:test';
+import type { FastifyReply, FastifyRequest } from 'fastify';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { LifecyclePhase } from '../../../../src/lifecycle/types.js';
 import HealthController from '../../../../src/webserver/controller/health.js';
-import { mockRedisInstance } from '../../../utils/mocks/redis-mocks.js';
 import { mockDatabaseInstance } from '../../../utils/mocks/database-mocks.js';
 import { mockQueueManager } from '../../../utils/mocks/queue-mocks.js';
-import { LifecyclePhase } from '../../../../src/lifecycle/types.js';
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import { mockRedisInstance } from '../../../utils/mocks/redis-mocks.js';
 
 describe('HealthController', () => {
   let controller: HealthController;

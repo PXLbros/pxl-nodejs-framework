@@ -2,6 +2,7 @@ import type { FastifyRequest } from 'fastify';
 import type { ApplicationConfig } from '../../application/base-application.interface.js';
 import type { DatabaseInstance } from '../../database/index.js';
 import type EventManager from '../../event/manager.js';
+import type { LifecycleManager } from '../../lifecycle/lifecycle-manager.js';
 import type { QueueManager } from '../../queue/index.js';
 import type { RedisInstance } from '../../redis/index.js';
 import type {
@@ -11,7 +12,6 @@ import type {
   WebServerOptions,
 } from '../webserver.interface.js';
 import type WebServerBaseController from './base.js';
-import type { LifecycleManager } from '../../lifecycle/lifecycle-manager.js';
 
 export interface WebServerBaseControllerConstructorParams<
   TQueueManager extends QueueManager = QueueManager,

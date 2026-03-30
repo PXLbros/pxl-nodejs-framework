@@ -1,3 +1,7 @@
+import { createWriteStream } from 'node:fs';
+import { dirname } from 'node:path';
+import { pipeline, Readable } from 'node:stream';
+import { promisify } from 'node:util';
 import {
   CompleteMultipartUploadCommand,
   CreateMultipartUploadCommand,
@@ -9,13 +13,9 @@ import {
   UploadPartCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { Logger } from '../../logger/index.js';
 import { File, Helper } from '../../util/index.js';
 import type { AwsS3ConstructorOptions } from './s3.interface.js';
-import { createWriteStream } from 'fs';
-import { Readable, pipeline } from 'stream';
-import { promisify } from 'node:util';
-import { Logger } from '../../logger/index.js';
-import { dirname } from 'path';
 
 const asyncPipeline = promisify(pipeline);
 
@@ -75,15 +75,11 @@ export default class AwsS3 {
   }
 
   private getBucketUrl({ bucketName, path }: { bucketName: string; path: string }) {
-    let url;
-
     if (this.options.localstack.enabled) {
-      url = `http://localhost:${this.options.localstack.port}/${bucketName}/${path}`;
-    } else {
-      url = `https://${bucketName}.s3.amazonaws.com/${path}`;
+      return `http://localhost:${this.options.localstack.port}/${bucketName}/${path}`;
     }
 
-    return url;
+    return `https://${bucketName}.s3.amazonaws.com/${path}`;
   }
 
   public async uploadFile({

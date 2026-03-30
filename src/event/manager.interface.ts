@@ -1,7 +1,7 @@
 // event-manager.interface.ts
 import type { ApplicationConfig } from '../application/base-application.interface.js';
-import type { RedisInstance } from '../redis/index.js';
 import type { DatabaseInstance } from '../database/index.js';
+import type { RedisInstance } from '../redis/index.js';
 import type { EventControllerType } from './controller/base.interface.js';
 
 // Generic event handler type
@@ -132,7 +132,8 @@ export interface ApplicationEvents {
 
 // Custom events interface for application-specific events
 // Applications can extend this interface via declaration merging
-export interface CustomApplicationEvents {}
+// biome-ignore lint/complexity/noBannedTypes: intentionally empty for declaration merging
+export type CustomApplicationEvents = {};
 
 // Union of all possible events
 export type AllApplicationEvents = ApplicationEvents & CustomApplicationEvents;

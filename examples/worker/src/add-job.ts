@@ -7,7 +7,7 @@
  *   npm run add-job -- --message "Custom message"
  */
 
-import 'dotenv/config';
+process.loadEnvFile();
 import { Queue } from 'bullmq';
 import pc from 'picocolors';
 

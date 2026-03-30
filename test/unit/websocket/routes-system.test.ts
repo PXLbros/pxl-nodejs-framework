@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { webSocketSystemClientRoutes as clientRoutes } from '../../../src/websocket/routes/client/system.js';
 import { webSocketSystemClientRoutes as serverRoutes } from '../../../src/websocket/routes/server/system.js';
 

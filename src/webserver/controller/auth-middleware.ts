@@ -41,7 +41,7 @@ export function withAuth(
  * Usage: @requiresAuth()
  */
 export function requiresAuth() {
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+  return (_target: any, _propertyKey: string, descriptor: PropertyDescriptor) => {
     const originalMethod = descriptor.value;
 
     descriptor.value = async function (this: any, request: FastifyRequest, reply: FastifyReply) {

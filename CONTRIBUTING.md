@@ -1,6 +1,6 @@
-# Contributing to PXL Node.js Framework
+# Contributing to SC/PXL Node.js Framework
 
-Thank you for your interest in contributing to the PXL Node.js Framework! This document provides guidelines and instructions for contributing.
+Thank you for your interest in contributing to the SC/PXL Node.js Framework! This document provides guidelines and instructions for contributing.
 
 ## Table of Contents
 
@@ -538,7 +538,7 @@ Contributors are recognized in:
 - Release notes (for significant contributions)
 - Project documentation (for major features)
 
-Thank you for contributing to the PXL Node.js Framework! 🎉
+Thank you for contributing to the SC/PXL Node.js Framework! 🎉
 
 ---
 

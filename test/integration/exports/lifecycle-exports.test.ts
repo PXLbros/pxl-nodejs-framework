@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 describe('Lifecycle Exports', () => {
   it('should export all lifecycle components from main index', async () => {

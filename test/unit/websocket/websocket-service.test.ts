@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { WebSocketService } from '../../../src/websocket/websocket-service.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { WebSocketRedisSubscriberEvent } from '../../../src/websocket/websocket.interface.js';
+import { WebSocketService } from '../../../src/websocket/websocket-service.js';
 
 describe('WebSocketService', () => {
   let message: { type: string; action: string; data?: any };

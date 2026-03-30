@@ -5,7 +5,8 @@
  * This example uses direct source imports for easy development and testing.
  */
 
-import 'dotenv/config';
+// Load .env file using Node.js built-in (no dotenv needed)
+process.loadEnvFile();
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import type { WebSocket } from 'ws';
 import { StatusCodes } from 'http-status-codes';

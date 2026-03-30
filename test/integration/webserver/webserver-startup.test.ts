@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { testServerRequest, waitForServer, getTestPort } from '../../utils/helpers/test-server.js';
-import { mockRedisInstance } from '../../utils/mocks/redis-mocks.js';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { getTestPort, testServerRequest, waitForServer } from '../../utils/helpers/test-server.js';
 import { mockDatabaseManager } from '../../utils/mocks/database-mocks.js';
 import { mockQueueManager } from '../../utils/mocks/queue-mocks.js';
+import { mockRedisInstance } from '../../utils/mocks/redis-mocks.js';
 
 describe('WebServer Startup Integration', () => {
   let WebServer: any;

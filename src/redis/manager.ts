@@ -1,10 +1,10 @@
-import { Redis, type RedisOptions } from 'ioredis';
 import { EventEmitter } from 'node:events';
-import type { RedisManagerConfig as RedisManagerOptions } from './manager.interface.js';
-import RedisInstance from './instance.js';
+import { Redis, type RedisOptions } from 'ioredis';
+import { safeSerializeError } from '../error/error-reporter.js';
 import { Logger } from '../logger/index.js';
 import { CachePerformanceWrapper } from '../performance/index.js';
-import { safeSerializeError } from '../error/error-reporter.js';
+import RedisInstance from './instance.js';
+import type { RedisManagerConfig as RedisManagerOptions } from './manager.interface.js';
 
 const truthyPattern = /^(1|true|yes|on)$/i;
 const scheduleMicrotask =
@@ -206,7 +206,7 @@ export default class RedisManager {
 
           const client = new Redis(redisOptions);
           // Attach a temporary error handler to prevent unhandled errors during connection
-          const errorHandler = (error: Error) => {
+          const errorHandler = (_error: Error) => {
             // Error will be handled by the promise rejection below
           };
           client.once('error', errorHandler);
@@ -345,5 +345,9 @@ export default class RedisManager {
    */
   public log(message: string, meta?: Record<string, unknown>): void {
     this.logger.custom({ level: 'redis', message, meta });
+  }
+
+  async [Symbol.asyncDispose](): Promise<void> {
+    await this.disconnect();
   }
 }

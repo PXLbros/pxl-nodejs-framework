@@ -15,7 +15,7 @@
  * from configured queues.
  */
 
-import 'dotenv/config';
+process.loadEnvFile();
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { WorkerApplication } from '../../../src/application/index.js';

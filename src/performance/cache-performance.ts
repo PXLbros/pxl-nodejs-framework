@@ -280,7 +280,7 @@ export class CachePerformanceWrapper {
  * Decorator for monitoring cache operations
  */
 export function MonitorCacheOperation(operationName?: string) {
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+  return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
     const originalMethod = descriptor.value;
     const className = target.constructor.name;
     const operation = operationName ?? propertyKey;

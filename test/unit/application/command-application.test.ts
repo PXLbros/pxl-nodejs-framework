@@ -1,10 +1,9 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { mkdirSync, writeFileSync, rmSync } from 'fs';
-import { join } from 'path';
-import { tmpdir } from 'os';
-import CommandApplication from '../../../src/application/command-application.js';
+import { mkdirSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CommandApplicationConfig } from '../../../src/application/command-application.interface.js';
-import { Logger } from '../../../src/logger/index.js';
+import CommandApplication from '../../../src/application/command-application.js';
 
 // Mock Logger
 vi.mock('../../../src/logger/index.js', () => ({

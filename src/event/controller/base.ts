@@ -1,10 +1,10 @@
-import cluster from 'cluster';
+import cluster from 'node:cluster';
+import type { ApplicationConfig } from '../../application/base-application.interface.js';
 import type { DatabaseInstance } from '../../database/index.js';
+import { safeSerializeError } from '../../error/error-reporter.js';
+import { Logger } from '../../logger/index.js';
 import type { RedisInstance } from '../../redis/index.js';
 import type { EventControllerConstructorParams } from './base.interface.js';
-import { Logger } from '../../logger/index.js';
-import type { ApplicationConfig } from '../../application/base-application.interface.js';
-import { safeSerializeError } from '../../error/error-reporter.js';
 
 export default abstract class BaseEventController {
   protected logger: typeof Logger = Logger;

@@ -19,24 +19,24 @@ export abstract class DynamicEntity extends BaseEntity {
   }
 
   public static get singularNameLowerCase(): string {
-    return this.singularName.toLowerCase();
+    return DynamicEntity.singularName.toLowerCase();
   }
 
   public static get pluralNameLowerCase(): string {
-    return this.pluralName.toLowerCase();
+    return DynamicEntity.pluralName.toLowerCase();
   }
 
   public static get singularNameCapitalized(): string {
-    return this.singularName.charAt(0).toUpperCase() + this.singularName.slice(1).toLowerCase();
+    return DynamicEntity.singularName.charAt(0).toUpperCase() + DynamicEntity.singularName.slice(1).toLowerCase();
   }
 
   public static get pluralNameCapitalized(): string {
-    return this.pluralName.charAt(0).toUpperCase() + this.pluralName.slice(1).toLowerCase();
+    return DynamicEntity.pluralName.charAt(0).toUpperCase() + DynamicEntity.pluralName.slice(1).toLowerCase();
   }
 
   public static validateCreate<T>(item: unknown): { error?: Error; value?: T } {
     try {
-      return { value: this.createSchema.parse(item) as T };
+      return { value: DynamicEntity.createSchema.parse(item) as T };
     } catch (err) {
       if (err instanceof z.ZodError) {
         return { error: new Error(err.issues.map(i => `${i.path.join('.')}: ${i.message}`).join(', ')) };
@@ -47,7 +47,7 @@ export abstract class DynamicEntity extends BaseEntity {
 
   public static validateUpdate<T>(item: unknown): { error?: Error; value?: T } {
     try {
-      return { value: this.updateSchema.parse(item) as T };
+      return { value: DynamicEntity.updateSchema.parse(item) as T };
     } catch (err) {
       if (err instanceof z.ZodError) {
         return { error: new Error(err.issues.map(i => `${i.path.join('.')}: ${i.message}`).join(', ')) };
@@ -73,10 +73,10 @@ export abstract class DynamicEntity extends BaseEntity {
       requireAtLeastOneOnUpdate,
       readAugment,
     });
-    this.createSchema = schemas.create;
-    this.updateSchema = schemas.update;
+    DynamicEntity.createSchema = schemas.create;
+    DynamicEntity.updateSchema = schemas.update;
     if (readAugment) {
-      this.readSchema = schemas.read;
+      DynamicEntity.readSchema = schemas.read;
     }
   }
 }

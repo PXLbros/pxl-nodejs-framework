@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { WebSocketAuthService } from '../../../src/websocket/websocket-auth.js';
-import Jwt from '../../../src/auth/jwt.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { WebApplicationConfig } from '../../../src/application/web-application.interface.js';
+import Jwt from '../../../src/auth/jwt.js';
+import { WebSocketAuthService } from '../../../src/websocket/websocket-auth.js';
 
 vi.mock('../../../src/auth/jwt.js');
 

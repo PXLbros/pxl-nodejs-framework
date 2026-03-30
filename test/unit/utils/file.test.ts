@@ -1,9 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import * as fs from 'fs';
-import * as path from 'path';
-import * as https from 'https';
-import { pipeline } from 'stream';
+import * as fs from 'node:fs';
+import * as https from 'node:https';
+import * as path from 'node:path';
+import { pipeline } from 'node:stream';
 import { promisify } from 'node:util';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import File from '../../../src/util/file.js';
 
 // Mock all dependencies
@@ -18,7 +18,7 @@ const mockFs = vi.mocked(fs);
 const mockPath = vi.mocked(path);
 const mockHttps = vi.mocked(https);
 const mockPipeline = vi.mocked(pipeline);
-const mockPromisify = vi.mocked(promisify);
+const _mockPromisify = vi.mocked(promisify);
 
 describe('File', () => {
   beforeEach(() => {
@@ -168,7 +168,7 @@ describe('File', () => {
 
   describe('pathExists', () => {
     it('should return true when path exists', async () => {
-      const fsMock = await import('fs/promises');
+      const fsMock = await import('node:fs/promises');
       const mockAccess = vi.mocked(fsMock).access;
       mockAccess.mockResolvedValueOnce(undefined);
 
@@ -179,7 +179,7 @@ describe('File', () => {
     });
 
     it('should return false when path does not exist', async () => {
-      const fsMock = await import('fs/promises');
+      const fsMock = await import('node:fs/promises');
       const mockAccess = vi.mocked(fsMock).access;
       mockAccess.mockRejectedValueOnce(new Error('ENOENT: no such file or directory'));
 
@@ -192,7 +192,7 @@ describe('File', () => {
 
   describe('ensureDir', () => {
     it('should not create directory if it already exists', async () => {
-      const fsMock = await import('fs/promises');
+      const fsMock = await import('node:fs/promises');
       const mockModule = vi.mocked(fsMock);
       mockModule.access.mockResolvedValueOnce(undefined);
 
@@ -203,7 +203,7 @@ describe('File', () => {
     });
 
     it('should create directory if it does not exist', async () => {
-      const fsMock = await import('fs/promises');
+      const fsMock = await import('node:fs/promises');
       const mockModule = vi.mocked(fsMock);
       mockModule.access.mockRejectedValueOnce(new Error('ENOENT'));
       mockModule.mkdir.mockResolvedValueOnce(undefined);
@@ -230,8 +230,8 @@ describe('File', () => {
       };
 
       mockFs.createWriteStream.mockReturnValue(mockWriteStream as any);
-      mockFs.unlink.mockImplementation((path, callback: any) => callback());
-      mockHttps.get.mockImplementation((url, callback: any) => {
+      mockFs.unlink.mockImplementation((_path, callback: any) => callback());
+      mockHttps.get.mockImplementation((_url, callback: any) => {
         callback(mockResponse);
         return { on: vi.fn() } as any;
       });
@@ -247,7 +247,7 @@ describe('File', () => {
       };
 
       mockFs.createWriteStream.mockReturnValue(mockWriteStream as any);
-      mockFs.unlink.mockImplementation((path, callback: any) => callback());
+      mockFs.unlink.mockImplementation((_path, callback: any) => callback());
       mockHttps.get.mockImplementation(() => {
         return {
           on: vi.fn((event, handler) => {
@@ -275,7 +275,7 @@ describe('File', () => {
       };
 
       mockFs.createWriteStream.mockReturnValue(mockWriteStream as any);
-      mockFs.unlink.mockImplementation((path, callback: any) => callback());
+      mockFs.unlink.mockImplementation((_path, callback: any) => callback());
 
       await expect(
         File.downloadFile({ url: 'https://example.com/file.txt', destinationPath: '/tmp/file.txt' }),

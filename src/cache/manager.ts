@@ -1,6 +1,6 @@
-import type RedisManager from '../redis/manager.js';
-import type RedisInstance from '../redis/instance.js';
 import { safeSerializeError } from '../error/error-reporter.js';
+import type RedisInstance from '../redis/instance.js';
+import type RedisManager from '../redis/manager.js';
 
 /**
  * CacheManager

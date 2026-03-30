@@ -14,7 +14,7 @@
  * - Modern 2025 TypeScript patterns
  */
 
-import 'dotenv/config';
+process.loadEnvFile();
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { CommandApplication } from '../../../src/application/index.js';

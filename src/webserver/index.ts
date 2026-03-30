@@ -1,4 +1,22 @@
-export { default as WebServer } from './webserver.js';
+export type {
+  AuthenticatedRequest,
+  AuthenticatedRouteHandler,
+  AuthenticatedUser,
+  RouteHandler,
+} from './controller/auth-middleware.js';
+export { withAuth } from './controller/auth-middleware.js';
+export type {
+  ControllerAction,
+  ControllerRequest,
+  WebServerBaseControllerConstructorParams,
+} from './controller/base.interface.js';
+export { default as WebServerBaseController } from './controller/base.js';
+export { default as WebServerEntityController } from './controller/entity.js';
+export { default as ExampleAuthController } from './controller/example-auth.js';
+export { default as WebServerHealthController } from './controller/health.js';
+export { defineAction } from './define-action.js';
+export { defineRoute } from './define-route.js';
+export { default as RouteUtil } from './util.js';
 export type {
   RouteHandler as TypedRouteHandler,
   RouteHandlerContext,
@@ -8,22 +26,4 @@ export type {
   WebServerRoute,
 } from './webserver.interface.js';
 export { WebServerRouteType } from './webserver.interface.js';
-export { default as WebServerBaseController } from './controller/base.js';
-export type {
-  ControllerAction,
-  ControllerRequest,
-  WebServerBaseControllerConstructorParams,
-} from './controller/base.interface.js';
-export { default as WebServerHealthController } from './controller/health.js';
-export { default as WebServerEntityController } from './controller/entity.js';
-export { default as ExampleAuthController } from './controller/example-auth.js';
-export { default as RouteUtil } from './util.js';
-export type {
-  AuthenticatedUser,
-  AuthenticatedRequest,
-  AuthenticatedRouteHandler,
-  RouteHandler,
-} from './controller/auth-middleware.js';
-export { withAuth } from './controller/auth-middleware.js';
-export { defineRoute } from './define-route.js';
-export { defineAction } from './define-action.js';
+export { default as WebServer } from './webserver.js';

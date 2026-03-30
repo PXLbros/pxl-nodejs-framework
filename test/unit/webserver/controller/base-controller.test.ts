@@ -1,11 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mock } from 'node:test';
+import type { FastifyReply, FastifyRequest } from 'fastify';
 import { StatusCodes } from 'http-status-codes';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import BaseController from '../../../../src/webserver/controller/base.js';
-import { mockRedisInstance } from '../../../utils/mocks/redis-mocks.js';
 import { mockDatabaseInstance } from '../../../utils/mocks/database-mocks.js';
 import { mockQueueManager } from '../../../utils/mocks/queue-mocks.js';
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import { mockRedisInstance } from '../../../utils/mocks/redis-mocks.js';
 
 // Mock JWT
 vi.mock('../../../../src/auth/jwt.js', () => ({

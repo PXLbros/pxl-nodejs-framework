@@ -10,7 +10,7 @@ import { z } from 'zod';
 export interface BuildEntitySchemasOptions<
   Shape extends z.ZodRawShape,
   Updatable extends keyof Shape = keyof Shape,
-  ReadAugment extends z.ZodRawShape = {},
+  ReadAugment extends z.ZodRawShape = Record<string, never>,
 > {
   shape: Shape;
   updatableFields?: readonly Updatable[];
@@ -35,7 +35,7 @@ export interface BuiltEntitySchemas<
 export function buildEntitySchemas<
   Shape extends z.ZodRawShape,
   Updatable extends keyof Shape = keyof Shape,
-  ReadAugment extends z.ZodRawShape = {},
+  ReadAugment extends z.ZodRawShape = Record<string, never>,
 >(
   options: BuildEntitySchemasOptions<Shape, Updatable, ReadAugment>,
 ): BuiltEntitySchemas<Shape, Updatable, ReadAugment> {

@@ -1,8 +1,8 @@
 ---
-title: PXL Node.js Framework
+title: SC/PXL Node.js Framework
 ---
 
-# PXL Node.js Framework
+# SC/PXL Node.js Framework
 
 > Modular TypeScript framework unifying HTTP, WebSocket, Queue, Database, Cache, Auth, and Observability under a single lifecycle.
 

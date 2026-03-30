@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-import { execSync } from 'child_process';
-import { readFileSync, writeFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { execSync } from 'node:child_process';
+import { readFileSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -42,7 +42,6 @@ function log(message, color = 'white') {
     case 'cyan':
       colorCode = colors.cyan;
       break;
-    case 'white':
     default:
       colorCode = colors.white;
   }
@@ -149,7 +148,7 @@ function incrementVersion(currentVersion, type) {
 
 function showHelp() {
   console.log(`
-${colors.cyan}PXL Node.js Framework Release Script${colors.reset}
+${colors.cyan}SC/PXL Node.js Framework Release Script${colors.reset}
 
 Usage: npm run release [options]
 
@@ -197,7 +196,7 @@ async function main() {
     process.exit(1);
   }
 
-  log(`\n🚀 ${colors.cyan}PXL Node.js Framework Release Script${colors.reset}\n`);
+  log(`\n🚀 ${colors.cyan}SC/PXL Node.js Framework Release Script${colors.reset}\n`);
 
   // Check git status
   checkGitStatus();

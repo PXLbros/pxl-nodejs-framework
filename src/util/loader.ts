@@ -1,5 +1,5 @@
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 import { LRUCache } from 'lru-cache';
 import { Helper } from './index.js';
 
@@ -115,7 +115,7 @@ const loadEntityModule = async <T = unknown>({
     throw new Error(`Invalid entity name (Entity: ${entityName})`);
   }
 
-  if (!entityModule || !Object.prototype.hasOwnProperty.call(entityModule, entityName)) {
+  if (!entityModule || !Object.hasOwn(entityModule, entityName)) {
     throw new Error(`Entity not found (Entity: ${entityName})`);
   }
 

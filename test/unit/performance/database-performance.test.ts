@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   DatabasePerformanceWrapper,
   MonitorDatabaseOperation,
@@ -21,7 +21,7 @@ describe('DatabasePerformanceWrapper', () => {
     it('should set performance monitor', () => {
       const customMonitor = PerformanceMonitor.getInstance();
       DatabasePerformanceWrapper.setPerformanceMonitor(customMonitor);
-      expect(DatabasePerformanceWrapper['performanceMonitor']).toBe(customMonitor);
+      expect(DatabasePerformanceWrapper.performanceMonitor).toBe(customMonitor);
     });
   });
 
@@ -104,7 +104,7 @@ describe('DatabasePerformanceWrapper', () => {
 
     it('should truncate long queries', async () => {
       const operation = vi.fn().mockResolvedValue([]);
-      const longQuery = 'SELECT * FROM users WHERE ' + 'id = ? OR '.repeat(50) + 'id = ?';
+      const longQuery = `SELECT * FROM users WHERE ${'id = ? OR '.repeat(50)}id = ?`;
       const parameters = Array(51).fill(1);
 
       const result = await DatabasePerformanceWrapper.monitorQuery(longQuery, parameters, operation);
@@ -316,7 +316,7 @@ describe('DatabasePerformanceWrapper', () => {
       class UserRepository {
         @MonitorDatabaseOperation()
         async findById(id: number) {
-          return { id, name: 'User' + id };
+          return { id, name: `User${id}` };
         }
       }
 

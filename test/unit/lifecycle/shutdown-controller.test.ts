@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { LifecycleManager } from '../../../src/lifecycle/lifecycle-manager.js';
 import { ShutdownController } from '../../../src/lifecycle/shutdown-controller.js';
 

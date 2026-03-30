@@ -1,13 +1,13 @@
-import type { Job } from 'bullmq';
 import type { EntityManager } from '@mikro-orm/core';
-import type { QueueManager } from '../../queue/index.js';
-import type { DatabaseInstance } from '../../database/index.js';
+import type { Job } from 'bullmq';
 import type { ApplicationConfig } from '../../application/base-application.interface.js';
-import { Logger } from '../../logger/index.js';
-import type { RedisInstance } from '../../redis/index.js';
-import type EventManager from '../../event/manager.js';
-import type { QueueJobData } from '../job.interface.js';
+import type { DatabaseInstance } from '../../database/index.js';
 import { safeSerializeError } from '../../error/error-reporter.js';
+import type EventManager from '../../event/manager.js';
+import { Logger } from '../../logger/index.js';
+import type { QueueManager } from '../../queue/index.js';
+import type { RedisInstance } from '../../redis/index.js';
+import type { QueueJobData } from '../job.interface.js';
 
 export default abstract class BaseProcessor<
   TQueueManager extends QueueManager = QueueManager,

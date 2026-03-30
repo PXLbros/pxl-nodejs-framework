@@ -94,14 +94,21 @@ async function main(argv = hideBin(process.argv)) {
           })
           .option('json', { type: 'boolean', default: false, describe: 'Output JSON' }),
       async args => {
-        const { glob } = await import('glob');
+        const { glob } = await import('node:fs/promises');
         const searchPath = path.resolve(process.cwd(), args.path);
         const pattern = path.join(searchPath, args.pattern);
 
         try {
-          const files = await glob(pattern, {
-            ignore: ['**/node_modules/**', '**/dist/**', '**/*.test.ts', '**/*.spec.ts'],
-          });
+          const files: string[] = [];
+          for await (const file of glob(pattern, {
+            exclude: name =>
+              name.includes('node_modules') ||
+              name.includes('dist') ||
+              name.endsWith('.test.ts') ||
+              name.endsWith('.spec.ts'),
+          })) {
+            files.push(file);
+          }
 
           if (args.json) {
             console.log(JSON.stringify({ routes: files, count: files.length }, null, 2));

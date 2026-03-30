@@ -1,17 +1,17 @@
-import { StatusCodes } from 'http-status-codes';
+import cluster from 'node:cluster';
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import type { DatabaseInstance } from '../../database/index.js';
-import type { RedisInstance } from '../../redis/index.js';
-import type { QueueManager } from '../../queue/index.js';
-import type { ApiError, ApiResponse, WebServerBaseControllerConstructorParams } from './base.interface.js';
-import { Logger } from '../../logger/index.js';
+import { StatusCodes } from 'http-status-codes';
 import type { ApplicationConfig } from '../../application/base-application.interface.js';
-import type EventManager from '../../event/manager.js';
-import cluster from 'cluster';
-import type { WebServerOptions } from '../webserver.interface.js';
-import type { LifecycleManager } from '../../lifecycle/lifecycle-manager.js';
 import Jwt from '../../auth/jwt.js';
+import type { DatabaseInstance } from '../../database/index.js';
 import { safeSerializeError } from '../../error/error-reporter.js';
+import type EventManager from '../../event/manager.js';
+import type { LifecycleManager } from '../../lifecycle/lifecycle-manager.js';
+import { Logger } from '../../logger/index.js';
+import type { QueueManager } from '../../queue/index.js';
+import type { RedisInstance } from '../../redis/index.js';
+import type { WebServerOptions } from '../webserver.interface.js';
+import type { ApiError, ApiResponse, WebServerBaseControllerConstructorParams } from './base.interface.js';
 
 export interface AuthenticatedUser<TPayload = Record<string, unknown>> {
   userId: number;
@@ -101,7 +101,7 @@ export default abstract class BaseController<
     errorType?: ApiError['type'];
   }) {
     let publicErrorMessage: string;
-    let errorDetails: Record<string, unknown> | undefined = undefined;
+    let errorDetails: Record<string, unknown> | undefined;
 
     if (this.webServerOptions.errors?.verbose === true) {
       if (error instanceof Error) {
@@ -219,7 +219,7 @@ export default abstract class BaseController<
         return null;
       }
 
-      const userId = parseInt(payload.sub);
+      const userId = parseInt(payload.sub, 10);
 
       return {
         userId,

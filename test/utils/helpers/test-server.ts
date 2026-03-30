@@ -83,7 +83,7 @@ export async function testServerRequest(
 
     const response = await fetch(url, fetchOptions);
     const contentType = response.headers.get('content-type');
-    let data;
+    let data: unknown;
 
     if (contentType?.includes('application/json')) {
       try {

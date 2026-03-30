@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AwsS3 from '../../../../src/services/aws/s3.js';
 
 // Mock AWS SDK
@@ -280,7 +280,7 @@ describe('AwsS3', () => {
     });
 
     it('should call all lifecycle callbacks during download', async () => {
-      const { Readable } = await import('stream');
+      const { Readable } = await import('node:stream');
       const mockReadable = new Readable();
       mockReadable._read = () => {};
 
@@ -349,7 +349,7 @@ describe('AwsS3', () => {
     });
 
     it('should decode URI-encoded keys', async () => {
-      const { Readable } = await import('stream');
+      const { Readable } = await import('node:stream');
       const mockReadable = new Readable();
       mockReadable._read = () => {};
 

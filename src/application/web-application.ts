@@ -1,15 +1,15 @@
-import type RedisInstance from '../redis/instance.js';
 import type DatabaseInstance from '../database/instance.js';
-import WebServer from '../webserver/webserver.js';
+import type EventManager from '../event/manager.js';
+import { Logger } from '../logger/index.js';
+import { WebServerPerformanceWrapper, WebSocketPerformanceWrapper } from '../performance/index.js';
 import type QueueManager from '../queue/manager.js';
+import type RedisInstance from '../redis/instance.js';
+import { Helper, Time } from '../util/index.js';
+import WebServer from '../webserver/webserver.js';
+import WebSocketClient from '../websocket/websocket-client.js';
+import WebSocketServer from '../websocket/websocket-server.js';
 import BaseApplication from './base-application.js';
 import type { WebApplicationConfig } from './web-application.interface.js';
-import { Helper, Time } from '../util/index.js';
-import { Logger } from '../logger/index.js';
-import WebSocketServer from '../websocket/websocket-server.js';
-import WebSocketClient from '../websocket/websocket-client.js';
-import type EventManager from '../event/manager.js';
-import { WebServerPerformanceWrapper, WebSocketPerformanceWrapper } from '../performance/index.js';
 
 /**
  * Application
@@ -158,9 +158,8 @@ export default class WebApplication extends BaseApplication {
         default: {
           if (!this.config.webSocket.type) {
             throw new Error('WebSocket type is required');
-          } else {
-            throw new Error(`WebSocket type is not supported (Type: ${this.config.webSocket.type})`);
           }
+          throw new Error(`WebSocket type is not supported (Type: ${this.config.webSocket.type})`);
         }
       }
 

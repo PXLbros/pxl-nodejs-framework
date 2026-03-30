@@ -1,10 +1,10 @@
+import cluster from 'node:cluster';
 import * as Sentry from '@sentry/node';
 import { nodeProfilingIntegration } from '@sentry/profiling-node';
-import cluster from 'node:cluster';
-import winston from 'winston';
-import type { LogOptions } from '../websocket/utils.js';
-import { getRequestId } from '../request-context/index.js';
+import pino from 'pino';
 import { safeSerializeError } from '../error/error-reporter.js';
+import { getRequestId } from '../request-context/index.js';
+import type { LogOptions } from '../websocket/utils.js';
 
 export type LoggerLevels =
   | 'error'
@@ -20,9 +20,27 @@ export type LoggerLevels =
   | 'event'
   | 'debug';
 
+// Map custom levels to numeric values (lower = more severe, matching Pino convention)
+const customLevels = {
+  error: 10,
+  warn: 20,
+  info: 30,
+  command: 35,
+  database: 40,
+  redis: 45,
+  webServer: 50,
+  webSocket: 55,
+  queue: 60,
+  queueJob: 65,
+  event: 70,
+  debug: 80,
+} as const;
+
+type CustomLogger = pino.Logger<keyof typeof customLevels>;
+
 export class Logger {
   private static instance: Logger;
-  private logger: winston.Logger;
+  private logger: CustomLogger;
 
   private environment: string | undefined;
 
@@ -33,57 +51,37 @@ export class Logger {
   private constructor() {
     this.environment = process.env.NODE_ENV;
 
-    const customFormat = this.getCustomFormat();
-
-    const customLevels: winston.config.AbstractConfigSetLevels = {
-      error: 0,
-      warn: 1,
-      info: 2,
-      command: 3,
-      database: 4,
-      redis: 5,
-      webServer: 6,
-      webSocket: 7,
-      queue: 8,
-      queueJob: 9,
-      event: 10,
-      debug: 11,
-    };
-
-    const customColors: winston.config.AbstractConfigSetColors = {
-      error: 'red',
-      warn: 'yellow',
-      info: 'blue',
-      command: 'cyan',
-      database: 'brightGreen',
-      redis: 'brightYellow',
-      webServer: 'brightBlue',
-      webSocket: 'brightMagenta',
-      queue: 'gray',
-      queueJob: 'blue',
-      event: 'brightGreen',
-      debug: 'brightCyan',
-    };
-
-    winston.addColors(customColors);
-
-    this.logger = winston.createLogger({
-      levels: customLevels,
+    this.logger = pino({
+      customLevels,
+      useOnlyCustomLevels: true,
       level: this.environment === 'production' ? 'info' : 'debug',
-      format: winston.format.combine(
-        winston.format.timestamp({
-          format: 'YYYY-MM-DD HH:mm:ss',
-        }),
-        winston.format.errors({ stack: true }),
-        winston.format.splat(),
-        winston.format.json(),
-      ),
-      transports: [
-        new winston.transports.Console({
-          format: winston.format.combine(winston.format.colorize(), customFormat),
-        }),
-      ],
+      formatters: {
+        level(label) {
+          return { level: label };
+        },
+      },
+      timestamp: pino.stdTimeFunctions.isoTime,
+      transport: {
+        target: 'pino-pretty',
+        options: {
+          colorize: true,
+          translateTime: 'yyyy-mm-dd HH:MM:ss',
+          ignore: 'pid,hostname',
+          messageFormat: '{msg}',
+          customLevels: Object.entries(customLevels)
+            .map(([name, num]) => `${name}:${num}`)
+            .join(','),
+          customColors:
+            'error:red,warn:yellow,info:blue,command:cyan,database:greenBright,redis:yellowBright,webServer:blueBright,webSocket:magentaBright,queue:gray,queueJob:blue,event:greenBright,debug:cyanBright',
+          useOnlyCustomProps: false,
+        },
+      },
     });
+  }
+
+  /** Get the underlying Pino logger instance (useful for Fastify integration) */
+  public get pinoInstance(): CustomLogger {
+    return this.logger;
   }
 
   public static getInstance(): Logger {
@@ -92,61 +90,6 @@ export class Logger {
     }
 
     return Logger.instance;
-  }
-
-  private getCustomFormat(): winston.Logform.Format {
-    return winston.format.printf(({ level, message, timestamp, ...meta }) => {
-      // Auto-inject request ID from AsyncLocalStorage context if available
-      const requestId = getRequestId();
-      if (requestId && !meta['requestId'] && this.showRequestIdInConsole) {
-        meta['requestId'] = requestId;
-      }
-
-      if (cluster.isWorker && cluster.worker) {
-        meta['Worker'] = cluster.worker.id; // .process.pid;
-      }
-
-      const metaString = Object.entries(meta)
-        .map(([key, value]) => {
-          // Safely convert value to string representation
-          let stringValue: string;
-
-          if (value === null) {
-            stringValue = 'null';
-          } else if (value === undefined) {
-            stringValue = 'undefined';
-          } else if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-            stringValue = String(value);
-          } else if (value instanceof Error) {
-            stringValue = value.message;
-          } else if (value instanceof Promise) {
-            stringValue = '[Promise]';
-          } else if (typeof value === 'object') {
-            try {
-              // Attempt to JSON.stringify, but handle circular references
-              stringValue = JSON.stringify(value);
-            } catch {
-              // Fallback for circular references or other issues
-              stringValue = '[Object]';
-            }
-          } else {
-            stringValue = String(value);
-          }
-
-          return `${key}: ${stringValue}`;
-        })
-        .join(' | ');
-
-      if (level === 'error') {
-        if (this.isSentryInitialized) {
-          const errorMessage = typeof message === 'string' ? message : JSON.stringify(message);
-
-          Sentry.captureException(new Error(errorMessage));
-        }
-      }
-
-      return `[${timestamp}] ${level}: ${message}${metaString ? ` (${metaString})` : ''}`;
-    });
   }
 
   public configure({ showRequestIdInConsole }: { showRequestIdInConsole?: boolean }): void {
@@ -172,6 +115,32 @@ export class Logger {
     this.isSentryInitialized = true;
   }
 
+  private buildMeta(meta?: Record<string, unknown>): Record<string, unknown> {
+    const enriched: Record<string, unknown> = { ...meta };
+
+    // Auto-inject request ID from AsyncLocalStorage context if available
+    const requestId = getRequestId();
+    if (requestId && !enriched.requestId && this.showRequestIdInConsole) {
+      enriched.requestId = requestId;
+    }
+
+    if (cluster.isWorker && cluster.worker) {
+      enriched.Worker = cluster.worker.id;
+    }
+
+    return enriched;
+  }
+
+  private formatMessage(message: unknown): string {
+    if (message instanceof Error) {
+      return message.stack ?? message.toString();
+    }
+    if (typeof message === 'string') {
+      return message;
+    }
+    return JSON.stringify(message);
+  }
+
   public log({
     level,
     message,
@@ -183,16 +152,14 @@ export class Logger {
     meta?: Record<string, unknown>;
     options?: LogOptions;
   }): void {
-    // if (options?.muteWorker) {
-    // }
+    const enrichedMeta = this.buildMeta(meta);
+    const msg = this.formatMessage(message);
 
-    if (message instanceof Error) {
-      const errorMessage = message.stack ?? message.toString();
-      this.logger.log(level, errorMessage, meta);
-    } else if (typeof message === 'string') {
-      this.logger.log(level, message, meta);
-    } else {
-      this.logger.log(level, JSON.stringify(message), meta);
+    this.logger[level](enrichedMeta, msg);
+
+    if (level === 'error' && this.isSentryInitialized) {
+      const errorMessage = typeof message === 'string' ? message : JSON.stringify(message);
+      Sentry.captureException(new Error(errorMessage));
     }
   }
 

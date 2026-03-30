@@ -1,7 +1,7 @@
 import { defineConfig } from 'vitepress';
 
 export default defineConfig({
-  title: 'PXL Node.js Framework',
+  title: 'SC/PXL Node.js Framework',
   description: 'Opinionated application framework for building scalable Node.js services',
   cleanUrls: true,
   themeConfig: {

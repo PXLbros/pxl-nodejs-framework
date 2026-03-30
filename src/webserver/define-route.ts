@@ -1,11 +1,11 @@
 import type { HTTPMethods } from 'fastify';
+import type { ControllerAction, WebServerBaseControllerType } from './controller/base.interface.js';
 import {
   type AnyRouteSchemaDefinition,
   type RouteSchemaDefinition,
   type WebServerRoute,
   WebServerRouteType,
 } from './webserver.interface.js';
-import type { ControllerAction, WebServerBaseControllerType } from './controller/base.interface.js';
 
 export interface DefineRouteConfig<
   Schema extends RouteSchemaDefinition<any, any, any, any, any> | undefined,

@@ -1,19 +1,19 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { WebSocketSubscriberHandlerContext } from '../../../src/websocket/websocket.interface.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  composeHandlers,
+  getNestedProperty,
   matchByProperty,
   matchByPropertyPredicate,
-  getNestedProperty,
+  withDebounce,
   withErrorHandler,
+  withFilter,
   withLogging,
   withRateLimit,
   withRetry,
-  composeHandlers,
-  withFilter,
-  withValidation,
-  withDebounce,
   withThrottle,
+  withValidation,
 } from '../../../src/websocket/subscriber-utils.js';
+import type { WebSocketSubscriberHandlerContext } from '../../../src/websocket/websocket.interface.js';
 
 describe('Subscriber Utilities', () => {
   let mockContext: WebSocketSubscriberHandlerContext;
@@ -244,7 +244,7 @@ describe('Subscriber Utilities', () => {
 
     it('should apply exponential backoff multiplier', async () => {
       // Test that retries use exponential backoff
-      let delayTotal = 0;
+      const _delayTotal = 0;
       const handler = vi.fn().mockRejectedValue(new Error('Test'));
 
       const wrapped = withRetry(handler, 2, 100, 2); // 100ms initial, 2x multiplier

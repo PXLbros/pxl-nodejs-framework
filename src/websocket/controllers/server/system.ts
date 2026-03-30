@@ -1,6 +1,6 @@
 import type { WebSocket } from 'ws';
-import WebSocketServerBaseController from '../../controller/server/base.js';
 import { Logger } from '../../../logger/index.js';
+import WebSocketServerBaseController from '../../controller/server/base.js';
 
 export default class SystemController extends WebSocketServerBaseController {
   public joinRoom = (clientWebSocket: WebSocket, webSocketClientId: string, data: any): any => {

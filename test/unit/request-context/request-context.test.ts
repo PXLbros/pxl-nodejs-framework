@@ -1,13 +1,13 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
+  getContextMetadata,
   getRequestContext,
   getRequestId,
   getUserId,
-  setUserId,
-  getContextMetadata,
-  setContextMetadata,
   runWithContext,
   runWithContextAsync,
+  setContextMetadata,
+  setUserId,
 } from '../../../src/request-context/request-context.js';
 
 describe('Request Context', () => {
@@ -330,14 +330,13 @@ describe('Request Context', () => {
   describe('context isolation', () => {
     it('should not leak context between sequential executions', () => {
       let id1: string | undefined;
-      let id2OutsideContext: string | undefined;
       let id3: string | undefined;
 
       runWithContext({ requestId: 'first' }, () => {
         id1 = getRequestId();
       });
 
-      id2OutsideContext = getRequestId();
+      const id2OutsideContext = getRequestId();
 
       runWithContext({ requestId: 'second' }, () => {
         id3 = getRequestId();

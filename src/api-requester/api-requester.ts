@@ -243,7 +243,7 @@ export default class ApiRequester {
 
   private async createHttpError(response: Response): Promise<ApiRequesterHttpError> {
     const headers = this.headersToRecord(response.headers);
-    let data: unknown = undefined;
+    let data: unknown;
     let message = `Request failed with status ${response.status}`;
 
     try {

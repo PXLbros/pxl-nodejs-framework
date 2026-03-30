@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { defineAction } from '../../../src/webserver/define-action.js';
+import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
+import { defineAction } from '../../../src/webserver/define-action.js';
 import type { RouteSchemaDefinition } from '../../../src/webserver/webserver.interface.js';
 
 describe('defineAction', () => {
@@ -33,7 +33,7 @@ describe('defineAction', () => {
 
   describe('without schema', () => {
     it('should return handler when no schema is provided', () => {
-      const handler = async (request: any, reply: any) => {
+      const handler = async (_request: any, reply: any) => {
         return reply.send({ message: 'Hello' });
       };
 

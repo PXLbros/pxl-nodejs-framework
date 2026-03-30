@@ -1,10 +1,10 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { defineRoute } from '../../../src/webserver/define-route.js';
+import WebServerBaseController from '../../../src/webserver/controller/base.js';
 import { defineAction } from '../../../src/webserver/define-action.js';
+import { defineRoute } from '../../../src/webserver/define-route.js';
 import type { RouteSchemaDefinition } from '../../../src/webserver/webserver.interface.js';
 import { WebServerRouteType } from '../../../src/webserver/webserver.interface.js';
-import WebServerBaseController from '../../../src/webserver/controller/base.js';
 
 describe('defineRoute', () => {
   describe('with inline handler', () => {

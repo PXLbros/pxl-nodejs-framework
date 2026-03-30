@@ -1,10 +1,8 @@
-import { fileURLToPath } from 'url';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-export { __dirname as baseDir };
 
 export * from './api-requester/index.js';
 export * from './application/index.js';
@@ -25,3 +23,4 @@ export * from './services/index.js';
 export * from './util/index.js';
 export * from './webserver/index.js';
 export * from './websocket/index.js';
+export { __dirname as baseDir };

@@ -1,11 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { Queue, type Job } from 'bullmq';
+import { type Job, Queue } from 'bullmq';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { Logger } from '../../../src/logger/index.js';
+import type { QueueItem } from '../../../src/queue/index.interface.js';
+import type { QueueManagerConstructorParams } from '../../../src/queue/manager.interface.js';
 import QueueManager from '../../../src/queue/manager.js';
 import QueueWorker from '../../../src/queue/worker.js';
-import { Logger } from '../../../src/logger/index.js';
 import { File, Helper, Loader, Time } from '../../../src/util/index.js';
-import type { QueueManagerConstructorParams } from '../../../src/queue/manager.interface.js';
-import type { QueueItem } from '../../../src/queue/index.interface.js';
 
 // Mock dependencies
 vi.mock('bullmq', () => ({
@@ -34,7 +34,7 @@ vi.mock('../../../src/util/index.js', () => ({
 }));
 
 const mockQueue = vi.mocked(Queue);
-const mockQueueWorker = vi.mocked(QueueWorker);
+const _mockQueueWorker = vi.mocked(QueueWorker);
 const mockLogger = vi.mocked(Logger);
 const mockHelper = Helper as unknown as {
   defaultsDeep: ReturnType<typeof vi.fn>;
@@ -198,8 +198,8 @@ describe('QueueManager', () => {
         add: vi.fn().mockResolvedValue({ id: 'job-123' }),
       };
 
-      // @ts-ignore - accessing private property for testing
-      queueManager['queues'].set('test-queue', mockQueueInstance as any);
+      // @ts-expect-error - accessing private property for testing
+      queueManager.queues.set('test-queue', mockQueueInstance as any);
     });
 
     it('should add job to queue successfully', async () => {
@@ -243,7 +243,7 @@ describe('QueueManager', () => {
   describe('workerProcessor', () => {
     beforeEach(() => {
       mockTime.now.mockReturnValue(1000);
-      const jobProcessors = queueManager['jobProcessors'] as Map<string, any>;
+      const jobProcessors = queueManager.jobProcessors as Map<string, any>;
       jobProcessors.clear();
     });
 
@@ -268,7 +268,7 @@ describe('QueueManager', () => {
         afterProcess: vi.fn().mockResolvedValue(undefined),
       };
 
-      const jobProcessors = queueManager['jobProcessors'] as Map<string, any>;
+      const jobProcessors = queueManager.jobProcessors as Map<string, any>;
       jobProcessors.set('test-job', processor as any);
 
       const workerPromise = (queueManager as any).workerProcessor(job);
@@ -298,7 +298,7 @@ describe('QueueManager', () => {
         beforeProcess: vi.fn().mockResolvedValue(undefined),
         afterProcess: vi.fn().mockResolvedValue(undefined),
       };
-      const jobProcessors = queueManager['jobProcessors'] as Map<string, any>;
+      const jobProcessors = queueManager.jobProcessors as Map<string, any>;
       jobProcessors.set('test-job', processor as any);
 
       await (queueManager as any).workerProcessor(job);
@@ -338,10 +338,10 @@ describe('QueueManager', () => {
         getJobs: vi.fn().mockResolvedValue([]),
       };
 
-      // @ts-ignore - accessing private property for testing
-      queueManager['queues'].set('queue1', mockQueue1 as any);
-      // @ts-ignore - accessing private property for testing
-      queueManager['queues'].set('queue2', mockQueue2 as any);
+      // @ts-expect-error - accessing private property for testing
+      queueManager.queues.set('queue1', mockQueue1 as any);
+      // @ts-expect-error - accessing private property for testing
+      queueManager.queues.set('queue2', mockQueue2 as any);
 
       const result = await queueManager.listAllJobsWithStatus();
 
@@ -394,12 +394,12 @@ describe('QueueManager', () => {
         close: vi.fn().mockResolvedValue(undefined),
       };
 
-      // @ts-ignore - accessing private property for testing
-      queueManager['workers'].set('test-queue', mockWorker as any);
-      // @ts-ignore - accessing private property for testing
-      queueManager['queues'].set('test-queue', mockQueueInstance as any);
-      // @ts-ignore - accessing private property for testing
-      queueManager['jobProcessors'].set('test-processor', {} as any);
+      // @ts-expect-error - accessing private property for testing
+      queueManager.workers.set('test-queue', mockWorker as any);
+      // @ts-expect-error - accessing private property for testing
+      queueManager.queues.set('test-queue', mockQueueInstance as any);
+      // @ts-expect-error - accessing private property for testing
+      queueManager.jobProcessors.set('test-processor', {} as any);
 
       vi.spyOn(queueManager, 'log').mockImplementation(() => {});
 
@@ -409,12 +409,12 @@ describe('QueueManager', () => {
       expect(mockQueueInstance.removeAllListeners).toHaveBeenCalled();
       expect(mockQueueInstance.close).toHaveBeenCalled();
 
-      // @ts-ignore - accessing private property for testing
-      expect(queueManager['workers'].size).toBe(0);
-      // @ts-ignore - accessing private property for testing
-      expect(queueManager['queues'].size).toBe(0);
-      // @ts-ignore - accessing private property for testing
-      expect(queueManager['jobProcessors'].size).toBe(0);
+      // @ts-expect-error - accessing private property for testing
+      expect(queueManager.workers.size).toBe(0);
+      // @ts-expect-error - accessing private property for testing
+      expect(queueManager.queues.size).toBe(0);
+      // @ts-expect-error - accessing private property for testing
+      expect(queueManager.jobProcessors.size).toBe(0);
     });
 
     it('should handle worker cleanup errors gracefully', async () => {
@@ -426,10 +426,10 @@ describe('QueueManager', () => {
         close: vi.fn().mockResolvedValue(undefined),
       };
 
-      // @ts-ignore - accessing private property for testing
-      queueManager['workers'].set('test-queue', mockWorker as any);
-      // @ts-ignore - accessing private property for testing
-      queueManager['queues'].set('test-queue', mockQueueInstance as any);
+      // @ts-expect-error - accessing private property for testing
+      queueManager.workers.set('test-queue', mockWorker as any);
+      // @ts-expect-error - accessing private property for testing
+      queueManager.queues.set('test-queue', mockQueueInstance as any);
 
       vi.spyOn(queueManager, 'log').mockImplementation(() => {});
 
@@ -449,8 +449,8 @@ describe('QueueManager', () => {
         close: vi.fn().mockRejectedValue(new Error('Queue close failed')),
       };
 
-      // @ts-ignore - accessing private property for testing
-      queueManager['queues'].set('test-queue', mockQueueInstance as any);
+      // @ts-expect-error - accessing private property for testing
+      queueManager.queues.set('test-queue', mockQueueInstance as any);
 
       vi.spyOn(queueManager, 'log').mockImplementation(() => {});
 

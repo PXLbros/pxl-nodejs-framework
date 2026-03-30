@@ -19,7 +19,7 @@ export function log(message: string, meta?: Record<string, unknown>, options?: L
 }
 
 export function parseServerMessage(message: WebSocket.Data): Record<string, unknown> {
-  let parsedMessage;
+  let parsedMessage: Record<string, unknown>;
 
   try {
     parsedMessage = JSON.parse(message.toString());
@@ -29,9 +29,11 @@ export function parseServerMessage(message: WebSocket.Data): Record<string, unkn
 
   if (!parsedMessage) {
     throw new Error('Invalid WebSocket message');
-  } else if (!parsedMessage.type) {
+  }
+  if (!parsedMessage.type) {
     throw new Error('Missing WebSocket message type');
-  } else if (!parsedMessage.action) {
+  }
+  if (!parsedMessage.action) {
     throw new Error('Missing WebSocket message action');
   }
 

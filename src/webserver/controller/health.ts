@@ -1,6 +1,6 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import BaseController from './base.js';
 import { LifecyclePhase } from '../../lifecycle/types.js';
+import BaseController from './base.js';
 
 export default class HealthController extends BaseController {
   /**

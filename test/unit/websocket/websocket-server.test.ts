@@ -1,11 +1,11 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import WebSocketServer from '../../../src/websocket/websocket-server.js';
-import type { WebSocketOptions } from '../../../src/websocket/websocket.interface.js';
-import type RedisInstance from '../../../src/redis/instance.js';
-import type QueueManager from '../../../src/queue/manager.js';
-import type DatabaseInstance from '../../../src/database/instance.js';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { WebApplicationConfig } from '../../../src/application/web-application.interface.js';
+import type DatabaseInstance from '../../../src/database/instance.js';
 import { LifecycleManager } from '../../../src/lifecycle/lifecycle-manager.js';
+import type QueueManager from '../../../src/queue/manager.js';
+import type RedisInstance from '../../../src/redis/instance.js';
+import type { WebSocketOptions } from '../../../src/websocket/websocket.interface.js';
+import WebSocketServer from '../../../src/websocket/websocket-server.js';
 
 const baseApplicationConfig: WebApplicationConfig = {
   name: 'TestApp',
@@ -425,7 +425,7 @@ describe('WebSocketServer', () => {
       let abortTriggered = false;
 
       vi.spyOn(global, 'setInterval' as any).mockImplementation(
-        (fn: () => void, ms: number, options?: { signal?: AbortSignal }) => {
+        (_fn: () => void, _ms: number, options?: { signal?: AbortSignal }) => {
           capturedSignal = options?.signal;
           options?.signal?.addEventListener('abort', () => {
             abortTriggered = true;

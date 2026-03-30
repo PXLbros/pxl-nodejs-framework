@@ -1,17 +1,17 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { testServerRequest, waitForServer } from '../../utils/helpers/test-server.js';
+import type { FastifyReply, FastifyRequest } from 'fastify';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import type { WebSocket as WSType } from 'ws';
 import WebSocket from 'ws';
 import type { WebApplicationConfig } from '../../../dist/application/index.js';
 import { WebApplication } from '../../../dist/application/index.js';
 import { WebSocketServerBaseController } from '../../../dist/websocket/index.js';
-import type { FastifyRequest, FastifyReply } from 'fastify';
-import type { WebSocket as WSType } from 'ws';
+import { testServerRequest, waitForServer } from '../../utils/helpers/test-server.js';
 
 /**
  * WebSocket Controller - Handles real-time messages
  */
 class HelloWebSocketController extends WebSocketServerBaseController {
-  public greet = (clientWebSocket: WSType, webSocketClientId: string, data: any) => {
+  public greet = (_clientWebSocket: WSType, webSocketClientId: string, data: any) => {
     const name = typeof data?.name === 'string' && data.name.trim() ? data.name.trim() : 'World';
     const message =
       typeof data?.message === 'string' && data.message.trim() ? data.message.trim() : `${name} says hello!`;
@@ -43,7 +43,7 @@ describe('Hello World Example End-to-End', () => {
   let testPort: number;
   const testHost = '127.0.0.1';
   let wsUrl: string;
-  let baseUrl: string;
+  let _baseUrl: string;
 
   beforeAll(async () => {
     // Use in-memory Redis for testing
@@ -53,7 +53,7 @@ describe('Hello World Example End-to-End', () => {
     const { getTestPort } = await import('../../utils/helpers/test-server.js');
     testPort = getTestPort();
     wsUrl = `ws://${testHost}:${testPort}/ws`;
-    baseUrl = `http://${testHost}:${testPort}`;
+    _baseUrl = `http://${testHost}:${testPort}`;
 
     // Create application configuration
     const config: WebApplicationConfig = {

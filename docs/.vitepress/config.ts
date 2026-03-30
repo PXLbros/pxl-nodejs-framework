@@ -3,7 +3,7 @@ import { defineConfig } from 'vitepress';
 import pkg from '../../package.json' with { type: 'json' };
 
 export default defineConfig({
-  title: 'PXL Node.js Framework',
+  title: 'SC/PXL Node.js Framework',
   description: 'Opinionated modular TypeScript framework for scalable backends',
   base: '/pxl-nodejs-framework/',
   cleanUrls: true,

@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { WebApplication } from '../../../src/application/index.js';
 import type { WebApplicationConfig } from '../../../src/application/index.js';
+import { WebApplication } from '../../../src/application/index.js';
 import { defineRoute, type RouteSchemaDefinition } from '../../../src/webserver/index.js';
 import { waitForServer } from '../../utils/helpers/test-server.js';
 

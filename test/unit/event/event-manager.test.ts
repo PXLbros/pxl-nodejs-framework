@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import EventManager from '../../../src/event/manager.js';
-import { mockRedisInstance } from '../../utils/mocks/redis-mocks.js';
 import { mockDatabaseInstance } from '../../utils/mocks/database-mocks.js';
+import { mockRedisInstance } from '../../utils/mocks/redis-mocks.js';
 
 // Mock utilities
 vi.mock('../../../src/util/index.js', async () => {
@@ -100,7 +100,6 @@ describe('EventManager', () => {
       vi.mocked(File.pathExists).mockResolvedValue(true);
 
       const mockController = class {
-        constructor(_params: any) {}
         handle() {
           return 'handled';
         }

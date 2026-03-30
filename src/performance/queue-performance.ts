@@ -183,7 +183,7 @@ export class QueuePerformanceWrapper {
  * Decorator for monitoring queue processor methods
  */
 export function MonitorQueueProcessor(processorName?: string) {
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+  return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
     const originalMethod = descriptor.value;
     const className = target.constructor.name;
     const operation = processorName ?? propertyKey;

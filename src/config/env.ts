@@ -1,4 +1,4 @@
-import { type InferFrameworkConfig } from './schema.js';
+import type { InferFrameworkConfig } from './schema.js';
 
 // Helper to parse booleans like 'true', '1', 'yes'
 function parseBool(v: string | undefined): boolean | undefined {

@@ -1,13 +1,13 @@
 export type { RequestContext, RunWithContextOptions } from './request-context.interface.js';
 export {
+  enterRequestContext,
+  getContextMetadata,
   getRequestContext,
   getRequestId,
   getUserId,
-  setUserId,
-  getContextMetadata,
-  setContextMetadata,
+  requestContextStorage,
   runWithContext,
   runWithContextAsync,
-  enterRequestContext,
-  requestContextStorage,
+  setContextMetadata,
+  setUserId,
 } from './request-context.js';

@@ -1,16 +1,17 @@
 // event-manager.ts
+
+import type { ApplicationConfig } from '../application/base-application.interface.js';
+import type DatabaseInstance from '../database/instance.js';
 import { Logger } from '../logger/index.js';
+import type { RedisInstance } from '../redis/index.js';
 import { File, Helper, Loader } from '../util/index.js';
+import type { EventControllerType } from './controller/base.interface.js';
 import type {
   EventDefinition,
   EventHandler,
   EventManagerConstructorParams,
   EventManagerOptions,
 } from './manager.interface.js';
-import type { ApplicationConfig } from '../application/base-application.interface.js';
-import type DatabaseInstance from '../database/instance.js';
-import type { RedisInstance } from '../redis/index.js';
-import type { EventControllerType } from './controller/base.interface.js';
 
 export default class EventManager {
   private logger: typeof Logger = Logger;

@@ -1,11 +1,11 @@
-import type RedisInstance from '../redis/instance.js';
 import type DatabaseInstance from '../database/instance.js';
-import type QueueManager from '../queue/manager.js';
 import type EventManager from '../event/manager.js';
+import { Logger } from '../logger/index.js';
+import type QueueManager from '../queue/manager.js';
+import type RedisInstance from '../redis/instance.js';
+import { Helper, Time } from '../util/index.js';
 import BaseApplication from './base-application.js';
 import type { WorkerApplicationConfig } from './worker-application.interface.js';
-import { Helper, Time } from '../util/index.js';
-import { Logger } from '../logger/index.js';
 
 /**
  * WorkerApplication

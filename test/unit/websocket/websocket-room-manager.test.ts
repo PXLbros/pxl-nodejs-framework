@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import WebSocketRoomManager from '../../../src/websocket/websocket-room-manager.js';
-import WebSocketClientManager from '../../../src/websocket/websocket-client-manager.js';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as websocketUtils from '../../../src/websocket/utils.js';
+import WebSocketClientManager from '../../../src/websocket/websocket-client-manager.js';
+import WebSocketRoomManager from '../../../src/websocket/websocket-room-manager.js';
 
 describe('WebSocketRoomManager', () => {
   let roomManager: WebSocketRoomManager;

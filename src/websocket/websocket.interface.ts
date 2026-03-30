@@ -1,10 +1,10 @@
 import type { WebSocketServer as NativeWebSocketServer, WebSocket } from 'ws';
-import type WebSocketServerInstance from './websocket-server.js';
 import type DatabaseInstance from '../database/instance.js';
 import type QueueManager from '../queue/manager.js';
 import type RedisInstance from '../redis/instance.js';
-import type { WebSocketServerBaseControllerType } from './controller/server/base.interface.js';
 import type { WebSocketClientBaseControllerType } from './controller/client/base.interface.js';
+import type { WebSocketServerBaseControllerType } from './controller/server/base.interface.js';
+import type WebSocketServerInstance from './websocket-server.js';
 
 export type WebSocketType = 'server' | 'client';
 
@@ -219,9 +219,11 @@ export interface WebSocketMessageResponse {
   error?: string;
 }
 
-export interface WebSocketMessageHandler<TData = unknown, TResponse = WebSocketMessageResponse> {
-  (ws: WebSocket, clientId: string, data: TData): Promise<TResponse> | TResponse;
-}
+export type WebSocketMessageHandler<TData = unknown, TResponse = WebSocketMessageResponse> = (
+  ws: WebSocket,
+  clientId: string,
+  data: TData,
+) => Promise<TResponse> | TResponse;
 
 export enum WebSocketRedisSubscriberEvent {
   ClientConnected = 'clientConnected',

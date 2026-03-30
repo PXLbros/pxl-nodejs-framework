@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/node';
-import { getRequestId } from '../request-context/index.js';
 import Logger from '../logger/logger.js';
+import { getRequestId } from '../request-context/index.js';
 import { ErrorCode, type ErrorEnvelope, type ErrorReportOptions, ErrorSeverity } from './error.interface.js';
 import { FrameworkError } from './framework-errors.js';
 

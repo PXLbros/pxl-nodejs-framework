@@ -1,13 +1,13 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { mock } from 'node:test';
-import WebServer from '../../../src/webserver/webserver.js';
-import { mockRedisInstance } from '../../utils/mocks/redis-mocks.js';
-import { mockDatabaseInstance } from '../../utils/mocks/database-mocks.js';
-import { mockQueueManager } from '../../utils/mocks/queue-mocks.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { z } from 'zod';
 import type { ApplicationConfig } from '../../../src/application/base-application.interface.js';
 import type { WebServerOptions, WebServerRoute } from '../../../src/webserver/webserver.interface.js';
 import { WebServerRouteType } from '../../../src/webserver/webserver.interface.js';
-import { z } from 'zod';
+import WebServer from '../../../src/webserver/webserver.js';
+import { mockDatabaseInstance } from '../../utils/mocks/database-mocks.js';
+import { mockQueueManager } from '../../utils/mocks/queue-mocks.js';
+import { mockRedisInstance } from '../../utils/mocks/redis-mocks.js';
 
 // Mock Fastify
 vi.mock('fastify', () => {
@@ -235,8 +235,6 @@ describe('WebServer', () => {
 
       class AutoController {
         public auto = vi.fn();
-
-        public constructor(..._args: any[]) {}
       }
 
       vi.mocked(File.pathExists).mockImplementation(async path => {
@@ -416,14 +414,14 @@ describe('WebServer', () => {
       const typedRouteCall = routeCalls.find((call: any) => call[0].url === '/typed');
 
       expect(typedRouteCall).toBeDefined();
-      expect(typedRouteCall![0]).toMatchObject({
+      expect(typedRouteCall?.[0]).toMatchObject({
         url: '/typed',
         method: 'POST',
       });
       // Schema is passed as-is (Zod schemas), not converted
-      expect(typedRouteCall![0].schema).toBeDefined();
-      expect(typedRouteCall![0].schema.body).toBeDefined();
-      expect(typedRouteCall![0].schema.response).toBeDefined();
+      expect(typedRouteCall?.[0].schema).toBeDefined();
+      expect(typedRouteCall?.[0].schema.body).toBeDefined();
+      expect(typedRouteCall?.[0].schema.response).toBeDefined();
     });
 
     it('should add health check routes', async () => {

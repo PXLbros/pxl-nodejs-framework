@@ -99,7 +99,7 @@ function mergeObjects(target: any, source: any): void {
     }
 
     // Only use hasOwnProperty for safer property access
-    if (!Object.prototype.hasOwnProperty.call(source, key)) {
+    if (!Object.hasOwn(source, key)) {
       continue;
     }
 
@@ -176,7 +176,7 @@ function getValueFromObject(obj: AnyObject, path: string): unknown {
   let current: any = obj;
   for (const part of parts) {
     if (part === '__proto__' || part === 'constructor' || part === 'prototype') return undefined;
-    if (!current || !Object.prototype.hasOwnProperty.call(current, part)) return undefined;
+    if (!current || !Object.hasOwn(current, part)) return undefined;
     // Access guarded by ownProperty check and blocked prototype keys
     // eslint-disable-next-line security/detect-object-injection
     current = (current as Record<string, any>)[part];

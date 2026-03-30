@@ -1,13 +1,14 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import QueueWorker from '../../../src/queue/worker.js';
-import type QueueManager from '../../../src/queue/manager.js';
-import { WebSocketRedisSubscriberEvent } from '../../../src/websocket/websocket.interface.js';
 import type { Job } from 'bullmq';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type QueueManager from '../../../src/queue/manager.js';
+import QueueWorker from '../../../src/queue/worker.js';
+import { WebSocketRedisSubscriberEvent } from '../../../src/websocket/websocket.interface.js';
 
 // Mock dependencies
 vi.mock('bullmq', () => ({
-  Worker: vi.fn(function (this: any, name: string, processor: any, options: any) {
-    this.on = vi.fn((event: string, handler: Function) => this);
+  Worker: vi.fn(function (this: any, _name: string, _processor: any, _options: any) {
+    // biome-ignore lint/complexity/noBannedTypes: mock callback typing not critical
+    this.on = vi.fn((_event: string, _handler: Function) => this);
     return this;
   }),
 }));

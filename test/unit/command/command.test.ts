@@ -1,11 +1,11 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import Command from '../../../src/command/command.js';
-import type { CommandConstructorParams } from '../../../src/command/command.interface.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ApplicationConfig } from '../../../src/application/base-application.interface.js';
-import type RedisInstance from '../../../src/redis/instance.js';
-import type QueueManager from '../../../src/queue/manager.js';
+import type { CommandConstructorParams } from '../../../src/command/command.interface.js';
+import Command from '../../../src/command/command.js';
 import type DatabaseInstance from '../../../src/database/instance.js';
 import { Logger } from '../../../src/logger/index.js';
+import type QueueManager from '../../../src/queue/manager.js';
+import type RedisInstance from '../../../src/redis/instance.js';
 
 // Mock Logger
 vi.mock('../../../src/logger/index.js', () => ({
@@ -47,23 +47,23 @@ describe('Command', () => {
 
   describe('Constructor', () => {
     it('should initialize with application config', () => {
-      expect(command['applicationConfig']).toBe(mockParams.applicationConfig);
+      expect(command.applicationConfig).toBe(mockParams.applicationConfig);
     });
 
     it('should initialize with redis instance', () => {
-      expect(command['redisInstance']).toBe(mockParams.redisInstance);
+      expect(command.redisInstance).toBe(mockParams.redisInstance);
     });
 
     it('should initialize with queue manager', () => {
-      expect(command['queueManager']).toBe(mockParams.queueManager);
+      expect(command.queueManager).toBe(mockParams.queueManager);
     });
 
     it('should initialize with database instance', () => {
-      expect(command['databaseInstance']).toBe(mockParams.databaseInstance);
+      expect(command.databaseInstance).toBe(mockParams.databaseInstance);
     });
 
     it('should initialize logger', () => {
-      expect(command['logger']).toBe(Logger);
+      expect(command.logger).toBe(Logger);
     });
   });
 
@@ -155,25 +155,25 @@ describe('Command', () => {
 
   describe('Dependency injection', () => {
     it('should provide access to application config', () => {
-      expect(command['applicationConfig'].name).toBe('TestApp');
-      expect(command['applicationConfig'].instanceId).toBe('test-instance');
+      expect(command.applicationConfig.name).toBe('TestApp');
+      expect(command.applicationConfig.instanceId).toBe('test-instance');
     });
 
     it('should provide access to redis instance', () => {
-      expect(command['redisInstance']).toBeDefined();
+      expect(command.redisInstance).toBeDefined();
     });
 
     it('should provide access to queue manager', () => {
-      expect(command['queueManager']).toBeDefined();
+      expect(command.queueManager).toBeDefined();
     });
 
     it('should provide access to database instance', () => {
-      expect(command['databaseInstance']).toBeDefined();
+      expect(command.databaseInstance).toBeDefined();
     });
 
     it('should provide access to logger', () => {
-      expect(command['logger']).toBeDefined();
-      expect(command['logger']).toBe(Logger);
+      expect(command.logger).toBeDefined();
+      expect(command.logger).toBe(Logger);
     });
   });
 

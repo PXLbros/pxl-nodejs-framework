@@ -1,9 +1,9 @@
 import type { ApplicationConfig } from '../application/base-application.interface.js';
 import type DatabaseInstance from '../database/instance.js';
+import { Logger } from '../logger/index.js';
 import type { QueueManager } from '../queue/index.js';
 import type RedisInstance from '../redis/instance.js';
 import type { CommandConstructorParams } from './command.interface.js';
-import { Logger } from '../logger/index.js';
 
 export default abstract class Command {
   /** Command name */

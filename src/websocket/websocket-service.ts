@@ -1,6 +1,6 @@
-import type WebSocketServer from './websocket-server.js';
 import type RedisInstance from '../redis/instance.js';
 import { WebSocketRedisSubscriberEvent } from './websocket.interface.js';
+import type WebSocketServer from './websocket-server.js';
 
 export interface WebSocketMessage {
   type: string;
@@ -52,7 +52,7 @@ export class WebSocketService {
    * Send a message to specific clients by their IDs
    * Note: This requires direct access to WebSocket server and room functionality
    */
-  async sendToClients(clientIds: string[], message: WebSocketMessage): Promise<void> {
+  async sendToClients(_clientIds: string[], message: WebSocketMessage): Promise<void> {
     // Currently not implemented in the framework
     // For now, we'll broadcast to all clients
     await this.broadcast(message);

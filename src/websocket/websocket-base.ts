@@ -1,9 +1,9 @@
-import type { WebSocketMessageHandler, WebSocketRoute, WebSocketType } from './websocket.interface.js';
-import { getRouteKey, log, parseServerMessage } from './utils.js';
-import type { WebSocketServerBaseControllerType } from './controller/server/base.interface.js';
-import type { WebSocketClientBaseControllerType } from './controller/client/base.interface.js';
 import type WebSocket from 'ws';
 import { File, Helper, Loader } from '../util/index.js';
+import type { WebSocketClientBaseControllerType } from './controller/client/base.interface.js';
+import type { WebSocketServerBaseControllerType } from './controller/server/base.interface.js';
+import { getRouteKey, log, parseServerMessage } from './utils.js';
+import type { WebSocketMessageHandler, WebSocketRoute, WebSocketType } from './websocket.interface.js';
 
 export default abstract class WebSocketBase {
   protected routes: WebSocketRoute[] = [];
@@ -102,7 +102,7 @@ export default abstract class WebSocketBase {
     ws: WebSocket,
     message: WebSocket.Data,
     clientId: string,
-  ): Promise<{ type: unknown; action: unknown; response: unknown } | void> {
+  ): Promise<{ type: unknown; action: unknown; response: unknown } | undefined> {
     try {
       const parsedMessage = parseServerMessage(message);
       const type = parsedMessage.type;

@@ -1,8 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import BaseEventController from '../../../src/event/controller/base.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ApplicationConfig } from '../../../src/application/base-application.interface.js';
-import type { RedisInstance } from '../../../src/redis/index.js';
 import type { DatabaseInstance } from '../../../src/database/index.js';
+import BaseEventController from '../../../src/event/controller/base.js';
+import type { RedisInstance } from '../../../src/redis/index.js';
 
 // Create a concrete test class since BaseEventController is abstract
 class TestEventController extends BaseEventController {
@@ -34,18 +34,18 @@ describe('BaseEventController', () => {
   describe('constructor', () => {
     it('should initialize with provided configuration', () => {
       expect(controller).toBeDefined();
-      expect(controller['applicationConfig']).toBe(mockApplicationConfig);
-      expect(controller['redisInstance']).toBe(mockRedisInstance);
-      expect(controller['databaseInstance']).toBe(mockDatabaseInstance);
+      expect(controller.applicationConfig).toBe(mockApplicationConfig);
+      expect(controller.redisInstance).toBe(mockRedisInstance);
+      expect(controller.databaseInstance).toBe(mockDatabaseInstance);
     });
 
     it('should set workerId from cluster worker', () => {
       // Worker ID should be set from cluster.worker?.id (undefined in test environment)
-      expect(controller['workerId']).toBeUndefined();
+      expect(controller.workerId).toBeUndefined();
     });
 
     it('should initialize logger', () => {
-      expect(controller['logger']).toBeDefined();
+      expect(controller.logger).toBeDefined();
     });
 
     it('should initialize log methods', () => {
@@ -59,7 +59,7 @@ describe('BaseEventController', () => {
 
   describe('log methods', () => {
     it('should log error with Error instance', () => {
-      const customSpy = vi.spyOn(controller['logger'], 'custom');
+      const customSpy = vi.spyOn(controller.logger, 'custom');
       const error = new Error('Test error');
       const message = 'Error occurred';
       const meta = { context: 'test' };
@@ -78,7 +78,7 @@ describe('BaseEventController', () => {
     });
 
     it('should log error with non-Error value', () => {
-      const customSpy = vi.spyOn(controller['logger'], 'custom');
+      const customSpy = vi.spyOn(controller.logger, 'custom');
       const error = 'String error';
       const message = 'Error occurred';
 
@@ -95,7 +95,7 @@ describe('BaseEventController', () => {
     });
 
     it('should log error without message', () => {
-      const customSpy = vi.spyOn(controller['logger'], 'custom');
+      const customSpy = vi.spyOn(controller.logger, 'custom');
       const error = 'Simple error';
 
       controller.log.error(error);
@@ -107,7 +107,7 @@ describe('BaseEventController', () => {
     });
 
     it('should log info message', () => {
-      const customSpy = vi.spyOn(controller['logger'], 'custom');
+      const customSpy = vi.spyOn(controller.logger, 'custom');
       const message = 'Info message';
       const meta = { key: 'value' };
 
@@ -121,7 +121,7 @@ describe('BaseEventController', () => {
     });
 
     it('should log info message without meta', () => {
-      const customSpy = vi.spyOn(controller['logger'], 'custom');
+      const customSpy = vi.spyOn(controller.logger, 'custom');
       const message = 'Info message';
 
       controller.log.info(message);
@@ -134,7 +134,7 @@ describe('BaseEventController', () => {
     });
 
     it('should log warn message', () => {
-      const customSpy = vi.spyOn(controller['logger'], 'custom');
+      const customSpy = vi.spyOn(controller.logger, 'custom');
       const message = 'Warning message';
       const meta = { warning: 'test' };
 
@@ -148,7 +148,7 @@ describe('BaseEventController', () => {
     });
 
     it('should log debug message', () => {
-      const customSpy = vi.spyOn(controller['logger'], 'custom');
+      const customSpy = vi.spyOn(controller.logger, 'custom');
       const message = 'Debug message';
       const meta = { debug: 'info' };
 
@@ -164,7 +164,7 @@ describe('BaseEventController', () => {
 
   describe('error handling edge cases', () => {
     it('should handle Error with undefined stack', () => {
-      const customSpy = vi.spyOn(controller['logger'], 'custom');
+      const customSpy = vi.spyOn(controller.logger, 'custom');
       const error = new Error('Test');
       delete error.stack;
 
@@ -181,7 +181,7 @@ describe('BaseEventController', () => {
     });
 
     it('should handle null as error', () => {
-      const customSpy = vi.spyOn(controller['logger'], 'custom');
+      const customSpy = vi.spyOn(controller.logger, 'custom');
 
       controller.log.error(null, 'Null error');
 
@@ -195,7 +195,7 @@ describe('BaseEventController', () => {
     });
 
     it('should handle undefined as error', () => {
-      const customSpy = vi.spyOn(controller['logger'], 'custom');
+      const customSpy = vi.spyOn(controller.logger, 'custom');
 
       controller.log.error(undefined, 'Undefined error');
 
@@ -209,7 +209,7 @@ describe('BaseEventController', () => {
     });
 
     it('should handle object as error', () => {
-      const customSpy = vi.spyOn(controller['logger'], 'custom');
+      const customSpy = vi.spyOn(controller.logger, 'custom');
       const errorObj = { code: 'ERR123', details: 'Something went wrong' };
 
       controller.log.error(errorObj, 'Object error');

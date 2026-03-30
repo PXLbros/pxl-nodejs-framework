@@ -1,5 +1,5 @@
-import os from 'os';
-import crypto from 'crypto';
+import crypto from 'node:crypto';
+import os from 'node:os';
 
 function getUniqueComputerId(): string {
   const interfaces = Object.values(os.networkInterfaces()).filter(Boolean) as os.NetworkInterfaceInfo[][];

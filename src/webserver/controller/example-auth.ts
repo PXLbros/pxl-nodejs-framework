@@ -1,6 +1,6 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import WebServerBaseController, { type AuthenticatedUser } from './base.js';
 import { type AuthenticatedRequest, withAuth } from './auth-middleware.js';
+import WebServerBaseController, { type AuthenticatedUser } from './base.js';
 
 /**
  * Example controller demonstrating simplified authentication

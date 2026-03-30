@@ -1,8 +1,8 @@
-import { spawn } from 'node:child_process';
 import type { ChildProcess } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { once } from 'node:events';
-import { setTimeout as delay } from 'node:timers/promises';
 import path from 'node:path';
+import { setTimeout as delay } from 'node:timers/promises';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 
@@ -222,7 +222,7 @@ function normalizeCliOptions(cli: CliOptions): LoadTestOptions {
 
 function createLoadTestState(loadTestOptions: LoadTestOptions): LoadTestState {
   const useDuration = typeof loadTestOptions.duration === 'number';
-  const durationMs = useDuration ? loadTestOptions.duration! * 1000 : null;
+  const durationMs = useDuration ? (loadTestOptions.duration as number) * 1000 : null;
   const totalRequests = useDuration ? Number.POSITIVE_INFINITY : loadTestOptions.requests;
   const concurrency = useDuration ? loadTestOptions.concurrency : Math.min(loadTestOptions.concurrency, totalRequests);
 
@@ -317,7 +317,7 @@ async function waitForServerReady(loadTestOptions: LoadTestOptions, child: Child
       if (response.ok) {
         return;
       }
-    } catch (error) {
+    } catch (_error) {
       // Ignore errors while waiting for the server to boot
     }
 

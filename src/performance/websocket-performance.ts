@@ -171,7 +171,7 @@ export class WebSocketPerformanceWrapper {
  * Decorator for monitoring WebSocket controller methods
  */
 export function MonitorWebSocketOperation(operationName?: string) {
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+  return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
     const originalMethod = descriptor.value;
     const controllerName = target.constructor.name;
     const operation = operationName ?? propertyKey;

@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from 'vitest';
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'node:events';
+import { describe, expect, it, vi } from 'vitest';
 
 describe('WebSocket Client Controllers', () => {
   describe('WebSocketClientBaseController', () => {

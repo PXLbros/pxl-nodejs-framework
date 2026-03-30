@@ -1,4 +1,8 @@
 import crypto from 'node:crypto';
+import cors from '@fastify/cors';
+import helmet from '@fastify/helmet';
+import multipart from '@fastify/multipart';
+import rateLimit from '@fastify/rate-limit';
 import Fastify, {
   type FastifyInstance,
   type FastifyReply,
@@ -6,10 +10,19 @@ import Fastify, {
   type FastifySchema,
   type HTTPMethods,
 } from 'fastify';
-import cors from '@fastify/cors';
-import helmet from '@fastify/helmet';
-import rateLimit from '@fastify/rate-limit';
-import multipart from '@fastify/multipart';
+import { serializerCompiler, validatorCompiler, type ZodTypeProvider } from 'fastify-type-provider-zod';
+import type { ApplicationConfig } from '../application/base-application.interface.js';
+import type { DatabaseInstance } from '../database/index.js';
+import type EventManager from '../event/manager.js';
+import { WebServerHealthController } from '../index.js';
+import type { LifecycleManager } from '../lifecycle/lifecycle-manager.js';
+import { Logger } from '../logger/index.js';
+import type { QueueManager } from '../queue/index.js';
+import type { RedisInstance } from '../redis/index.js';
+import { enterRequestContext } from '../request-context/index.js';
+import { File, Helper, Loader, Time } from '../util/index.js';
+import type { ControllerAction, WebServerBaseControllerType } from './controller/base.interface.js';
+import WebServerUtil from './util.js';
 import {
   type AnyRouteSchemaDefinition,
   type WebServerConstructorParams,
@@ -17,19 +30,6 @@ import {
   type WebServerRoute,
   WebServerRouteType,
 } from './webserver.interface.js';
-import { Logger } from '../logger/index.js';
-import { File, Helper, Loader, Time } from '../util/index.js';
-import WebServerUtil from './util.js';
-import type { RedisInstance } from '../redis/index.js';
-import type { DatabaseInstance } from '../database/index.js';
-import type { ControllerAction, WebServerBaseControllerType } from './controller/base.interface.js';
-import type { QueueManager } from '../queue/index.js';
-import { WebServerHealthController } from '../index.js';
-import type { LifecycleManager } from '../lifecycle/lifecycle-manager.js';
-import type { ApplicationConfig } from '../application/base-application.interface.js';
-import type EventManager from '../event/manager.js';
-import { enterRequestContext } from '../request-context/index.js';
-import { type ZodTypeProvider, serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -293,7 +293,7 @@ class WebServer {
     this.log('API Request', logParams);
   }
 
-  private async onError(request: FastifyRequest, reply: FastifyReply, error: Error): Promise<void> {
+  private async onError(_request: FastifyRequest, _reply: FastifyReply, error: Error): Promise<void> {
     // Adjusted for Fastify types
     Logger.error({ error });
     // Implement any additional logic here
@@ -400,7 +400,7 @@ class WebServer {
     for (const route of this.routes) {
       let ControllerClass: WebServerBaseControllerType;
 
-      let controllerName;
+      let controllerName: string;
 
       if (route.handler && !route.controller && !route.controllerName) {
         if (route.type && route.type !== WebServerRouteType.Default) {
@@ -461,9 +461,9 @@ class WebServer {
         lifecycleManager: this.lifecycleManager,
       });
 
-      let routeMethod;
-      let routeAction;
-      let routePath;
+      let routeMethod: HTTPMethods | HTTPMethods[];
+      let routeAction: string | undefined;
+      let routePath: string;
 
       switch (route.type) {
         case WebServerRouteType.Default: {

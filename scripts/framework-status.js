@@ -1,7 +1,7 @@
 #!/usr/bin/env node
+import { execFile } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { execFile } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 
@@ -95,7 +95,6 @@ function parseCliOptions(argv) {
             .filter(Boolean),
         );
       }
-      continue;
     }
   }
 
@@ -325,7 +324,7 @@ async function getGitBranch() {
   try {
     const branch = await git.revparse(['--abbrev-ref', 'HEAD']);
     return branch.trim();
-  } catch (error) {
+  } catch (_error) {
     return null;
   }
 }
@@ -341,7 +340,7 @@ async function getGitSummary() {
     const relative = formatRelativeTime(commitDate);
     const shortHash = latest.hash ? latest.hash.slice(0, 7) : '';
     return relative ? `${shortHash} ${latest.message} (${relative})` : `${shortHash} ${latest.message}`;
-  } catch (error) {
+  } catch (_error) {
     return null;
   }
 }
@@ -374,7 +373,7 @@ async function getGitStatusCounts() {
     }
 
     return { staged, unstaged, untracked, total: files.length };
-  } catch (error) {
+  } catch (_error) {
     return null;
   }
 }
@@ -543,7 +542,7 @@ async function getOutdatedPackages() {
 }
 
 function formatDate(d) {
-  return d instanceof Date && !isNaN(d) ? d.toISOString().slice(0, 10) : 'n/a';
+  return d instanceof Date && !Number.isNaN(d) ? d.toISOString().slice(0, 10) : 'n/a';
 }
 
 async function getTopLevelInstalled() {
@@ -575,7 +574,7 @@ async function getPackageAgeInfo(packages) {
 
   function safeDate(s) {
     const d = new Date(s);
-    return isNaN(d) ? null : d;
+    return Number.isNaN(d) ? null : d;
   }
   function daysSince(d) {
     if (!d) return null;
@@ -611,7 +610,7 @@ async function getPackageAgeInfo(packages) {
         }
       }
 
-      const installedDate = times && times[version] ? safeDate(times[version]) : null;
+      const installedDate = times?.[version] ? safeDate(times[version]) : null;
       const latestDate = times && latest && times[latest] ? safeDate(times[latest]) : null;
 
       results.push({
@@ -831,4 +830,4 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 }
 
 // Export selected internals for testing (kept minimal & stable-ish)
-export { parseCliOptions, formatBytes, formatRelativeTime, loadIgnoreConfig, createPathFilter, getDirectoryStats };
+export { createPathFilter, formatBytes, formatRelativeTime, getDirectoryStats, loadIgnoreConfig, parseCliOptions };

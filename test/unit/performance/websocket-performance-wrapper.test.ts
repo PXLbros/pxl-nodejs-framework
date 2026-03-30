@@ -1,9 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { PerformanceMonitor } from '../../../src/performance/performance-monitor.js';
 import {
-  WebSocketPerformanceWrapper,
   MonitorWebSocketOperation,
+  WebSocketPerformanceWrapper,
 } from '../../../src/performance/websocket-performance.js';
-import { PerformanceMonitor } from '../../../src/performance/performance-monitor.js';
 
 describe('WebSocketPerformanceWrapper', () => {
   let mockMonitor: PerformanceMonitor;
@@ -20,7 +20,7 @@ describe('WebSocketPerformanceWrapper', () => {
     it('should set the performance monitor', () => {
       const newMonitor = {} as PerformanceMonitor;
       WebSocketPerformanceWrapper.setPerformanceMonitor(newMonitor);
-      expect(WebSocketPerformanceWrapper['performanceMonitor']).toBe(newMonitor);
+      expect(WebSocketPerformanceWrapper.performanceMonitor).toBe(newMonitor);
     });
   });
 
@@ -218,7 +218,7 @@ describe('WebSocketPerformanceWrapper', () => {
     it('should use method name when operation name not specified', async () => {
       class NotificationController {
         @MonitorWebSocketOperation()
-        async broadcastAlert(message: string) {
+        async broadcastAlert(_message: string) {
           return { sent: true };
         }
       }

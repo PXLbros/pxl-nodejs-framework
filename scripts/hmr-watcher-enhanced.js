@@ -1,22 +1,22 @@
 #!/usr/bin/env node
 
-import { spawn } from 'child_process';
-import { watch } from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { spawn } from 'node:child_process';
+import { watch } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..');
 
 // HMR State
-let buildProcess = null;
-let tscWatchProcess = null;
-let esbuildWatchProcess = null;
+const buildProcess = null;
+const tscWatchProcess = null;
+const esbuildWatchProcess = null;
 let isBuilding = false;
-let pendingChanges = new Set();
+const pendingChanges = new Set();
 let debounceTimer = null;
-let lastBuildSuccess = true;
+let _lastBuildSuccess = true;
 let buildStartTime = null;
 
 // Change detection
@@ -105,7 +105,7 @@ function getChangeSummary() {
 }
 
 // Determine rebuild strategy
-function needsFullRebuild() {
+function _needsFullRebuild() {
   // Config changes always need full rebuild
   if (changesByType.config.size > 0) return true;
 
@@ -118,7 +118,7 @@ function needsFullRebuild() {
 
 // Run incremental build with TypeScript compiler
 async function runIncrementalBuild() {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve, _reject) => {
     buildStartTime = Date.now();
     isBuilding = true;
 
@@ -155,7 +155,7 @@ async function runIncrementalBuild() {
 
         yalcProcess.on('close', yalcCode => {
           isBuilding = false;
-          lastBuildSuccess = true;
+          _lastBuildSuccess = true;
           clearChangeTracking();
 
           if (yalcCode === 0) {
@@ -168,7 +168,7 @@ async function runIncrementalBuild() {
         });
       } else {
         isBuilding = false;
-        lastBuildSuccess = false;
+        _lastBuildSuccess = false;
 
         logError(`Build failed (${buildTime}ms)`);
 
@@ -186,7 +186,7 @@ async function runIncrementalBuild() {
 
     esbuildProcess.on('error', error => {
       isBuilding = false;
-      lastBuildSuccess = false;
+      _lastBuildSuccess = false;
       logError(`Build process error: ${error.message}`);
       resolve(); // Don't reject - keep watcher alive
     });
@@ -208,14 +208,14 @@ function scheduleBuild() {
 
 // Initial build
 async function initialBuild() {
-  log('🚀 Starting HMR for PXL Node.js Framework', 'bright');
+  log('🚀 Starting HMR for SC/PXL Node.js Framework', 'bright');
   logInfo('Enhanced mode: Incremental compilation enabled');
 
   await runIncrementalBuild();
 }
 
 // File change handler
-function handleFileChange(eventType, filename) {
+function handleFileChange(_eventType, filename) {
   if (!filename) return;
 
   // Filter out non-source files

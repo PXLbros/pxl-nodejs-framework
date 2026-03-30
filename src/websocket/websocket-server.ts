@@ -1,4 +1,16 @@
-import { type RawData, WebSocketServer as WS, WebSocket } from 'ws';
+import path from 'node:path';
+import type { FastifyInstance } from 'fastify';
+import { type RawData, WebSocket, WebSocketServer as WS } from 'ws';
+import type DatabaseInstance from '../database/instance.js';
+import { baseDir, type WebApplicationConfig } from '../index.js';
+import { Logger } from '../logger/index.js';
+import logger from '../logger/logger.js';
+import type QueueManager from '../queue/manager.js';
+import type RedisInstance from '../redis/instance.js';
+import { runWithContextAsync } from '../request-context/index.js';
+import { File, Loader } from '../util/index.js';
+import { executeWithMiddleware } from './subscriber-middleware.js';
+import { generateClientId, log } from './utils.js';
 import {
   type WebSocketOptions,
   WebSocketRedisSubscriberEvent,
@@ -8,23 +20,11 @@ import {
   type WebSocketSubscriberMatcher,
   type WebSocketType,
 } from './websocket.interface.js';
-import type RedisInstance from '../redis/instance.js';
-import type QueueManager from '../queue/manager.js';
-import type DatabaseInstance from '../database/instance.js';
-import type { WebSocketServerProps } from './websocket-server.interface.js';
-import WebSocketClientManager from './websocket-client-manager.js';
-import { generateClientId, log } from './utils.js';
-import WebSocketBase from './websocket-base.js';
-import { Logger } from '../logger/index.js';
-import path from 'path';
-import { type WebApplicationConfig, baseDir } from '../index.js';
-import WebSocketRoomManager from './websocket-room-manager.js';
-import logger from '../logger/logger.js';
-import type { FastifyInstance } from 'fastify';
 import { WebSocketAuthService } from './websocket-auth.js';
-import { File, Loader } from '../util/index.js';
-import { executeWithMiddleware } from './subscriber-middleware.js';
-import { runWithContextAsync } from '../request-context/index.js';
+import WebSocketBase from './websocket-base.js';
+import WebSocketClientManager from './websocket-client-manager.js';
+import WebSocketRoomManager from './websocket-room-manager.js';
+import type { WebSocketServerProps } from './websocket-server.interface.js';
 
 export default class WebSocketServer extends WebSocketBase {
   protected defaultRoutes: WebSocketRoute[] = [
@@ -226,20 +226,20 @@ export default class WebSocketServer extends WebSocketBase {
     }
 
     let channelSource: unknown;
-    if (Object.prototype.hasOwnProperty.call(value, 'channel')) {
+    if (Object.hasOwn(value, 'channel')) {
       channelSource = value.channel;
-    } else if (Object.prototype.hasOwnProperty.call(value, 'channels')) {
+    } else if (Object.hasOwn(value, 'channels')) {
       channelSource = value.channels;
     }
 
     const channels = this.normalizeChannels(channelSource);
 
     let matcherSource: unknown;
-    if (Object.prototype.hasOwnProperty.call(value, 'match')) {
+    if (Object.hasOwn(value, 'match')) {
       matcherSource = value.match;
-    } else if (Object.prototype.hasOwnProperty.call(value, 'matcher')) {
+    } else if (Object.hasOwn(value, 'matcher')) {
       matcherSource = value.matcher;
-    } else if (Object.prototype.hasOwnProperty.call(value, 'matchers')) {
+    } else if (Object.hasOwn(value, 'matchers')) {
       matcherSource = value.matchers;
     }
 
@@ -408,10 +408,14 @@ export default class WebSocketServer extends WebSocketBase {
     const channelHandlers = this.subscriberHandlersByChannel.get(channel);
 
     if (channelHandlers) {
-      channelHandlers.forEach(handler => candidates.add(handler));
+      for (const handler of channelHandlers) {
+        candidates.add(handler);
+      }
     }
 
-    this.wildcardSubscriberHandlers.forEach(handler => candidates.add(handler));
+    for (const handler of this.wildcardSubscriberHandlers) {
+      candidates.add(handler);
+    }
 
     for (const definition of this.subscriberMatcherHandlers) {
       if (this.doesDefinitionMatch(definition, context)) {
@@ -480,7 +484,7 @@ export default class WebSocketServer extends WebSocketBase {
 
       server.on(
         'connection',
-        (ws: WebSocket, request: any, authenticatedUser: { userId: number; payload: any } | null) => {
+        (ws: WebSocket, _request: any, authenticatedUser: { userId: number; payload: any } | null) => {
           this.handleServerClientConnection(ws, authenticatedUser);
         },
       );
@@ -1114,7 +1118,8 @@ export default class WebSocketServer extends WebSocketBase {
       });
 
       return;
-    } else if (!client.ws) {
+    }
+    if (!client.ws) {
       log('Client WebSocket not found when sending message error', {
         'Client ID': webSocketClientId || '-',
         Error: error,

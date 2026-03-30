@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 // This test suite verifies the broadcasting method signatures and behavior
 // The actual implementations are tested through integration tests

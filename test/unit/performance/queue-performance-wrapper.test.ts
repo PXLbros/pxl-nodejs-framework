@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { QueuePerformanceWrapper, MonitorQueueProcessor } from '../../../src/performance/queue-performance.js';
-import { PerformanceMonitor } from '../../../src/performance/performance-monitor.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { PerformanceMonitor } from '../../../src/performance/performance-monitor.js';
+import { MonitorQueueProcessor, QueuePerformanceWrapper } from '../../../src/performance/queue-performance.js';
 
 describe('QueuePerformanceWrapper', () => {
   let mockMonitor: PerformanceMonitor;
@@ -17,7 +17,7 @@ describe('QueuePerformanceWrapper', () => {
     it('should set the performance monitor', () => {
       const newMonitor = {} as PerformanceMonitor;
       QueuePerformanceWrapper.setPerformanceMonitor(newMonitor);
-      expect(QueuePerformanceWrapper['performanceMonitor']).toBe(newMonitor);
+      expect(QueuePerformanceWrapper.performanceMonitor).toBe(newMonitor);
     });
   });
 
@@ -180,7 +180,7 @@ describe('QueuePerformanceWrapper', () => {
     it('should use method name when processor name not specified', async () => {
       class NotificationProcessor {
         @MonitorQueueProcessor()
-        async handleNotification(message: string) {
+        async handleNotification(_message: string) {
           return { handled: true };
         }
       }

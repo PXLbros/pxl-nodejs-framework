@@ -1,13 +1,13 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { WebSocketSubscriberHandlerContext } from '../../../src/websocket/websocket.interface.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { WebSocketSubscriberMiddleware } from '../../../src/websocket/subscriber-middleware.js';
 import {
   executeWithMiddleware,
   loggingMiddleware,
+  rateLimitMiddleware,
   timingMiddleware,
   validationMiddleware,
-  rateLimitMiddleware,
 } from '../../../src/websocket/subscriber-middleware.js';
+import type { WebSocketSubscriberHandlerContext } from '../../../src/websocket/websocket.interface.js';
 
 describe('Subscriber Middleware', () => {
   let mockContext: WebSocketSubscriberHandlerContext;
@@ -196,7 +196,7 @@ describe('Subscriber Middleware', () => {
     it('should return true from onBefore', async () => {
       const mw = loggingMiddleware('testHandler');
 
-      const result = await mw.onBefore!(mockContext);
+      const result = await mw.onBefore?.(mockContext);
 
       expect(result).toBe(true);
     });
@@ -204,7 +204,7 @@ describe('Subscriber Middleware', () => {
     it('should log on successful execution', async () => {
       const mw = loggingMiddleware('testHandler');
 
-      await mw.onAfter!(mockContext, 'result');
+      await mw.onAfter?.(mockContext, 'result');
 
       // Middleware executed without throwing
       expect(mw).toBeDefined();
@@ -214,7 +214,7 @@ describe('Subscriber Middleware', () => {
       const mw = loggingMiddleware('testHandler');
       const error = new Error('Test error');
 
-      const result = await mw.onError!(mockContext, error);
+      const result = await mw.onError?.(mockContext, error);
 
       expect(result).toBe(false); // Don't suppress
     });
@@ -233,7 +233,7 @@ describe('Subscriber Middleware', () => {
     it('should allow execution to proceed', async () => {
       const mw = timingMiddleware();
 
-      const result = await mw.onBefore!(mockContext);
+      const result = await mw.onBefore?.(mockContext);
 
       expect(result).toBe(true);
     });
@@ -242,9 +242,9 @@ describe('Subscriber Middleware', () => {
       vi.useFakeTimers();
       const mw = timingMiddleware();
 
-      await mw.onBefore!(mockContext);
+      await mw.onBefore?.(mockContext);
       vi.advanceTimersByTime(100);
-      await mw.onAfter!(mockContext, undefined);
+      await mw.onAfter?.(mockContext, undefined);
 
       // Middleware executed without throwing
       expect(mw).toBeDefined();
@@ -266,7 +266,7 @@ describe('Subscriber Middleware', () => {
       const validator = vi.fn();
       const mw = validationMiddleware(validator);
 
-      const result = await mw.onBefore!(mockContext);
+      const result = await mw.onBefore?.(mockContext);
 
       expect(validator).toHaveBeenCalledWith(mockContext.message);
       expect(result).toBe(true);
@@ -278,14 +278,14 @@ describe('Subscriber Middleware', () => {
       });
       const mw = validationMiddleware(validator);
 
-      await expect(mw.onBefore!(mockContext)).rejects.toThrow('Validation failed');
+      await expect(mw.onBefore?.(mockContext)).rejects.toThrow('Validation failed');
     });
 
     it('should support async validators', async () => {
       const validator = vi.fn().mockResolvedValue(undefined);
       const mw = validationMiddleware(validator);
 
-      const result = await mw.onBefore!(mockContext);
+      const result = await mw.onBefore?.(mockContext);
 
       expect(validator).toHaveBeenCalled();
       expect(result).toBe(true);
@@ -303,9 +303,9 @@ describe('Subscriber Middleware', () => {
     it('should allow executions within limit', async () => {
       const mw = rateLimitMiddleware(3, 1000);
 
-      const result1 = await mw.onBefore!(mockContext);
-      const result2 = await mw.onBefore!(mockContext);
-      const result3 = await mw.onBefore!(mockContext);
+      const result1 = await mw.onBefore?.(mockContext);
+      const result2 = await mw.onBefore?.(mockContext);
+      const result3 = await mw.onBefore?.(mockContext);
 
       expect(result1).toBe(true);
       expect(result2).toBe(true);
@@ -315,9 +315,9 @@ describe('Subscriber Middleware', () => {
     it('should block executions exceeding limit', async () => {
       const mw = rateLimitMiddleware(2, 1000);
 
-      await mw.onBefore!(mockContext);
-      await mw.onBefore!(mockContext);
-      const result = await mw.onBefore!(mockContext);
+      await mw.onBefore?.(mockContext);
+      await mw.onBefore?.(mockContext);
+      const result = await mw.onBefore?.(mockContext);
 
       expect(result).toBe(false);
     });
@@ -326,14 +326,14 @@ describe('Subscriber Middleware', () => {
       vi.useFakeTimers();
       const mw = rateLimitMiddleware(1, 100);
 
-      const result1 = await mw.onBefore!(mockContext);
+      const result1 = await mw.onBefore?.(mockContext);
       expect(result1).toBe(true);
 
-      const result2 = await mw.onBefore!(mockContext);
+      const result2 = await mw.onBefore?.(mockContext);
       expect(result2).toBe(false); // Limited
 
       vi.advanceTimersByTime(101);
-      const result3 = await mw.onBefore!(mockContext);
+      const result3 = await mw.onBefore?.(mockContext);
       expect(result3).toBe(true); // Reset
 
       vi.useRealTimers();
@@ -345,9 +345,9 @@ describe('Subscriber Middleware', () => {
       const context1 = { ...mockContext, channel: 'channel-1' };
       const context2 = { ...mockContext, channel: 'channel-2' };
 
-      const result1 = await mw.onBefore!(context1);
-      const result2 = await mw.onBefore!(context1);
-      const result3 = await mw.onBefore!(context2);
+      const result1 = await mw.onBefore?.(context1);
+      const result2 = await mw.onBefore?.(context1);
+      const result3 = await mw.onBefore?.(context2);
 
       expect(result1).toBe(true);
       expect(result2).toBe(false); // Limited on channel-1

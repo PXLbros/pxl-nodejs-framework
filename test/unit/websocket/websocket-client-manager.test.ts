@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import WebSocket from 'ws';
-import WebSocketClientManager from '../../../src/websocket/websocket-client-manager.js';
 import * as websocketUtils from '../../../src/websocket/utils.js';
+import WebSocketClientManager from '../../../src/websocket/websocket-client-manager.js';
 
 class FakeWebSocket {
   public readyState = WebSocket.OPEN;

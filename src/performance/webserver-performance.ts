@@ -202,7 +202,7 @@ export class WebServerPerformanceWrapper {
  * Decorator for monitoring controller methods
  */
 export function MonitorControllerMethod(methodName?: string) {
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+  return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
     const originalMethod = descriptor.value;
     const controllerName = target.constructor.name;
     const operation = methodName ?? propertyKey;

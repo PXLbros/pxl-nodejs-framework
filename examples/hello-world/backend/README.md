@@ -1,6 +1,6 @@
 # Hello World Backend - PXL Framework Example
 
-A minimal API built with the PXL Node.js Framework demonstrating basic web server functionality.
+A minimal API built with the SC/PXL Node.js Framework demonstrating basic web server functionality.
 
 ## Features
 

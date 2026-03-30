@@ -7,7 +7,7 @@
  * To create your own CLI application:
  *
  * 1. Create a new project directory with src/index.ts
- * 2. Install dependencies: npm install @scpxl/nodejs-framework yargs dotenv
+ * 2. Install dependencies: npm install @scpxl/nodejs-framework yargs
  * 3. Set up CommandApplication (see examples/commands/src/index.ts)
  * 4. Create command files in src/commands/
  * 5. Run with: tsx src/index.ts <command-name> [options]

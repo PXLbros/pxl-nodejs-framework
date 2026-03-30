@@ -1,9 +1,9 @@
 import { MikroORM } from '@mikro-orm/postgresql';
-import DatabaseInstance from './instance.js';
-import type { ApplicationDatabaseOptions } from './manager.interface.js';
+import { safeSerializeError } from '../error/error-reporter.js';
 import { Logger } from '../logger/index.js';
 import { DatabasePerformanceWrapper } from '../performance/index.js';
-import { safeSerializeError } from '../error/error-reporter.js';
+import DatabaseInstance from './instance.js';
+import type { ApplicationDatabaseOptions } from './manager.interface.js';
 
 /**
  * Database manager
@@ -135,5 +135,9 @@ export default class DatabaseManager {
    */
   public log(message: string, meta?: Record<string, unknown>): void {
     this.logger.custom({ level: 'database', message, meta });
+  }
+
+  async [Symbol.asyncDispose](): Promise<void> {
+    await this.disconnect();
   }
 }

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is the PXL Node.js Framework - a comprehensive framework for building Node.js applications with support for web servers, databases, queues, caching, and more. It's published as `@scpxl/nodejs-framework` on npm.
+This is the SC/PXL Node.js Framework - a comprehensive framework for building Node.js applications with support for web servers, databases, queues, caching, and more. It's published as `@scpxl/nodejs-framework` on npm.
 
 ## Build and Development Commands
 
@@ -101,7 +101,7 @@ The framework supports three main application types:
 
 - **AWS S3** - File storage integration
 - **Authentication** - JWT-based auth system
-- **Logging** - Winston-based structured logging
+- **Logging** - Pino-based structured logging (Fastify's native logger)
 - **Utilities** - File, image, string, time, and URL helpers
 
 ### Configuration Structure

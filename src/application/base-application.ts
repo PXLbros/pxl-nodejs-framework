@@ -1,29 +1,29 @@
-import cluster from 'cluster';
-import { existsSync, readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join, resolve } from 'path';
+import cluster from 'node:cluster';
+import { existsSync, readFileSync } from 'node:fs';
+import os from 'node:os';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import CacheManager from '../cache/manager.js';
+import ClusterManager from '../cluster/cluster-manager.js';
+import { ConfigValidationError, formatConfigIssues, validateFrameworkConfig } from '../config/schema.js';
 import { type DatabaseInstance, DatabaseManager } from '../database/index.js';
+import { safeSerializeError } from '../error/error-reporter.js';
+import EventManager from '../event/manager.js';
+import { type ExitOutcome, requestExit } from '../lifecycle/exit.js';
+import { type LifecycleConfig, LifecycleManager, ShutdownController } from '../lifecycle/index.js';
+import Logger from '../logger/logger.js';
+import type { PerformanceMonitor } from '../performance/performance-monitor.js';
+// Performance monitoring now pluginized
+import { PerformanceMonitorPlugin } from '../performance/performance-monitor.plugin.js';
 import QueueManager from '../queue/manager.js';
+import type RedisInstance from '../redis/instance.js';
 import RedisManager from '../redis/manager.js';
+import { OS, Time } from '../util/index.js';
 import type {
   ApplicationConfig,
   ApplicationStartInstanceOptions,
   ApplicationStopInstanceOptions,
 } from './base-application.interface.js';
-import ClusterManager from '../cluster/cluster-manager.js';
-import type RedisInstance from '../redis/instance.js';
-import { OS, Time } from '../util/index.js';
-import CacheManager from '../cache/manager.js';
-import os from 'os';
-import EventManager from '../event/manager.js';
-import Logger from '../logger/logger.js';
-import type { PerformanceMonitor } from '../performance/performance-monitor.js';
-// Performance monitoring now pluginized
-import { PerformanceMonitorPlugin } from '../performance/performance-monitor.plugin.js';
-import { type LifecycleConfig, LifecycleManager, ShutdownController } from '../lifecycle/index.js';
-import { ConfigValidationError, formatConfigIssues, validateFrameworkConfig } from '../config/schema.js';
-import { type ExitOutcome, requestExit } from '../lifecycle/exit.js';
-import { safeSerializeError } from '../error/error-reporter.js';
 
 // Re-export types for external use
 export type { ApplicationConfig } from './base-application.interface.js';
@@ -661,5 +661,9 @@ export default abstract class BaseApplication {
       return;
     }
     requestExit(outcome);
+  }
+
+  async [Symbol.asyncDispose](): Promise<void> {
+    await this.stop();
   }
 }

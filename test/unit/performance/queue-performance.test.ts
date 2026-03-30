@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { QueuePerformanceWrapper, MonitorQueueProcessor } from '../../../dist/performance/queue-performance.js';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PerformanceMonitor } from '../../../dist/performance/performance-monitor.js';
+import { MonitorQueueProcessor, QueuePerformanceWrapper } from '../../../dist/performance/queue-performance.js';
 
 describe('QueuePerformanceWrapper', () => {
   let performanceMonitor: PerformanceMonitor;
@@ -18,7 +18,7 @@ describe('QueuePerformanceWrapper', () => {
     it('should set performance monitor', () => {
       const customMonitor = PerformanceMonitor.getInstance();
       QueuePerformanceWrapper.setPerformanceMonitor(customMonitor);
-      expect(QueuePerformanceWrapper['performanceMonitor']).toBe(customMonitor);
+      expect(QueuePerformanceWrapper.performanceMonitor).toBe(customMonitor);
     });
   });
 

@@ -1,11 +1,11 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import WebSocketClient from '../../../src/websocket/websocket-client.js';
-import type { WebSocketOptions } from '../../../src/websocket/websocket.interface.js';
-import type RedisInstance from '../../../src/redis/instance.js';
-import type QueueManager from '../../../src/queue/manager.js';
-import type DatabaseInstance from '../../../src/database/instance.js';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import type WebSocket from 'ws';
 import type { ApplicationConfig } from '../../../src/application/base-application.interface.js';
-import WebSocket from 'ws';
+import type DatabaseInstance from '../../../src/database/instance.js';
+import type QueueManager from '../../../src/queue/manager.js';
+import type RedisInstance from '../../../src/redis/instance.js';
+import type { WebSocketOptions } from '../../../src/websocket/websocket.interface.js';
+import WebSocketClient from '../../../src/websocket/websocket-client.js';
 
 // Mock WebSocket module
 vi.mock('ws', () => {
@@ -23,8 +23,8 @@ vi.mock('ws', () => {
 
     // Simulate asynchronous connection
     setTimeout(() => {
-      if (this._events['open']) {
-        this._events['open']();
+      if (this._events.open) {
+        this._events.open();
       }
     }, 0);
 
@@ -262,8 +262,8 @@ describe('WebSocketClient', () => {
       const ws = (client as any).ws;
 
       // Trigger close event using the mocked WebSocket's _events
-      if (ws && ws._events && ws._events['close']) {
-        ws._events['close']();
+      if (ws?._events?.close) {
+        ws._events.close();
       }
 
       expect((client as any).isConnected).toBe(false);
@@ -288,8 +288,8 @@ describe('WebSocketClient', () => {
       const testError = new Error('Test WebSocket error');
 
       // Trigger error event using the mocked WebSocket's _events
-      if (ws && ws._events && ws._events['error']) {
-        ws._events['error'](testError);
+      if (ws?._events?.error) {
+        ws._events.error(testError);
       }
 
       expect(onError).toHaveBeenCalledWith({ error: testError });
@@ -311,8 +311,8 @@ describe('WebSocketClient', () => {
       const testMessage = JSON.stringify({ type: 'test', action: 'ping', data: { foo: 'bar' } });
 
       // Trigger message event using the mocked WebSocket's _events
-      if (ws && ws._events && ws._events['message']) {
-        await ws._events['message'](testMessage);
+      if (ws?._events?.message) {
+        await ws._events.message(testMessage);
       }
 
       expect(onMessage).toHaveBeenCalledWith(
@@ -540,8 +540,8 @@ describe('WebSocketClient', () => {
       const ws = (client as any).ws;
 
       // Trigger close event
-      if (ws && ws._events && ws._events['close']) {
-        ws._events['close'](1000);
+      if (ws?._events?.close) {
+        ws._events.close(1000);
       }
 
       // Wait a bit for async operations
@@ -552,12 +552,12 @@ describe('WebSocketClient', () => {
     });
 
     it('should calculate exponential backoff delays correctly', () => {
-      const { client } = createClient();
+      const { client: _client } = createClient();
 
       // Test the delay calculation directly
       const calculateDelay = (attempts: number) => {
         const baseDelay = 1000;
-        return Math.min(baseDelay * Math.pow(2, attempts), 30000);
+        return Math.min(baseDelay * 2 ** attempts, 30000);
       };
 
       // Verify exponential backoff: 1s, 2s, 4s, 8s, 16s, 30s (capped)
@@ -599,8 +599,8 @@ describe('WebSocketClient', () => {
       const ws = (client as any).ws;
 
       // Trigger disconnect
-      if (ws && ws._events && ws._events['close']) {
-        ws._events['close'](1000);
+      if (ws?._events?.close) {
+        ws._events.close(1000);
       }
 
       // Wait for async operations
@@ -644,8 +644,8 @@ describe('WebSocketClient', () => {
       const ws = (client as any).ws;
 
       // Trigger disconnect to schedule reconnection
-      if (ws && ws._events && ws._events['close']) {
-        ws._events['close'](1000);
+      if (ws?._events?.close) {
+        ws._events.close(1000);
       }
 
       // Wait for reconnect to be scheduled
@@ -671,8 +671,8 @@ describe('WebSocketClient', () => {
       const ws = (client as any).ws;
 
       // Trigger disconnect
-      if (ws && ws._events && ws._events['close']) {
-        ws._events['close'](1000);
+      if (ws?._events?.close) {
+        ws._events.close(1000);
       }
 
       // Wait a bit
@@ -702,8 +702,8 @@ describe('WebSocketClient', () => {
       const ws = (client as any).ws;
 
       // Trigger disconnect - schedules reconnection
-      if (ws && ws._events && ws._events['close']) {
-        ws._events['close'](1000);
+      if (ws?._events?.close) {
+        ws._events.close(1000);
       }
 
       // Wait for reconnect to be scheduled

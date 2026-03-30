@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import ExampleAuthController from '../../../../src/webserver/controller/example-auth.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AuthenticatedUser } from '../../../../src/webserver/controller/base.js';
+import ExampleAuthController from '../../../../src/webserver/controller/example-auth.js';
 
 class TestableExampleAuthController extends ExampleAuthController {
   public authenticateRequestMock = vi.fn();

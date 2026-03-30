@@ -1,4 +1,4 @@
-import { beforeEach, afterEach, mock } from 'node:test';
+import { afterEach, beforeEach, mock } from 'node:test';
 
 // Global test setup
 beforeEach(() => {

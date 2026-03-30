@@ -133,7 +133,7 @@ All other TypeScript/JavaScript files
 Enhanced HMR provides rich console output:
 
 ```
-[10:30:45] 🚀 Starting HMR for PXL Node.js Framework
+[10:30:45] 🚀 Starting HMR for SC/PXL Node.js Framework
 [10:30:45] ℹ️  Enhanced mode: Incremental compilation enabled
 [10:30:45] 🔄 Rebuilding (1 route file(s))...
 [10:30:46] ✅ Build completed in 234ms

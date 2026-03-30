@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { loadFrameworkConfigFromEnv } from '../../../src/config/env.js';
 
 const ENV_KEYS = [

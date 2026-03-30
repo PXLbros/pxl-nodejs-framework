@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { spawn, type ChildProcess } from 'child_process';
-import { join } from 'path';
-import { writeFileSync, unlinkSync, mkdirSync } from 'fs';
+import { type ChildProcess, spawn } from 'node:child_process';
+import { mkdirSync, unlinkSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 describe('Cluster Integration Tests', () => {
   let testAppPath: string;
@@ -12,7 +12,7 @@ describe('Cluster Integration Tests', () => {
     // Create test fixtures directory if it doesn't exist
     try {
       mkdirSync(testDir, { recursive: true });
-    } catch (e) {
+    } catch (_e) {
       // Directory already exists
     }
   });
@@ -28,7 +28,7 @@ describe('Cluster Integration Tests', () => {
     if (testAppPath) {
       try {
         unlinkSync(testAppPath);
-      } catch (e) {
+      } catch (_e) {
         // File may not exist
       }
     }
@@ -82,7 +82,7 @@ describe('Cluster Integration Tests', () => {
           try {
             const msg = JSON.parse(line);
             messages.push(msg);
-          } catch (e) {
+          } catch (_e) {
             // Ignore non-JSON output
           }
         });
@@ -200,7 +200,7 @@ describe('Cluster Integration Tests', () => {
                 }, 500);
               }
             }
-          } catch (e) {
+          } catch (_e) {
             // Ignore non-JSON output
           }
         });
@@ -286,7 +286,7 @@ describe('Cluster Integration Tests', () => {
           try {
             const msg = JSON.parse(line);
             messages.push(msg);
-          } catch (e) {
+          } catch (_e) {
             // Ignore non-JSON output
           }
         });

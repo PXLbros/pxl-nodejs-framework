@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import cluster from 'node:cluster';
-import ClusterManager from '../../../src/cluster/cluster-manager.js';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ClusterManagerConfig } from '../../../src/cluster/cluster-manager.interface.js';
+import ClusterManager from '../../../src/cluster/cluster-manager.js';
 import { Logger } from '../../../src/logger/index.js';
 
 // Mock dependencies

@@ -33,7 +33,7 @@ export interface ApplicationRedisConfig {
   password?: string;
 }
 
-export interface ApplicationCacheConfig {}
+export type ApplicationCacheConfig = Record<string, never>;
 
 export interface ApplicationDatabaseConfig {
   /** Whether to enable database */
@@ -86,7 +86,7 @@ export interface ApplicationEventConfig {
   events: EventDefinition[];
 }
 
-export interface ApplicationEmailConfig {}
+export type ApplicationEmailConfig = Record<string, never>;
 
 export interface ApplicationAuthConfig {
   /** JWT secret key for token verification */

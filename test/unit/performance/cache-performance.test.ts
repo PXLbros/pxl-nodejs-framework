@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CachePerformanceWrapper } from '../../../src/performance/cache-performance.js';
 import { PerformanceMonitor } from '../../../src/performance/performance-monitor.js';
 

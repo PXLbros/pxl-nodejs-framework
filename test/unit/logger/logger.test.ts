@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import Logger from '../../../src/logger/logger.js';
-import * as Sentry from '@sentry/node';
 import cluster from 'node:cluster';
+import * as Sentry from '@sentry/node';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import Logger from '../../../src/logger/logger.js';
 import * as requestContext from '../../../src/request-context/index.js';
 
 // Mock Sentry
@@ -295,47 +295,57 @@ describe('Logger', () => {
   });
 
   describe('log method - message handling', () => {
-    let winstonLogSpy: any;
+    let pinoLevelSpy: any;
 
     beforeEach(() => {
       logSpy.mockRestore();
-      winstonLogSpy = vi.spyOn((instance as any).logger, 'log').mockImplementation(() => {});
-    });
-
-    afterEach(() => {
-      winstonLogSpy.mockRestore();
     });
 
     it('should handle Error message with stack', () => {
       const error = new Error('Test error');
+      pinoLevelSpy = vi.spyOn((instance as any).logger, 'error').mockImplementation(() => {});
+
       Logger.log({ level: 'error', message: error });
 
-      expect(winstonLogSpy).toHaveBeenCalledWith('error', expect.stringContaining('Test error'), undefined);
+      expect(pinoLevelSpy).toHaveBeenCalledWith(expect.any(Object), expect.stringContaining('Test error'));
+      pinoLevelSpy.mockRestore();
     });
 
     it('should handle string message', () => {
+      pinoLevelSpy = vi.spyOn((instance as any).logger, 'info').mockImplementation(() => {});
+
       Logger.log({ level: 'info', message: 'String message' });
 
-      expect(winstonLogSpy).toHaveBeenCalledWith('info', 'String message', undefined);
+      expect(pinoLevelSpy).toHaveBeenCalledWith(expect.any(Object), 'String message');
+      pinoLevelSpy.mockRestore();
     });
 
     it('should handle object message by stringifying', () => {
+      pinoLevelSpy = vi.spyOn((instance as any).logger, 'debug').mockImplementation(() => {});
       const obj = { foo: 'bar', count: 42 };
+
       Logger.log({ level: 'debug', message: obj });
 
-      expect(winstonLogSpy).toHaveBeenCalledWith('debug', JSON.stringify(obj), undefined);
+      expect(pinoLevelSpy).toHaveBeenCalledWith(expect.any(Object), JSON.stringify(obj));
+      pinoLevelSpy.mockRestore();
     });
 
     it('should handle number message', () => {
+      pinoLevelSpy = vi.spyOn((instance as any).logger, 'info').mockImplementation(() => {});
+
       Logger.log({ level: 'info', message: 42 });
 
-      expect(winstonLogSpy).toHaveBeenCalledWith('info', '42', undefined);
+      expect(pinoLevelSpy).toHaveBeenCalledWith(expect.any(Object), '42');
+      pinoLevelSpy.mockRestore();
     });
 
     it('should pass meta through', () => {
+      pinoLevelSpy = vi.spyOn((instance as any).logger, 'info').mockImplementation(() => {});
+
       Logger.log({ level: 'info', message: 'test', meta: { key: 'value' } });
 
-      expect(winstonLogSpy).toHaveBeenCalledWith('info', 'test', { key: 'value' });
+      expect(pinoLevelSpy).toHaveBeenCalledWith(expect.objectContaining({ key: 'value' }), 'test');
+      pinoLevelSpy.mockRestore();
     });
   });
 
@@ -362,6 +372,7 @@ describe('Logger', () => {
 
       Logger.initSentry({ sentryDsn: '', environment: 'production' });
 
+      // Pino's warn is called with just a string message (no meta object prefix)
       expect(warnSpy).toHaveBeenCalledWith('Missing Sentry DSN when initializing Sentry');
       expect(Sentry.init).not.toHaveBeenCalled();
       expect(Logger.isSentryInitialized).toBe(false);
@@ -376,13 +387,15 @@ describe('Logger', () => {
       getRequestIdMock.mockReturnValue('req-123');
 
       logSpy.mockRestore();
-      const winstonLogSpy = vi.spyOn((instance as any).logger, 'log');
+      const pinoInfoSpy = vi.spyOn((instance as any).logger, 'info').mockImplementation(() => {});
 
       Logger.info('Test message');
 
-      // The format function is called by winston internally and should add requestId
+      // buildMeta should inject requestId, and pino is called with (meta, message)
       expect(getRequestIdMock).toHaveBeenCalled();
-      expect(winstonLogSpy).toHaveBeenCalled();
+      expect(pinoInfoSpy).toHaveBeenCalledWith(expect.objectContaining({ requestId: 'req-123' }), 'Test message');
+
+      pinoInfoSpy.mockRestore();
     });
 
     it('should not override existing requestId', () => {
@@ -390,13 +403,14 @@ describe('Logger', () => {
       getRequestIdMock.mockReturnValue('req-auto');
 
       logSpy.mockRestore();
-      const winstonLogSpy = vi.spyOn((instance as any).logger, 'log');
+      const pinoInfoSpy = vi.spyOn((instance as any).logger, 'info').mockImplementation(() => {});
 
       Logger.info('Test message', { requestId: 'req-manual' });
 
-      // Should still be called to check
       expect(getRequestIdMock).toHaveBeenCalled();
-      expect(winstonLogSpy).toHaveBeenCalledWith('info', 'Test message', { requestId: 'req-manual' });
+      expect(pinoInfoSpy).toHaveBeenCalledWith(expect.objectContaining({ requestId: 'req-manual' }), 'Test message');
+
+      pinoInfoSpy.mockRestore();
     });
 
     it('should handle missing requestId gracefully', () => {
@@ -404,12 +418,15 @@ describe('Logger', () => {
       getRequestIdMock.mockReturnValue(undefined);
 
       logSpy.mockRestore();
-      const winstonLogSpy = vi.spyOn((instance as any).logger, 'log');
+      const pinoInfoSpy = vi.spyOn((instance as any).logger, 'info').mockImplementation(() => {});
 
       Logger.info('Test message');
 
       expect(getRequestIdMock).toHaveBeenCalled();
-      expect(winstonLogSpy).toHaveBeenCalledWith('info', 'Test message', undefined);
+      // buildMeta returns {} when no meta and no requestId
+      expect(pinoInfoSpy).toHaveBeenCalledWith(expect.any(Object), 'Test message');
+
+      pinoInfoSpy.mockRestore();
     });
   });
 
@@ -420,18 +437,18 @@ describe('Logger', () => {
       (clusterMock as any).worker = { id: 3 } as any;
 
       logSpy.mockRestore();
-      const winstonLogSpy = vi.spyOn((instance as any).logger, 'log');
+      const pinoInfoSpy = vi.spyOn((instance as any).logger, 'info').mockImplementation(() => {});
 
       Logger.info('Test in worker');
 
-      // The custom format will be applied by winston internally
-      expect(winstonLogSpy).toHaveBeenCalled();
+      expect(pinoInfoSpy).toHaveBeenCalledWith(expect.objectContaining({ Worker: 3 }), 'Test in worker');
       expect(clusterMock.isWorker).toBe(true);
       expect(clusterMock.worker?.id).toBe(3);
 
       // Cleanup
       (clusterMock as any).isWorker = false;
       (clusterMock as any).worker = undefined;
+      pinoInfoSpy.mockRestore();
     });
 
     it('should not add worker ID when not in worker mode', () => {
@@ -440,129 +457,128 @@ describe('Logger', () => {
       (clusterMock as any).worker = undefined;
 
       logSpy.mockRestore();
-      const winstonLogSpy = vi.spyOn((instance as any).logger, 'log');
+      const pinoInfoSpy = vi.spyOn((instance as any).logger, 'info').mockImplementation(() => {});
 
       Logger.info('Test not in worker');
 
-      expect(winstonLogSpy).toHaveBeenCalled();
+      expect(pinoInfoSpy).toHaveBeenCalled();
+      // Verify Worker is NOT in the meta
+      const callArgs = pinoInfoSpy.mock.calls[0];
+      expect(callArgs[0]).not.toHaveProperty('Worker');
       expect(clusterMock.isWorker).toBe(false);
+
+      pinoInfoSpy.mockRestore();
     });
   });
 
   describe('Meta value serialization', () => {
-    it('should handle null values in meta', () => {
-      logSpy.mockRestore();
-      const winstonLogSpy = vi.spyOn((instance as any).logger, 'log');
+    let pinoInfoSpy: any;
 
+    beforeEach(() => {
+      logSpy.mockRestore();
+      pinoInfoSpy = vi.spyOn((instance as any).logger, 'info').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      pinoInfoSpy.mockRestore();
+    });
+
+    it('should handle null values in meta', () => {
       Logger.info('Test', { nullValue: null });
 
-      expect(winstonLogSpy).toHaveBeenCalledWith('info', 'Test', { nullValue: null });
+      expect(pinoInfoSpy).toHaveBeenCalledWith(expect.objectContaining({ nullValue: null }), 'Test');
     });
 
     it('should handle undefined values in meta', () => {
-      logSpy.mockRestore();
-      const winstonLogSpy = vi.spyOn((instance as any).logger, 'log');
-
       Logger.info('Test', { undefinedValue: undefined });
 
-      expect(winstonLogSpy).toHaveBeenCalledWith('info', 'Test', { undefinedValue: undefined });
+      expect(pinoInfoSpy).toHaveBeenCalledWith(expect.objectContaining({ undefinedValue: undefined }), 'Test');
     });
 
     it('should handle string values in meta', () => {
-      logSpy.mockRestore();
-      const winstonLogSpy = vi.spyOn((instance as any).logger, 'log');
-
       Logger.info('Test', { stringValue: 'hello' });
 
-      expect(winstonLogSpy).toHaveBeenCalledWith('info', 'Test', { stringValue: 'hello' });
+      expect(pinoInfoSpy).toHaveBeenCalledWith(expect.objectContaining({ stringValue: 'hello' }), 'Test');
     });
 
     it('should handle number values in meta', () => {
-      logSpy.mockRestore();
-      const winstonLogSpy = vi.spyOn((instance as any).logger, 'log');
-
       Logger.info('Test', { numberValue: 42 });
 
-      expect(winstonLogSpy).toHaveBeenCalledWith('info', 'Test', { numberValue: 42 });
+      expect(pinoInfoSpy).toHaveBeenCalledWith(expect.objectContaining({ numberValue: 42 }), 'Test');
     });
 
     it('should handle boolean values in meta', () => {
-      logSpy.mockRestore();
-      const winstonLogSpy = vi.spyOn((instance as any).logger, 'log');
-
       Logger.info('Test', { boolValue: true });
 
-      expect(winstonLogSpy).toHaveBeenCalledWith('info', 'Test', { boolValue: true });
+      expect(pinoInfoSpy).toHaveBeenCalledWith(expect.objectContaining({ boolValue: true }), 'Test');
     });
 
     it('should handle Error values in meta', () => {
-      logSpy.mockRestore();
-      const winstonLogSpy = vi.spyOn((instance as any).logger, 'log');
       const error = new Error('Test error message');
 
       Logger.info('Test', { errorValue: error });
 
-      expect(winstonLogSpy).toHaveBeenCalledWith('info', 'Test', { errorValue: error });
+      expect(pinoInfoSpy).toHaveBeenCalledWith(expect.objectContaining({ errorValue: error }), 'Test');
     });
 
     it('should handle Promise values in meta', () => {
-      logSpy.mockRestore();
-      const winstonLogSpy = vi.spyOn((instance as any).logger, 'log');
       const promise = Promise.resolve('test');
 
       Logger.info('Test', { promiseValue: promise });
 
-      expect(winstonLogSpy).toHaveBeenCalledWith('info', 'Test', { promiseValue: promise });
+      expect(pinoInfoSpy).toHaveBeenCalledWith(expect.objectContaining({ promiseValue: promise }), 'Test');
     });
 
     it('should handle plain object values in meta', () => {
-      logSpy.mockRestore();
-      const winstonLogSpy = vi.spyOn((instance as any).logger, 'log');
       const obj = { foo: 'bar', count: 42 };
 
       Logger.info('Test', { objectValue: obj });
 
-      expect(winstonLogSpy).toHaveBeenCalledWith('info', 'Test', { objectValue: obj });
+      expect(pinoInfoSpy).toHaveBeenCalledWith(expect.objectContaining({ objectValue: obj }), 'Test');
     });
 
     it('should handle circular reference objects in meta', () => {
-      logSpy.mockRestore();
-      const winstonLogSpy = vi.spyOn((instance as any).logger, 'log');
       const circular: any = { name: 'test' };
       circular.self = circular;
 
       Logger.info('Test', { circularValue: circular });
 
-      expect(winstonLogSpy).toHaveBeenCalledWith('info', 'Test', { circularValue: circular });
+      expect(pinoInfoSpy).toHaveBeenCalledWith(expect.objectContaining({ circularValue: circular }), 'Test');
     });
   });
 
   describe('Log format', () => {
+    let pinoSpy: any;
+
+    afterEach(() => {
+      if (pinoSpy) pinoSpy.mockRestore();
+    });
+
     it('should log messages with the correct level', () => {
       logSpy.mockRestore();
-      const winstonLogSpy = vi.spyOn((instance as any).logger, 'log');
+      pinoSpy = vi.spyOn((instance as any).logger, 'info').mockImplementation(() => {});
 
       Logger.info('Test message');
 
-      expect(winstonLogSpy).toHaveBeenCalledWith('info', 'Test message', undefined);
+      expect(pinoSpy).toHaveBeenCalledWith(expect.any(Object), 'Test message');
     });
 
     it('should log messages with meta', () => {
       logSpy.mockRestore();
-      const winstonLogSpy = vi.spyOn((instance as any).logger, 'log');
+      pinoSpy = vi.spyOn((instance as any).logger, 'info').mockImplementation(() => {});
 
       Logger.info('Test message', { userId: '123', action: 'login' });
 
-      expect(winstonLogSpy).toHaveBeenCalledWith('info', 'Test message', { userId: '123', action: 'login' });
+      expect(pinoSpy).toHaveBeenCalledWith(expect.objectContaining({ userId: '123', action: 'login' }), 'Test message');
     });
 
     it('should log messages without meta', () => {
       logSpy.mockRestore();
-      const winstonLogSpy = vi.spyOn((instance as any).logger, 'log');
+      pinoSpy = vi.spyOn((instance as any).logger, 'debug').mockImplementation(() => {});
 
       Logger.debug('Simple message');
 
-      expect(winstonLogSpy).toHaveBeenCalledWith('debug', 'Simple message', undefined);
+      expect(pinoSpy).toHaveBeenCalledWith(expect.any(Object), 'Simple message');
     });
   });
 
@@ -574,40 +590,43 @@ describe('Logger', () => {
 
     it('should trigger error formatting which captures to Sentry when initialized', () => {
       (instance as any).isSentryInitialized = true;
-      const winstonLogSpy = vi.spyOn((instance as any).logger, 'log');
+      const pinoErrorSpy = vi.spyOn((instance as any).logger, 'error').mockImplementation(() => {});
 
       Logger.log({ level: 'error', message: 'Critical error occurred' });
 
-      // Verify winston was called with error level
-      expect(winstonLogSpy).toHaveBeenCalledWith('error', 'Critical error occurred', undefined);
+      expect(pinoErrorSpy).toHaveBeenCalledWith(expect.any(Object), 'Critical error occurred');
+      pinoErrorSpy.mockRestore();
     });
 
     it('should work with error objects', () => {
       (instance as any).isSentryInitialized = true;
-      const winstonLogSpy = vi.spyOn((instance as any).logger, 'log');
+      const pinoErrorSpy = vi.spyOn((instance as any).logger, 'error').mockImplementation(() => {});
       const error = new Error('Test error');
 
       Logger.log({ level: 'error', message: error });
 
-      expect(winstonLogSpy).toHaveBeenCalled();
+      expect(pinoErrorSpy).toHaveBeenCalled();
+      pinoErrorSpy.mockRestore();
     });
 
     it('should not interfere when Sentry not initialized', () => {
       (instance as any).isSentryInitialized = false;
-      const winstonLogSpy = vi.spyOn((instance as any).logger, 'log');
+      const pinoErrorSpy = vi.spyOn((instance as any).logger, 'error').mockImplementation(() => {});
 
       Logger.log({ level: 'error', message: 'Error message' });
 
-      expect(winstonLogSpy).toHaveBeenCalledWith('error', 'Error message', undefined);
+      expect(pinoErrorSpy).toHaveBeenCalledWith(expect.any(Object), 'Error message');
+      pinoErrorSpy.mockRestore();
     });
 
     it('should not affect non-error level logs', () => {
       (instance as any).isSentryInitialized = true;
-      const winstonLogSpy = vi.spyOn((instance as any).logger, 'log');
+      const pinoWarnSpy = vi.spyOn((instance as any).logger, 'warn').mockImplementation(() => {});
 
       Logger.log({ level: 'warn', message: 'Warning message' });
 
-      expect(winstonLogSpy).toHaveBeenCalledWith('warn', 'Warning message', undefined);
+      expect(pinoWarnSpy).toHaveBeenCalledWith(expect.any(Object), 'Warning message');
+      pinoWarnSpy.mockRestore();
     });
   });
 });

@@ -1,15 +1,15 @@
+import path from 'node:path';
 import WebSocket, { type RawData } from 'ws';
-import type { WebSocketOptions, WebSocketRoute, WebSocketType } from './websocket.interface.js';
-import type RedisInstance from '../redis/instance.js';
-import type QueueManager from '../queue/manager.js';
-import type DatabaseInstance from '../database/instance.js';
-import type { WebSocketClientProps } from './websocket-client.interface.js';
-import { generateClientId, log, parseServerMessage } from './utils.js';
-import WebSocketBase from './websocket-base.js';
 import type { ApplicationConfig } from '../application/base-application.interface.js';
-import path from 'path';
+import type DatabaseInstance from '../database/instance.js';
 import { safeSerializeError } from '../error/error-reporter.js';
 import { baseDir } from '../index.js';
+import type QueueManager from '../queue/manager.js';
+import type RedisInstance from '../redis/instance.js';
+import { generateClientId, log, parseServerMessage } from './utils.js';
+import type { WebSocketOptions, WebSocketRoute, WebSocketType } from './websocket.interface.js';
+import WebSocketBase from './websocket-base.js';
+import type { WebSocketClientProps } from './websocket-client.interface.js';
 
 export default class WebSocketClient extends WebSocketBase {
   protected defaultRoutes: WebSocketRoute[] = [
@@ -176,7 +176,7 @@ export default class WebSocketClient extends WebSocketBase {
     await this.handleServerMessage(this.ws, message, this.clientId);
   };
 
-  protected handleMessageError(clientId: string, error: string): void {
+  protected handleMessageError(_clientId: string, error: string): void {
     log(error);
   }
 
@@ -240,7 +240,7 @@ export default class WebSocketClient extends WebSocketBase {
     }
 
     // Calculate delay with exponential backoff (max 30 seconds)
-    const delay = Math.min(this.reconnectDelay * Math.pow(2, this.reconnectAttempts), 30000);
+    const delay = Math.min(this.reconnectDelay * 2 ** this.reconnectAttempts, 30000);
     this.reconnectAttempts++;
 
     log('Scheduling reconnection', {

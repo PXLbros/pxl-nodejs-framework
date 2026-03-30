@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import BaseApplication from '../../../src/application/base-application.js';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ApplicationConfig } from '../../../src/application/base-application.interface.js';
+import BaseApplication from '../../../src/application/base-application.js';
 import { setExitHandler } from '../../../src/lifecycle/index.js';
 
 // Create a concrete implementation for testing
@@ -63,9 +63,9 @@ describe('BaseApplication Lifecycle Integration', () => {
   it('should handle shutdown hooks registration', () => {
     app = new TestApplication(mockConfig);
 
-    let hookCalled = false;
+    let _hookCalled = false;
     const removeHook = app.lifecycle.onShutdown(() => {
-      hookCalled = true;
+      _hookCalled = true;
     });
 
     expect(typeof removeHook).toBe('function');

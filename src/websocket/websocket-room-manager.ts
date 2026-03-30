@@ -1,4 +1,4 @@
-import cluster from 'cluster';
+import cluster from 'node:cluster';
 import { log } from './utils.js';
 import type WebSocketClientManager from './websocket-client-manager.js';
 

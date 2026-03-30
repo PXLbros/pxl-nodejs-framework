@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import crypto from 'node:crypto';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../../src/logger/index.js', () => ({
   Logger: {
@@ -8,7 +8,7 @@ vi.mock('../../../src/logger/index.js', () => ({
 }));
 
 import { Logger } from '../../../src/logger/index.js';
-import { generateClientId, log, parseServerMessage, getRouteKey } from '../../../src/websocket/utils.js';
+import { generateClientId, getRouteKey, log, parseServerMessage } from '../../../src/websocket/utils.js';
 
 describe('websocket utils', () => {
   beforeEach(() => {

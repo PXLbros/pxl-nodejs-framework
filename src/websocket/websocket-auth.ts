@@ -1,6 +1,6 @@
-import { URL } from 'url';
-import Jwt from '../auth/jwt.js';
+import { URL } from 'node:url';
 import type { WebApplicationConfig } from '../application/web-application.interface.js';
+import Jwt from '../auth/jwt.js';
 
 export interface WebSocketAuthResult {
   userId: number;
@@ -40,9 +40,9 @@ export class WebSocketAuthService {
       // Verify JWT token
       const { payload } = await Jwt.jwtVerify(token, importedJwtSecretKey);
 
-      const userId = parseInt(payload.sub as string);
+      const userId = parseInt(payload.sub as string, 10);
 
-      if (isNaN(userId)) {
+      if (Number.isNaN(userId)) {
         throw new Error('Invalid user ID in token');
       }
 

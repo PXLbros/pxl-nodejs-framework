@@ -1,7 +1,7 @@
 import type BaseApplication from '../application/base-application.js';
 import { Logger } from '../logger/index.js';
-import { PerformanceMonitor, type PerformanceMonitorOptions } from './performance-monitor.js';
 import { CachePerformanceWrapper, DatabasePerformanceWrapper, QueuePerformanceWrapper } from './index.js';
+import { PerformanceMonitor, type PerformanceMonitorOptions } from './performance-monitor.js';
 
 /**
  * PerformanceMonitorPlugin
@@ -31,7 +31,8 @@ export class PerformanceMonitorPlugin {
   /** Initialize monitor & ancillary behaviors */
   public start(): void {
     if (this.started) return;
-    const cfg = this.app['config'].performanceMonitoring; // internal access
+    // biome-ignore lint/complexity/useLiteralKeys: bracket notation bypasses protected access on BaseApplication.config
+    const cfg = this.app['config'].performanceMonitoring;
     if (!cfg?.enabled) {
       Logger.debug({ message: 'PerformanceMonitorPlugin: disabled via configuration' });
       return; // remain not started

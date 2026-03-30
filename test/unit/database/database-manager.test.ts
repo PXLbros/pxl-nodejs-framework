@@ -1,9 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MikroORM } from '@mikro-orm/postgresql';
-import DatabaseManager from '../../../src/database/manager.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import DatabaseInstance from '../../../src/database/instance.js';
-import { Logger } from '../../../src/logger/index.js';
 import type { ApplicationDatabaseOptions } from '../../../src/database/manager.interface.js';
+import DatabaseManager from '../../../src/database/manager.js';
+import { Logger } from '../../../src/logger/index.js';
 
 // Mock dependencies
 vi.mock('@mikro-orm/postgresql');
@@ -29,7 +29,7 @@ describe('DatabaseManager', () => {
     vi.clearAllMocks();
 
     // Setup DatabaseInstance mock as a proper constructor
-    MockDatabaseInstance.mockImplementation(function (this: any, opts: any) {
+    MockDatabaseInstance.mockImplementation(function (this: any, _opts: any) {
       this.disconnect = vi.fn().mockResolvedValue(undefined);
       return this;
     } as any);

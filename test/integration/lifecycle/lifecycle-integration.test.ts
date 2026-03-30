@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { LifecycleManager, ShutdownController, setExitHandler, requestExit } from '../../../src/lifecycle/index.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { LifecycleManager, requestExit, ShutdownController, setExitHandler } from '../../../src/lifecycle/index.js';
 
 describe('Lifecycle Integration Tests', () => {
   beforeEach(() => {

@@ -1,11 +1,11 @@
 import { type Job, type Processor, Worker } from 'bullmq';
-import type { QueueWorkerConstructorParams } from './worker.interface.js';
-import type { RedisInstance } from '../redis/index.js';
+import type { ApplicationConfig } from '../application/base-application.interface.js';
 import { Logger } from '../logger/index.js';
+import type { RedisInstance } from '../redis/index.js';
 import { Time } from '../util/index.js';
 import { WebSocketRedisSubscriberEvent } from '../websocket/websocket.interface.js';
-import type { ApplicationConfig } from '../application/base-application.interface.js';
 import type QueueManager from './manager.js';
+import type { QueueWorkerConstructorParams } from './worker.interface.js';
 
 export default class QueueWorker extends Worker {
   private applicationConfig: ApplicationConfig;
@@ -47,7 +47,7 @@ export default class QueueWorker extends Worker {
     Logger.error({ error });
   };
 
-  private onWorkerFailed = (job: Job<any, Processor<any, any, string>, string> | undefined, error: Error): void => {
+  private onWorkerFailed = (_job: Job<any, Processor<any, any, string>, string> | undefined, error: Error): void => {
     // // Send job failed message to client
     // if (job && job.data.webSocketClientId) {
     //   const errorMessage = {

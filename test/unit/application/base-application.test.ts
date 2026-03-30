@@ -1,21 +1,21 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { existsSync, readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, resolve, join } from 'path';
-import os from 'os';
-import cluster from 'cluster';
+import cluster from 'node:cluster';
+import { existsSync, readFileSync } from 'node:fs';
+import os from 'node:os';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ApplicationConfig } from '../../../src/application/base-application.interface.js';
 import BaseApplication from '../../../src/application/base-application.js';
-import { DatabaseManager } from '../../../src/database/index.js';
-import QueueManager from '../../../src/queue/manager.js';
-import RedisManager from '../../../src/redis/manager.js';
 import CacheManager from '../../../src/cache/manager.js';
 import ClusterManager from '../../../src/cluster/cluster-manager.js';
+import { DatabaseManager } from '../../../src/database/index.js';
 import EventManager from '../../../src/event/manager.js';
-import { PerformanceMonitor } from '../../../src/performance/performance-monitor.js';
-import { OS, Time } from '../../../src/util/index.js';
-import Logger from '../../../src/logger/logger.js';
 import { requestExit } from '../../../src/lifecycle/exit.js';
-import type { ApplicationConfig } from '../../../src/application/base-application.interface.js';
+import Logger from '../../../src/logger/logger.js';
+import { PerformanceMonitor } from '../../../src/performance/performance-monitor.js';
+import QueueManager from '../../../src/queue/manager.js';
+import RedisManager from '../../../src/redis/manager.js';
+import { OS, Time } from '../../../src/util/index.js';
 
 // Mock all dependencies
 vi.mock('fs');
@@ -64,7 +64,7 @@ const mockPerformanceMonitor = vi.mocked(PerformanceMonitor);
 const mockOS = vi.mocked(OS);
 const mockTime = vi.mocked(Time);
 const mockLogger = vi.mocked(Logger);
-const mockRequestExit = vi.mocked(requestExit);
+const _mockRequestExit = vi.mocked(requestExit);
 
 // Create a concrete implementation for testing
 class TestApplication extends BaseApplication {
@@ -85,7 +85,7 @@ describe('BaseApplication', () => {
     vi.clearAllMocks();
 
     // Reset static cache
-    // @ts-ignore - accessing private static property
+    // @ts-expect-error - accessing private static property
     BaseApplication.applicationVersionCache = undefined;
 
     mockConfig = {
@@ -234,7 +234,7 @@ describe('BaseApplication', () => {
 
       application = new TestApplication(mockConfig);
 
-      // @ts-ignore - accessing protected property
+      // @ts-expect-error - accessing protected property
       expect(application.workerId).toBe(5);
     });
 
@@ -522,7 +522,7 @@ describe('BaseApplication', () => {
 
       await application.stop({ onStopped: mockOnStopped });
 
-      expect(application['stop']).toHaveBeenCalledWith({ onStopped: mockOnStopped });
+      expect(application.stop).toHaveBeenCalledWith({ onStopped: mockOnStopped });
     });
 
     it('should handle graceful shutdown through shutdown controller', () => {

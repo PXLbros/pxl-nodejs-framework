@@ -1,7 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import fs from 'node:fs';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import Loader from '../../../src/util/loader.js';
-import fs from 'fs';
-import path from 'path';
 
 // Mock fs
 vi.mock('fs', () => ({

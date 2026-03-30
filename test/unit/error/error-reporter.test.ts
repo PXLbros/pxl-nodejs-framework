@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import {
-  ErrorReporter,
   ErrorCode,
+  ErrorReporter,
   ErrorSeverity,
   FrameworkError,
   safeSerializeError,

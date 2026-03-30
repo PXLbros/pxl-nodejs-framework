@@ -149,7 +149,7 @@ export class DatabasePerformanceWrapper {
  * Decorator for monitoring repository methods
  */
 export function MonitorDatabaseOperation(operationName?: string) {
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+  return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
     const originalMethod = descriptor.value;
     const entityName = target.constructor.name.replace('Repository', '');
     const operation = operationName ?? propertyKey;
