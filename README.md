@@ -3,7 +3,7 @@
 [![npm version](https://img.shields.io/npm/v/@scpxl/nodejs-framework.svg)](https://www.npmjs.com/package/@scpxl/nodejs-framework)
 [![Node.js Version](https://img.shields.io/node/v/@scpxl/nodejs-framework.svg)](https://nodejs.org)
 [![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue.svg)](https://www.typescriptlang.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue.svg)](https://www.typescriptlang.org/)
 [![Coverage](https://img.shields.io/badge/Coverage-81%25-yellowgreen.svg)](#testing)
 
 A comprehensive, production-ready Node.js framework for building modern applications with built-in support for web servers, databases, queues, caching, WebSockets, and more.
@@ -512,11 +512,12 @@ The framework now ships with a bundled CLI executable exposed as `pxl` when the 
 Current capabilities:
 
 - `pxl --version` / `pxl -v` / `pxl version` – Print framework version
-- `pxl info` (or just `pxl`) – Display banner + roadmap
+- `pxl info` (or just `pxl`) – Display banner + available commands
+- `pxl routes` – List route files in your project (supports `--path`, `--pattern`, `--json`)
+- `pxl doctor` – Environment diagnostics (Node version, platform, memory, feature checks)
 
 Planned subcommands (roadmap):
 
-- `pxl doctor` – Environment diagnostics (Node version, dependency checks, Redis/Postgres availability)
 - `pxl generate` – Scaffolding for applications, routes, commands, processors
 - `pxl analyze` – Project inspection (unused files, dependency graph summary)
 
@@ -526,11 +527,16 @@ Usage examples:
 # Show version
 pxl --version
 
-# Show framework banner and roadmap
+# Show framework banner and available commands
 pxl info
 
-# (Future) Run doctor diagnostics
+# List route files in your project
+pxl routes
+pxl routes --path ./src/api --pattern "**/*.ts"
+
+# Run environment diagnostics
 pxl doctor
+pxl doctor --json
 ```
 
 Development Note:
@@ -839,7 +845,6 @@ Error: Cannot find module '../logger/index.js'
 - **GitHub Repository**: https://github.com/pxlbros/pxl-nodejs-framework
 - **Issues**: https://github.com/pxlbros/pxl-nodejs-framework/issues
 - **Changelog**: [CHANGELOG.md](CHANGELOG.md)
-- **TODO/Roadmap**: [TODO.md](TODO.md)
 
 ---
 

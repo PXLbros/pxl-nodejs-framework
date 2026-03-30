@@ -20,6 +20,6 @@ describe('PXL CLI', () => {
   it('info (default) prints banner with version', () => {
     const out = runCli(['info']);
     expect(out).toContain(pkg.version);
-    expect(out).toContain('PXL Node.js Framework');
+    expect(out).toContain('@scpxl/nodejs-framework');
   });
 });
