@@ -145,8 +145,9 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: '22'
-          registry-url: 'https://registry.npmjs.org'
+          node-version: '24'
+          # Do not set registry-url — it creates a token-based .npmrc
+          # that conflicts with OIDC Trusted Publishing
 
       - name: Restore dependencies
         uses: actions/cache@v5
@@ -162,7 +163,7 @@ jobs:
         run: npm run build
 
       - name: Publish to NPM
-        run: npm publish --provenance
+        run: npm publish --provenance --access public
 
   create-github-release:
     name: Create GitHub Release
