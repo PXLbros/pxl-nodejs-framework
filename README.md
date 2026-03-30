@@ -834,7 +834,7 @@ Error: Cannot find module '../logger/index.js'
 
 ## 📄 License
 
-[ISC License](LICENSE) - Copyright (c) PXL Agency
+[ISC License](LICENSE) - Copyright (c) SC/PXL
 
 ---
 
@@ -858,4 +858,4 @@ For questions, issues, or feature requests:
 
 ---
 
-**Built with ❤️ by [PXL Agency](https://pxlagency.com)**
+**Built with ❤️ by [SC/PXL](https://studiocity.com)**

@@ -525,7 +525,7 @@ npm run release -- --dry-run
 
 For urgent issues or questions, contact:
 
-- Email: devops@pxlagency.com
+- Email: devops@studiocity.com
 - GitHub: [@pxlbros](https://github.com/pxlbros)
 
 ---
@@ -542,4 +542,4 @@ Thank you for contributing to the SC/PXL Node.js Framework! 🎉
 
 ---
 
-**Built with ❤️ by [PXL Agency](https://pxlagency.com)**
+**Built with ❤️ by [SC/PXL](https://studiocity.com)**

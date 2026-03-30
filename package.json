@@ -151,7 +151,7 @@
     "microservice",
     "application-framework"
   ],
-  "author": "PXL <devops@pxlagency.com>",
+  "author": "SC/PXL <devops@studiocity.com>",
   "license": "ISC",
   "publishConfig": {
     "access": "public"
